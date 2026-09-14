@@ -270,6 +270,8 @@ npm run dev     # http://localhost:5173
 | `DB_ENGINE` / `DB_NAME` / … | `sqlite` یا `mysql` |
 | `NOTIFY_PROVIDER` | `console` · `soroush` · `null` |
 | `SOROUSH_API_BASE` / `SOROUSH_TOKEN` / `SOROUSH_DADDY_CHAT_ID` | اتصال به ربات سروش |
+| `SOROUSH_TIMEOUT` | تایم‌اوت هر درخواست سروش به ثانیه (پیش‌فرض `8`) |
+| `NOTIFY_ASYNC` | ارسال اعلان در نخ پس‌زمینه تا هیچ درخواست API منتظر سروش نماند (پیش‌فرض `true`) |
 | `SESSION_TTL_HOURS` | عمر نشست دستگاه او |
 | `VAULT_SESSION_MINUTES` | چقدر صندوقچه باز بماند |
 | `MAX_UNLOCK_ATTEMPTS` | چند بار رمز اشتباه تا «کمک از بابا» |

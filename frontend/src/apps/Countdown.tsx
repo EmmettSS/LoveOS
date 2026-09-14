@@ -12,7 +12,7 @@ import { del, post } from '../shared/api'
 import { digits, formatDate } from '../shared/format'
 import { playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Chips, Empty, Loading, useApi } from '../shared/ui'
+import { Empty, Loading, useApi } from '../shared/ui'
 
 interface Item {
   id: number

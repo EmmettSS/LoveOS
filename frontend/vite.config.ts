@@ -64,6 +64,8 @@ export default defineConfig({
       '/healthz': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
-  optimizeDeps: { include: ['jspdf', 'html2canvas'] },
+  // نکته: هیچ پکیج چاپ/PDF بیرونی در کار نیست (خروجی کتاب با miniPdf داخلی ساخته
+  // می‌شود)؛ پس optimizeDeps هم چیزی برای پیش‌باندل کردن ندارد. اگر روزی
+  // پکیج سنگینی اضافه کردید، اسمش را این‌جا بگذارید تا dev سریع‌تر بالا بیاید.
   build: { outDir: 'dist', chunkSizeWarningLimit: 1600 },
 })

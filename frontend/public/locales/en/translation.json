@@ -108,7 +108,8 @@
         "nextMeeting": "Next meeting",
         "weather": "Our weather",
         "clock": "Clock",
-        "nextCall": "Next call"
+        "nextCall": "Next call",
+        "dragHint": "To rearrange icons, press and hold one, then drag"
     },
     "apps": {
         "map": "Map of Us",
@@ -373,7 +374,10 @@
         "winStats": "Time: {{time}} • Moves: {{moves}}",
         "playAgain": "Play again",
         "byMe": "Made by me",
-        "shuffle": "Shuffle"
+        "shuffle": "Shuffle",
+        "check": "Check",
+        "checkResult": "{{correct}} of {{total}} tiles are in place 💪",
+        "offlineWin": "Well done! 🎉"
     },
     "hug": {
         "hugDaddy": "Hug Daddy",

@@ -97,7 +97,8 @@
         "nextMeeting": "دیدار بعدی",
         "weather": "هوای ما",
         "clock": "ساعت",
-        "nextCall": "تماس بعدی"
+        "nextCall": "تماس بعدی",
+        "dragHint": "برای جابه‌جایی آیکن‌ها، انگشتت را رویش نگه دار و بکش"
     },
     "apps": {
         "map": "نقشه‌ی ما",
@@ -362,7 +363,10 @@
         "winStats": "زمان: {{time}} • حرکت: {{moves}}",
         "playAgain": "بازی دوباره",
         "byMe": "ساخته‌ی من",
-        "shuffle": "به‌هم بریز"
+        "shuffle": "به‌هم بریز",
+        "check": "بررسی حل",
+        "checkResult": "{{correct}} قطعه از {{total}} سرِ جاشه 💪",
+        "offlineWin": "آفرین دخترم! 🎉"
     },
     "hug": {
         "hugDaddy": "بابا رو بغل کن",

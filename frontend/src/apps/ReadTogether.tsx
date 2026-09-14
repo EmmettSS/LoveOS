@@ -136,6 +136,9 @@ export default function ReadTogether() {
           <motion.div key="shelf" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
             <AddBook onAdded={overview.reload} />
 
+            {/* سرصفحه‌ی قفسه (کلید ترجمه‌اش هست ولی تا حالا جایی استفاده نمی‌شد) */}
+            <p className="os-title text-lg">{t('reading.shelf.library')}</p>
+
             <SectionTitle>{t('reading.shelf.reading')}</SectionTitle>
             <ShelfRow books={data.shelf.reading || []} onOpen={setOpenBook} />
 

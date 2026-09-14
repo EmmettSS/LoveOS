@@ -272,6 +272,8 @@ terminals are needed. A step-by-step walkthrough is in [`QUICKSTART_FA.md`](./QU
 | `DB_ENGINE` / `DB_NAME` / … | `sqlite` or `mysql` |
 | `NOTIFY_PROVIDER` | `console` · `soroush` · `null` |
 | `SOROUSH_API_BASE` / `SOROUSH_TOKEN` / `SOROUSH_DADDY_CHAT_ID` | Soroush bot wiring |
+| `SOROUSH_TIMEOUT` | per-request Soroush timeout in seconds (default `8`) |
+| `NOTIFY_ASYNC` | send notifications from a background thread so API calls never wait on Soroush (default `true`) |
 | `SESSION_TTL_HOURS` | how long her device session lives |
 | `VAULT_SESSION_MINUTES` | how long the vault stays open |
 | `MAX_UNLOCK_ATTEMPTS` | wrong tries before "Ask Daddy" |

@@ -11,10 +11,12 @@ Provider abstraction:
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 import requests
 from django.conf import settings
+from django.db import connection
 from django.utils import timezone
 
 logger = logging.getLogger("loveos.soroush")
@@ -53,10 +55,11 @@ class SoroushProvider(BaseProvider):
 
     name = "soroush"
 
-    def __init__(self, base: str | None = None, token: str | None = None, timeout: int = 20) -> None:
+    def __init__(self, base: str | None = None, token: str | None = None, timeout: int | None = None) -> None:
         self.base = (base or _cfg("SOROUSH_API_BASE", "https://api.splus.ir")).rstrip("/")
         self.token = token or _cfg("SOROUSH_TOKEN", "")
-        self.timeout = timeout
+        # تایم‌اوت کوتاه: حتی اگر سروش در دسترس نبود، هیچ درخواستی معطل نماند
+        self.timeout = timeout if timeout is not None else int(_cfg("SOROUSH_TIMEOUT", 8))
 
     # ------------------------------------------------------------------ core
     @property
@@ -71,11 +74,13 @@ class SoroushProvider(BaseProvider):
         if not self.token:
             return {"ok": False, "description": "SOROUSH_TOKEN تنظیم نشده است"}
         url = f"{self.api_root}/{method}"
+        # (connect, read) — اتصال مرده نباید درخواست را تا ابد نگه دارد
+        net_timeout = (min(5, self.timeout), self.timeout)
         try:
             if files:
-                resp = requests.post(url, data=payload or {}, files=files, timeout=self.timeout)
+                resp = requests.post(url, data=payload or {}, files=files, timeout=net_timeout)
             else:
-                resp = requests.post(url, json=payload or {}, timeout=self.timeout)
+                resp = requests.post(url, json=payload or {}, timeout=net_timeout)
             data = resp.json()
         except ValueError:
             return {"ok": False, "description": f"پاسخ نامعتبر (HTTP {resp.status_code})"}
@@ -141,8 +146,15 @@ def get_provider() -> BaseProvider:
 # --------------------------------------------------------------- صف ارسال ---
 def notify_daddy(event: str, text: str, chat_id: str | None = None) -> "object":
     """
-    یک پیام در صندوق خروجی می‌گذارد و بلافاصله تلاش به ارسال می‌کند.
-    اگر شبکه/توکن نبود، در صف می‌ماند و `manage.py sweep` دوباره تلاش می‌کند.
+    یک پیام در صندوق خروجی می‌گذارد و ارسالش را به یک نخِ پس‌زمینه می‌سپارد.
+
+    چرا پس‌زمینه؟ چون `flush_one` یک درخواست HTTP به سروش می‌زند؛ اگر آن را وسط
+    هندلرِ API صدا بزنیم، پاسخِ اپ (مثلاً «پازل حل شد!») تا تایم‌اوتِ سروش
+    معطل می‌ماند — حتی چند ده ثانیه — و دختر فکر می‌کند بازی هنگ کرده است.
+    پیام در هر صورت در outbox ثبت می‌شود؛ اگر نخ پس‌زمینه نرسید،
+    `manage.py sweep` بعداً ارسالش می‌کند.
+
+    اگر واقعاً ارسال همگام خواستید (مثلاً داخل خودِ sweep)، NOTIFY_ASYNC=False.
     """
     from core.models import SoroushOutbox  # local import to avoid cycles
 
@@ -151,8 +163,33 @@ def notify_daddy(event: str, text: str, chat_id: str | None = None) -> "object":
         text=text,
         chat_id=chat_id or _cfg("SOROUSH_DADDY_CHAT_ID", ""),
     )
-    flush_one(msg)
+    if bool(_cfg("NOTIFY_ASYNC", True)):
+        flush_in_background(msg.pk)
+    else:
+        flush_one(msg)
     return msg
+
+
+def flush_in_background(msg_id: int) -> None:
+    """ارسال یک پیام outbox در نخ جدا؛ هر خطا فقط لاگ می‌شود و به API نمی‌رسد."""
+
+    def worker() -> None:
+        from core.models import SoroushOutbox
+
+        try:
+            msg = SoroushOutbox.objects.filter(pk=msg_id).first()
+            if msg is not None and msg.status == "pending":
+                flush_one(msg)
+        except Exception:  # noqa: BLE001 — هیچ‌وقت نباید نخ را بشکند
+            logger.exception("ارسال پس‌زمینه‌ی پیام %s ناموفق بود", msg_id)
+        finally:
+            # نخِ تازه اتصال DB خودش را دارد؛ باید بسته شود تا نشتی ندهد
+            try:
+                connection.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    threading.Thread(target=worker, name=f"soroush-flush-{msg_id}", daemon=True).start()
 
 
 def flush_one(msg) -> bool:

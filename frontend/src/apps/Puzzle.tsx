@@ -3,10 +3,13 @@
  * عکس به قطعات N×N تقسیم می‌شود؛ با جابه‌جایی دو قطعه مرتب می‌شود.
  *
  * ۱) دخترم خودش هم می‌تواند عکس بفرستد و پازل بسازد (روی سرور ذخیره می‌شود).
- * ۲) تشخیص تکمیل: بعد از هر جابه‌جایی، صفحه‌ی فعلی با «ترتیب درست»
- *    مقایسه می‌شود؛ اگر یکی‌یکی باشند، همان لحظه جشن می‌آید — حتی اگر
- *    سرور پاسخ ندهد، بازی برای دختر تمام می‌شود (پایان محلی + تلاش برای ثبت).
- *    برای اطمینان، یک useEffect هم مرتب‌بودن را زیر نظر دارد.
+ * ۲) تشخیص تکمیل — سه لایه، هیچ‌کدام به سرور وابسته نیست:
+ *    لایه‌ی ۱: بعد از هر جابه‌جایی، آرایه‌ی قطعه‌ها با «ترتیب درست» مقایسه می‌شود.
+ *    لایه‌ی ۲: یک نگهبانِ زمان‌دار هر ۴۰۰ms دوباره بررسی می‌کند (اگر لایه‌ی ۱
+ *              به هر دلیلی از دست رفت، این یکی جشن را می‌آورد).
+ *    لایه‌ی ۳: دکمه‌ی «بررسی حل» که دختر خودش می‌تواند بزند.
+ *    مهم‌تر از همه: جشن **بی‌درنگ و محلی** نشان داده می‌شود و ثبت نتیجه روی
+ *    سرور بعداً انجام می‌شود؛ پس اگر شبکه کند/قطع بود، پایان بازی هرگز گم نمی‌شود.
  */
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -204,15 +207,22 @@ export default function Puzzle() {
   const [hints, setHints] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const [result, setResult] = useState<null | { message: string; voice: string | null; best_time: number; new_record: boolean; seconds: number; moves: number }>(null)
+  // نتیجه‌ی «بررسی حل»: چند قطعه سر جاست + کدام‌ها نه
+  const [checkFlash, setCheckFlash] = useState<null | { correct: number; wrong: number[] }>(null)
   const finishedRef = useRef(false)
   const secondsRef = useRef(0)
   const movesRef = useRef(0)
+  const tilesRef = useRef<number[]>([])
+  const activeRef = useRef<P | null>(null)
+  const flashTimer = useRef<number | null>(null)
 
   const size = active?.level || 3
   const solved = useMemo(() => isSolved(tiles), [tiles])
 
   useEffect(() => { secondsRef.current = seconds }, [seconds])
   useEffect(() => { movesRef.current = moves }, [moves])
+  useEffect(() => { tilesRef.current = tiles }, [tiles])
+  useEffect(() => { activeRef.current = active }, [active])
 
   useEffect(() => {
     if (!active || solved || result) return
@@ -220,40 +230,71 @@ export default function Puzzle() {
     return () => clearInterval(id)
   }, [active, solved, result])
 
-  // نگهبان دوم: اگر به هر دلیلی solved شد ولی finish صدا زده نشد، اینجا جشن را می‌آورد
-  useEffect(() => {
-    if (!active || !solved || result || finishedRef.current) return
-    // تاخیر کوتاه تا UI فرصت به‌روزرسانی داشته باشد
-    const id = window.setTimeout(() => {
-      if (!finishedRef.current) finish(secondsRef.current, movesRef.current)
-    }, 150)
-    return () => window.clearTimeout(id)
-  }, [solved, active, result])
-
+  /**
+   * پایان بازی — جشن بی‌درنگ و محلی.
+   * نتیجه‌ی سرور (پیام بابا، ویس، رکورد) بعداً روی همان جشن می‌نشیند؛ اگر سرور
+   * کند یا خاموش باشد هم چیزی از دست نمی‌رود.
+   */
   const finish = (finalSeconds: number, finalMoves: number) => {
-    if (finishedRef.current || !active) return
+    const puzzle = activeRef.current
+    if (finishedRef.current || !puzzle) return
     finishedRef.current = true
+    setCheckFlash(null)
+    setSelected(null)
+    setResult({
+      message: '',
+      voice: null,
+      best_time: finalSeconds,
+      new_record: false,
+      seconds: finalSeconds,
+      moves: finalMoves,
+    })
     playSuccess()
-    void post<{ message: string; voice: string | null; best_time: number; new_record: boolean }>(`/puzzles/${active.id}/complete`, {
+    void post<{ message: string; voice: string | null; best_time: number; new_record: boolean }>(`/puzzles/${puzzle.id}/complete`, {
       seconds: finalSeconds,
     })
       .then((r) => {
-        setResult({ ...r, seconds: finalSeconds, moves: finalMoves })
+        setResult({
+          message: r?.message || '',
+          voice: r?.voice ?? null,
+          best_time: r?.best_time ?? finalSeconds,
+          new_record: !!r?.new_record,
+          seconds: finalSeconds,
+          moves: finalMoves,
+        })
         void reload()
       })
       .catch(() => {
-        setResult({ message: 'آفرین دخترم! 🎉', voice: null, best_time: finalSeconds, new_record: false, seconds: finalSeconds, moves: finalMoves })
+        // سرور نرسید — جشن همان جشن است، فقط پیام محلی می‌گذاریم
+        setResult((cur) =>
+          cur
+            ? { ...cur, message: cur.message || t('puzzle.offlineWin'), best_time: finalSeconds, seconds: finalSeconds, moves: finalMoves }
+            : cur,
+        )
       })
   }
+
+  // نگهبانِ زمان‌دار: اگر به هر دلیلی پایان از دست رفت، این‌جا جشن را می‌آورد
+  useEffect(() => {
+    if (!active || result) return
+    const id = window.setInterval(() => {
+      if (!finishedRef.current && isSolved(tilesRef.current)) finish(secondsRef.current, movesRef.current)
+    }, 400)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, result])
 
   const start = async (p: P) => {
     playClick()
     finishedRef.current = false
     setActive(p)
+    activeRef.current = p
     const n = p.level * p.level
     const s = shuffled(n)
     // اطمینان مضاعف: اگر شانسی مرتب شد، دوباره بریز
-    setTiles(isSolved(s) ? shuffled(n) : s)
+    const next = isSolved(s) ? shuffled(n) : s
+    tilesRef.current = next
+    setTiles(next)
     setSelected(null)
     setSeconds(0)
     secondsRef.current = 0
@@ -261,8 +302,32 @@ export default function Puzzle() {
     movesRef.current = 0
     setHints(0)
     setResult(null)
+    setCheckFlash(null)
     await post(`/puzzles/${p.id}/start`).catch(() => undefined)
   }
+
+  /**
+   * «بررسی حل» — همان چیزی که دختر می‌تواند هر وقت خواست بزند:
+   * اگر مرتب باشد جشن می‌آید، اگر نه می‌گوید چند قطعه سر جاست و کدام‌ها نیست.
+   */
+  const checkSolution = () => {
+    if (!active || result) return
+    playClick()
+    const cur = tilesRef.current
+    if (isSolved(cur)) {
+      finish(secondsRef.current, movesRef.current)
+      return
+    }
+    const wrong: number[] = []
+    cur.forEach((v, i) => {
+      if (v !== i) wrong.push(i)
+    })
+    setCheckFlash({ correct: cur.length - wrong.length, wrong })
+    if (flashTimer.current) window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => setCheckFlash(null), 3200)
+  }
+
+  useEffect(() => () => { if (flashTimer.current) window.clearTimeout(flashTimer.current) }, [])
 
   const tap = (i: number) => {
     if (solved || result || !active) return
@@ -275,13 +340,17 @@ export default function Puzzle() {
       setSelected(null)
       return
     }
-    const next = [...tiles]
+    // همیشه از تازه‌ترین وضعیت می‌خوانیم (نه از کپیِ بسته‌ی کلیک)
+    const cur = tilesRef.current.length === size * size ? tilesRef.current : tiles
+    const next = [...cur]
     ;[next[selected], next[i]] = [next[i], next[selected]]
     const nextMoves = movesRef.current + 1
+    tilesRef.current = next
     setTiles(next)
     setMoves(nextMoves)
     movesRef.current = nextMoves
     setSelected(null)
+    setCheckFlash(null)
     if (isSolved(next)) {
       finish(secondsRef.current, nextMoves)
     }
@@ -292,6 +361,18 @@ export default function Puzzle() {
     setHints((h) => h + 1)
     setShowHint(true)
     setTimeout(() => setShowHint(false), 2200)
+  }
+
+  /** به‌هم ریختن دوباره — هم state و هم ref با هم به‌روز می‌شوند */
+  const shuffleNow = () => {
+    if (!active || result) return
+    playClick()
+    let next = shuffled(size * size)
+    if (isSolved(next)) next = shuffled(size * size)
+    tilesRef.current = next
+    setTiles(next)
+    setSelected(null)
+    setCheckFlash(null)
   }
 
   if (loading) return <Loading />
@@ -366,6 +447,17 @@ export default function Puzzle() {
           // برای size=1 تقسیم بر صفر پیش نیاید
           const posX = size > 1 ? (col / (size - 1)) * 100 : 0
           const posY = size > 1 ? (row / (size - 1)) * 100 : 0
+          // حالت «بررسی حل»: سبز = سرِ جاش، قرمز = نابجا
+          const isWrong = !!checkFlash && !result && !correct
+          const outline = selected === i
+            ? '3px solid var(--os-accent)'
+            : checkFlash && !result
+              ? correct
+                ? '2px solid rgba(52,211,153,.95)'
+                : '2px solid rgba(248,113,113,.95)'
+              : correct
+                ? '2px solid rgba(52,211,153,.9)'
+                : 'none'
           return (
             <motion.button
               key={i}
@@ -375,9 +467,11 @@ export default function Puzzle() {
                 backgroundImage: active.image ? `url(${active.image})` : 'linear-gradient(135deg,#ff9ecb,#bba0fb)',
                 backgroundSize: `${size * 100}% ${size * 100}%`,
                 backgroundPosition: `${posX}% ${posY}%`,
-                outline: selected === i ? '3px solid var(--os-accent)' : correct ? '2px solid rgba(52,211,153,.9)' : 'none',
+                outline,
                 outlineOffset: -2,
               }}
+              animate={isWrong ? { x: [0, -3, 3, -2, 2, 0] } : { x: 0 }}
+              transition={{ duration: 0.4 }}
               whileTap={{ scale: 0.92 }}
               aria-label={`${i + 1}`}
             />
@@ -401,8 +495,23 @@ export default function Puzzle() {
 
       <div className="flex gap-2">
         <button className="os-btn flex-1" onClick={() => void start(active)}>{t('puzzle.reset')}</button>
-        <button className="os-btn flex-1" onClick={() => setTiles(shuffled(size * size))}>{t('puzzle.shuffle')}</button>
+        <button className="os-btn flex-1" onClick={shuffleNow}>{t('puzzle.shuffle')}</button>
+        <button className="os-btn-primary flex-1" onClick={checkSolution}>{t('puzzle.check')}</button>
       </div>
+
+      <AnimatePresence>
+        {checkFlash && !result && (
+          <motion.p
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="os-card text-center text-xs leading-6"
+            style={{ color: 'var(--os-accent)' }}
+          >
+            {t('puzzle.checkResult', { correct: digits(checkFlash.correct), total: digits(size * size) })}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {result && <WinOverlay result={result} onReplay={() => void start(active)} />}
