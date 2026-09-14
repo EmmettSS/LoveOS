@@ -130,6 +130,12 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# سرو کردن فرانت‌اند توسط جنگو (برای هاست‌های تک‌ورودی مثل cPanel/Passenger)
+# پیش‌فرض خاموش است؛ در توسعه Vite جدا اجرا می‌شود و Hot Reload دارد.
+SERVE_FRONTEND = env_bool("SERVE_FRONTEND", False)
+FRONTEND_DIST = env("FRONTEND_DIST", str(BASE_DIR.parent / "frontend" / "dist"))
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 80 * 1024 * 1024  # 80MB uploads (voices/songs)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
