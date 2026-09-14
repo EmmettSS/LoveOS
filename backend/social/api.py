@@ -14,7 +14,15 @@ from accounts.models import UserConfig
 from content.models import TerminalCommand
 from core.auth import require_session
 from core.models import Achievement, AchievementUnlock, OSNotification
-from core.services import bump, get_counter, log_activity, push_notification, reset_counter, trigger_easter_egg
+from core.services import (
+    bump,
+    effective_daughter_location,
+    get_counter,
+    log_activity,
+    push_notification,
+    reset_counter,
+    trigger_easter_egg,
+)
 from core.soroush import notify_daddy
 from social.models import ChatMessage, Hug, HugSettings, Reminder, ReminderLog
 
@@ -408,8 +416,9 @@ def fetch_weather(lat: float, lng: float, tz: str) -> dict:
 @require_session
 def weather(request):
     cfg = UserConfig.get_solo()
+    eff = effective_daughter_location(cfg)
     daddy = fetch_weather(cfg.daddy_lat, cfg.daddy_lng, cfg.daddy_timezone)
-    daughter = fetch_weather(cfg.daughter_lat, cfg.daughter_lng, cfg.daughter_timezone)
+    daughter = fetch_weather(eff["lat"], eff["lng"], eff["timezone"])
     message = ""
     if daddy.get("temp") is not None and daughter.get("temp") is not None:
         diff = abs(daddy["temp"] - daughter["temp"])
@@ -420,7 +429,7 @@ def weather(request):
     return Response(
         {
             "daddy": {"city": cfg.daddy_city, **daddy},
-            "daughter": {"city": cfg.daughter_city, **daughter},
+            "daughter": {"city": eff["city"], "is_live": eff["is_live"], **daughter},
             "message": message,
         }
     )
@@ -435,10 +444,11 @@ def map_data(request):
     from zoneinfo import ZoneInfo
 
     cfg = UserConfig.get_solo()
+    eff = effective_daughter_location(cfg)
     r = 6371.0
-    p1, p2 = math.radians(cfg.daddy_lat), math.radians(cfg.daughter_lat)
-    dp = math.radians(cfg.daughter_lat - cfg.daddy_lat)
-    dl = math.radians(cfg.daughter_lng - cfg.daddy_lng)
+    p1, p2 = math.radians(cfg.daddy_lat), math.radians(eff["lat"])
+    dp = math.radians(eff["lat"] - cfg.daddy_lat)
+    dl = math.radians(eff["lng"] - cfg.daddy_lng)
     a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
     distance = round(2 * r * math.asin(math.sqrt(a)))
 
@@ -455,13 +465,17 @@ def map_data(request):
                 "city": cfg.daddy_city,
                 "lat": cfg.daddy_lat,
                 "lng": cfg.daddy_lng,
+                "is_live": False,
                 **local(cfg.daddy_timezone),
             },
             "daughter": {
-                "city": cfg.daughter_city,
-                "lat": cfg.daughter_lat,
-                "lng": cfg.daughter_lng,
-                **local(cfg.daughter_timezone),
+                "city": eff["city"],
+                "lat": eff["lat"],
+                "lng": eff["lng"],
+                "is_live": eff["is_live"],
+                "accuracy": eff["accuracy"],
+                "captured_at": eff["captured_at"],
+                **local(eff["timezone"]),
             },
             "distance_km": distance,
             "end_message": "فاصله فقط یه عدده. قلبمون همیشه یکیه.",

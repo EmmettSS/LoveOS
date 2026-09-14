@@ -8,7 +8,12 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, re_path
 
+from calls import api as calls_api
 from content import api as content_api
+from dreamhome import api as dreamhome_api
+from gifts import api as gifts_api
+from language import api as language_api
+from reading import api as reading_api
 from core import api_auth
 from core.webhook import soroush_webhook
 from games import api as games_api
@@ -40,7 +45,10 @@ urlpatterns = [
     path("api/auth/help", api_auth.ask_help),
     path("api/auth/logout", api_auth.logout),
     path("api/me", api_auth.me),
+    path("api/location", api_auth.location),
+    path("api/search", api_auth.search),
     path("api/settings", api_auth.update_settings),
+    path("api/settings/", api_auth.update_settings),
     path("api/vault/unlock", api_auth.vault_unlock),
     # ------------------------------------------------------------- content
     path("api/voices", content_api.voices),
@@ -108,6 +116,55 @@ urlpatterns = [
     path("api/puzzles", games_api.puzzles),
     path("api/puzzles/<int:pk>/start", games_api.puzzle_start),
     path("api/puzzles/<int:pk>/complete", games_api.puzzle_complete),
+    # --------------------------------------------------------- call sync
+    path("api/calls/overview", calls_api.overview),
+    path("api/calls/slots", calls_api.slots),
+    path("api/calls/slots/<int:pk>", calls_api.slot_item),
+    path("api/calls/appointments", calls_api.appointments),
+    path("api/calls/appointments/<int:pk>/respond", calls_api.appointment_respond),
+    path("api/calls/appointments/<int:pk>/cancel", calls_api.appointment_cancel),
+    path("api/calls/logs", calls_api.logs),
+    path("api/calls/logs/<int:pk>", calls_api.log_item),
+    path("api/calls/stats", calls_api.stats),
+    path("api/calls/next", calls_api.next_call),
+    # ----------------------------------------------------------- gift history
+    path("api/gifts", gifts_api.gifts),
+    path("api/gifts/occasions", gifts_api.occasions),
+    path("api/gifts/stats", gifts_api.stats),
+    path("api/gifts/<int:pk>", gifts_api.gift_item),
+    # --------------------------------------------------------- read together
+    path("api/reading/overview", reading_api.overview),
+    path("api/reading/books", reading_api.books),
+    path("api/reading/books/<int:pk>", reading_api.book_item),
+    path("api/reading/books/<int:pk>/chapters", reading_api.chapter_create),
+    path("api/reading/books/<int:pk>/progress", reading_api.progress_set),
+    path("api/reading/chapters/<int:pk>/notes", reading_api.notes),
+    path("api/reading/chapters/<int:pk>/quotes", reading_api.quotes),
+    path("api/reading/chapters/<int:pk>/comments", reading_api.comments),
+    path("api/reading/quotes", reading_api.quotes),
+    path("api/reading/stats", reading_api.stats),
+    # ------------------------------------------------------------ dream home
+    path("api/home/overview", dreamhome_api.overview),
+    path("api/home/features", dreamhome_api.features),
+    path("api/home/features/<int:pk>", dreamhome_api.feature_item),
+    path("api/home/rooms", dreamhome_api.rooms),
+    path("api/home/rooms/<int:pk>", dreamhome_api.room_item),
+    path("api/home/rooms/<int:pk>/ideas", dreamhome_api.room_ideas),
+    path("api/home/inspirations", dreamhome_api.inspirations),
+    path("api/home/inspirations/<int:pk>", dreamhome_api.inspiration_item),
+    path("api/home/inspirations/<int:pk>/comments", dreamhome_api.inspiration_comments),
+    path("api/home/categories", dreamhome_api.categories),
+    path("api/home/stats", dreamhome_api.stats),
+    # -------------------------------------------------------- language bridge
+    path("api/language/overview", language_api.overview),
+    path("api/language/entries", language_api.entries),
+    path("api/language/entries/<int:pk>", language_api.entry_item),
+    path("api/language/categories", language_api.categories),
+    path("api/language/flashcards", language_api.flashcards),
+    path("api/language/practice", language_api.practice),
+    path("api/language/quiz", language_api.quiz),
+    path("api/language/quiz/submit", language_api.quiz_submit),
+    path("api/language/stats", language_api.stats),
     # ------------------------------------------------------------- soroush
     path("api/soroush/webhook/<str:secret>/", soroush_webhook),
 ]

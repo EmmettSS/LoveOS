@@ -32,7 +32,9 @@
     "pause": "Pause",
     "retry": "Retry",
     "uploading": "Uploading...",
-    "saved": "Saved ✅"
+    "saved": "Saved ✅",
+    "minimize": "Minimize",
+    "alwaysOnTop": "Bring to front"
   },
   "boot": {
     "line1": "LoveOS v1.0 — only for my daughter",
@@ -63,7 +65,8 @@
     "todayMessage": "Daddy's message today",
     "nextMeeting": "Next meeting",
     "weather": "Our weather",
-    "clock": "Clock"
+    "clock": "Clock",
+    "nextCall": "Next call"
   },
   "apps": {
     "map": "Map of Us",
@@ -90,7 +93,12 @@
     "hug": "Hug",
     "cycle": "Cycle & Care",
     "library": "Our Library",
-    "about": "About LoveOS"
+    "about": "About LoveOS",
+    "call": "Call Sync",
+    "gifts": "Gift Book",
+    "reading": "Read Together",
+    "dreamhome": "Dream Home",
+    "language": "Language Bridge"
   },
   "map": {
     "flyRoute": "Fly the route",
@@ -102,7 +110,17 @@
     "timeDiff": "Time difference",
     "nightThere": "It's night there 🌙",
     "dayThere": "It's day there ☀️",
-    "localTime": "Local time"
+    "localTime": "Local time",
+    "live": "Live",
+    "liveOk": "Your location is saved ❤ The map now points where you really are.",
+    "liveDenied": "Allow location access and I will show exactly where you are.",
+    "liveUpdated": "Your spot is fresh ❤",
+    "liveHintOn": "This point is live — it comes from her own device and updates as she moves.",
+    "liveHintOff": "Sweetheart, tap the button below and your point becomes live too.",
+    "useMyLocation": "Use my location",
+    "refresh": "Refresh",
+    "accuracy": "Accuracy",
+    "meters": "m"
   },
   "voice": {
     "random": "A random voice note",
@@ -183,7 +201,9 @@
   "starmap": {
     "caption": "I wrote your name with stars.",
     "tapLetter": "Tap each letter",
-    "fullName": "Light up the whole name"
+    "fullName": "Light up the whole name",
+    "layoutRtl": "Layout: right to left",
+    "layoutLtr": "Layout: left to right"
   },
   "chat": {
     "placeholder": "Tell Daddy something...",
@@ -219,7 +239,12 @@
     "wrong": "Not this one 😅"
   },
   "plans": {
-    "categories": { "travel": "Travel", "work": "Work", "wish": "Wish", "home": "Home" },
+    "categories": {
+      "travel": "Travel",
+      "work": "Work",
+      "wish": "Wish",
+      "home": "Home"
+    },
     "addPlaceholder": "Write a new wish...",
     "addedBy": "by",
     "byDaddy": "Daddy",
@@ -227,8 +252,15 @@
     "doneCount": "{{done}} of {{total}} wishes"
   },
   "cinema": {
-    "status": { "todo": "Not watched", "watching": "Watching", "done": "Watched" },
-    "kind": { "film": "Film", "series": "Series" },
+    "status": {
+      "todo": "Not watched",
+      "watching": "Watching",
+      "done": "Watched"
+    },
+    "kind": {
+      "film": "Film",
+      "series": "Series"
+    },
     "addPlaceholder": "Film or series name",
     "link": "Watch link",
     "rating": "Rating",
@@ -254,7 +286,11 @@
     "locked": "Not unlocked yet"
   },
   "puzzle": {
-    "levels": { "3": "Easy", "4": "Medium", "5": "Hard" },
+    "levels": {
+      "3": "Easy",
+      "4": "Medium",
+      "5": "Hard"
+    },
     "hint": "Get a hint",
     "reset": "Restart",
     "time": "Time",
@@ -351,7 +387,19 @@
     "logout": "Log out",
     "vibration": "Vibration",
     "notificationsPerm": "Notification permission",
-    "install": "Install on phone"
+    "install": "Install on phone",
+    "languageHint": "The interface language, everywhere you go.",
+    "themeHint": "Auto means bright days and dark nights.",
+    "location": "My location",
+    "locationHint": "With your permission, Baba knows where you are — so distance, time and weather stay right.",
+    "locationLive": "Live",
+    "locating": "Locating...",
+    "allowLocation": "Let it find where I am",
+    "locationOk": "Your location is saved: {{city}}",
+    "locationDenied": "Couldn't find you, sweetheart; I'll use the city Baba saved.",
+    "locationUpdated": "Your location is fresh ❤",
+    "privacy": "Location is used inside this app only. The city and coordinates stay on our own server and are never sent anywhere else.",
+    "savedLocally": "Saved on your device; I will send it when the internet is better ❤"
   },
   "notifications": {
     "title": "Notification Center",
@@ -364,9 +412,269 @@
     "mute": "Mute",
     "unmute": "Unmute"
   },
-  "tutorial": { "title": "LoveOS Tutorial", "chapter": "Lesson" },
+  "tutorial": {
+    "title": "LoveOS Tutorial",
+    "chapter": "Lesson"
+  },
   "about": {
     "madeBy": "Made by Daddy for his daughter",
     "version": "Version"
+  },
+  "common": {
+    "tryAgain": "Try again in a moment ❤"
+  },
+  "search": {
+    "title": "Global search",
+    "placeholder": "Search all of LoveOS… (chat, letters, memories, gifts, books, words)",
+    "suggestions": "Start here:",
+    "hint": "Type anything you remember — I'll find it 🔎",
+    "searching": "Searching…",
+    "nothing": "Nothing found. Try another word 🌸",
+    "footer": "Ctrl/⌘ + K to open • Esc to close",
+    "results": "{count} results"
+  },
+  "calls": {
+    "tabs": {
+      "next": "Next call",
+      "week": "Our week",
+      "plan": "Plan",
+      "logs": "Call log"
+    },
+    "nextTitle": "Our next call",
+    "noNext": "No call is planned yet. Want to suggest a time?",
+    "noNextShort": "No call planned",
+    "proposeNow": "Suggest a call",
+    "countdownHint": "Counting every second ❤",
+    "yourSide": "Your side",
+    "reminderAt": "Reminder {minutes} min before",
+    "record": "Record",
+    "monthSummary": "This month",
+    "monthCalls": "Calls",
+    "monthTime": "Time together",
+    "average": "Average",
+    "lastSixMonths": "Last six months",
+    "moods": "Moods",
+    "mood": {
+      "happy": "Happy",
+      "normal": "Okay",
+      "missing": "Missing you"
+    },
+    "answerPrompt": "{name} suggested a call — is that okay?",
+    "approve": "I'm in",
+    "reject": "Not this time",
+    "reschedule": "Another time",
+    "tipSnack": "Tip: log how long you talked — daddy loves seeing it.",
+    "sharedWindows": "Times we are both free",
+    "overlapHint": "Each window is a chance to talk",
+    "noOverlap": "No shared window yet. Add your free times 🙂",
+    "freeTimes": "Free windows",
+    "addFreeTime": "New free window",
+    "endAfterStart": "End time must be after start",
+    "saveFailed": "Could not save, try again",
+    "slotNote": "Note (e.g. after class)",
+    "me": "Me",
+    "daddy": "Daddy",
+    "proposeTitle": "Suggest a call",
+    "fromMe": "From me",
+    "fromDaddy": "From daddy",
+    "topicPlaceholder": "What shall we talk about?",
+    "proposeSend": "Send for approval",
+    "waitingAnswer": "Waiting for an answer",
+    "approved": "Approved times",
+    "history": "History",
+    "isAlternative": "Alternative proposal",
+    "sendAlternative": "Send this time",
+    "logged": "Logged",
+    "logCall": "Log a call",
+    "kind": {
+      "video": "Video",
+      "voice": "Voice",
+      "group": "Group"
+    },
+    "notePlaceholder": "Call note",
+    "daddyMood": "Daddy's mood",
+    "myMood": "My mood",
+    "linkAppointment": "Link to which appointment?",
+    "recordVoice": "Record with microphone",
+    "stopRecord": "Stop",
+    "micUnsupported": "This browser has no recording support; only the text note will be saved.",
+    "noLogs": "No calls logged yet. Log the first one ❤",
+    "micError": "Microphone access was refused — allow it in the browser settings and try again."
+  },
+  "gifts": {
+    "stats": {
+      "received": "Received",
+      "given": "Given",
+      "value": "Total value",
+      "average": "Average",
+      "tomans": "Toman",
+      "noPrice": "No price recorded",
+      "pieces": "gifts"
+    },
+    "years": "Gift years",
+    "latest": "Latest gift",
+    "fromMe": "From me",
+    "fromDaddy": "From daddy",
+    "searchPlaceholder": "Which gift are you looking for?",
+    "empty": "The book is empty. Log the first gift 🎁",
+    "bands": {
+      "low": "Small and simple",
+      "medium": "Nice",
+      "high": "Special",
+      "unknown": "Unknown"
+    },
+    "reaction": "Your reaction",
+    "reactionPlaceholder": "How did it feel? What did you say?",
+    "favorite": "Favourite",
+    "unfavorite": "Remove favourite",
+    "addTitle": "Log a gift",
+    "namePlaceholder": "Gift name",
+    "needName": "Please write the gift name",
+    "giver": "Giver",
+    "receiver": "Receiver",
+    "daddy": "Daddy",
+    "me": "Me",
+    "occasion": "Occasion",
+    "date": "Date",
+    "price": "Price",
+    "pricePlaceholder": "e.g. 250 (Toman)",
+    "band": "Price band",
+    "bandAuto": "Calculate for me",
+    "descriptionPlaceholder": "Short description",
+    "photo": "Gift photo"
+  },
+  "reading": {
+    "stat": {
+      "books": "Books",
+      "finishedBoth": "Read together",
+      "notes": "Notes",
+      "quotes": "Quotes"
+    },
+    "shelf": {
+      "reading": "Reading now",
+      "want": "Wishlist",
+      "finished": "Finished",
+      "library": "Library shelf"
+    },
+    "libraryEmpty": "Our library has no books yet",
+    "linked": "On the shared shelf",
+    "tapToAdd": "Tap to read together",
+    "recentQuotes": "Lovely quotes",
+    "emptyShelf": "Nothing here yet",
+    "addBook": "Add a book to the shelf",
+    "bookTitle": "Book title",
+    "author": "Author",
+    "why": "Why this book?",
+    "cover": "Cover",
+    "pdf": "PDF file",
+    "noAuthor": "Unknown author",
+    "chapters": "chapters",
+    "linkExplain": "This book lives in the Library app. One tap brings it to our shared shelf so we can read and leave notes together.",
+    "linkNow": "Bring it to the shared shelf",
+    "chapterList": "Chapters",
+    "noChapters": "No chapters yet",
+    "newChapter": "New chapter title",
+    "comments": "comments",
+    "notes": "notes",
+    "quotes": "quotes",
+    "tab": {
+      "note": "My note",
+      "quote": "Quote",
+      "talk": "Talk"
+    },
+    "notePlaceholder": "How did this part feel?",
+    "quotePlaceholder": "Write the line you loved",
+    "commentPlaceholder": "Say what you think…",
+    "iReadIt": "I read it",
+    "mine": "mine",
+    "myNotes": "My notes",
+    "talk": "Talk under the chapter",
+    "pages": "pages",
+    "me": "Me",
+    "daddy": "Daddy"
+  },
+  "home": {
+    "title": "Our dream home",
+    "must": "Must have",
+    "nice": "Would love",
+    "luxury": "Luxury",
+    "done": "Done",
+    "rooms": "Rooms",
+    "gallery": "Inspirations",
+    "tab": {
+      "plan": "Wishes",
+      "map": "Layout",
+      "gallery": "Gallery"
+    },
+    "featurePlaceholder": "What should our home have?",
+    "noCategory": "No category",
+    "emptyFeatures": "No features yet",
+    "emptyMap": "Add rooms to shape our home…",
+    "mapHint": "Drag any room around — I save it for you 🏠",
+    "roomPlaceholder": "Room name",
+    "floors": {
+      "ground": "Ground floor",
+      "first": "Upper floor",
+      "yard": "Yard"
+    },
+    "idea": "Idea",
+    "color": "Color",
+    "furniture": "Furniture",
+    "ideaPlaceholder": "What do you want in this room?",
+    "addInspiration": "Add an inspiration",
+    "inspirationTitle": "Title or note",
+    "untitled": "Inspiration",
+    "anyRoom": "For which room?",
+    "pickPhoto": "Pick a photo",
+    "noPhoto": "Pick a photo first",
+    "emptyGallery": "The gallery is empty. Add a lovely photo 🖼",
+    "commentPlaceholder": "Your thoughts…"
+  },
+  "language": {
+    "title": "Language bridge",
+    "words": "words",
+    "streak": "day streak",
+    "bestStreak": "Best",
+    "tab": {
+      "dictionary": "Dictionary",
+      "flash": "Flashcards",
+      "quiz": "Quiz"
+    },
+    "kind": {
+      "word": "Word",
+      "idiom": "Idiom"
+    },
+    "searchPlaceholder": "Word or idiom…",
+    "allLanguages": "All languages",
+    "empty": "No words yet",
+    "literal": "Literal meaning",
+    "real": "Real meaning",
+    "pronunciation": "Pronunciation",
+    "recordPronunciation": "Record pronunciation",
+    "stop": "Stop",
+    "addTitle": "Add a word or idiom",
+    "needText": "Write the word or idiom",
+    "textPlaceholder": "Word / idiom",
+    "literalPlaceholder": "Letter by letter meaning",
+    "realPlaceholder": "What does it really mean?",
+    "examplePlaceholder": "An example in a sentence",
+    "me": "Me",
+    "daddy": "Daddy",
+    "noCards": "No cards to practise. Add some words first",
+    "practiceTarget": "Practise in",
+    "remaining": "{count} words left to learn",
+    "tapToFlip": "Tap to see the answer",
+    "notYet": "Not yet",
+    "learned": "I learned it",
+    "again": "One more round",
+    "roundDone": "You knew {correct} of {total}!",
+    "streakHint": "Practise daily and the streak keeps growing 🔥",
+    "noQuiz": "Daddy has not added quiz questions yet. Nudge him 🙂",
+    "quizIntro": "{count} questions from daddy's panel. Shall we start?",
+    "quizStart": "Start the quiz",
+    "answers": "Answers",
+    "yourAnswer": "Your answer",
+    "rightAnswer": "Correct answer",
+    "micError": "Microphone access was refused — allow it first."
   }
 }

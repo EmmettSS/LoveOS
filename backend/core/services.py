@@ -18,6 +18,57 @@ from core.models import (
 from core.soroush import notify_daddy
 
 
+# --------------------------------------------------- موقعیت زنده‌ی دخترم ---
+def effective_daughter_location(cfg=None) -> dict:
+    """
+    موقعیت مؤثری که همه‌ی اپ‌ها باید استفاده کنند.
+
+    ترتیب اولویت:
+      ۱) موقعیت زنده‌ی دستگاه دخترم (اگر تازه باشد و بابا آن را فعال کرده باشد)
+      ۲) مقدار ثبت‌شده در پنل بابا (خانه/شهر پیش‌فرض)
+
+    خروجی: lat, lng, city, timezone, is_live, captured_at, accuracy, source
+    """
+    from accounts.models import LiveLocation  # local import: جلوگیری از حلقه
+
+    if cfg is None:
+        from accounts.models import UserConfig
+
+        cfg = UserConfig.get_solo()
+
+    fallback = {
+        "lat": cfg.daughter_lat,
+        "lng": cfg.daughter_lng,
+        "city": cfg.daughter_city,
+        "timezone": cfg.daughter_timezone,
+        "is_live": False,
+        "captured_at": None,
+        "accuracy": None,
+        "source": "config",
+    }
+    if not getattr(cfg, "location_enabled", True):
+        return fallback
+
+    live = LiveLocation.current()
+    if not live or not live.is_fresh(getattr(cfg, "location_ttl_minutes", 60)):
+        return fallback
+
+    return {
+        "lat": live.lat,
+        "lng": live.lng,
+        "city": live.city or cfg.daughter_city,
+        "timezone": live.timezone or cfg.daughter_timezone,
+        "is_live": True,
+        "captured_at": live.captured_at.isoformat(),
+        "accuracy": live.accuracy,
+        "source": live.source,
+    }
+
+
+def daughter_timezone_name(cfg=None) -> str:
+    return effective_daughter_location(cfg).get("timezone") or "Europe/Istanbul"
+
+
 # ------------------------------------------------------------- اعلان‌ها -----
 def push_notification(kind: str, title: str, text: str = "", **kwargs) -> OSNotification:
     """یک کارت اعلان در مرکز اعلان دخترم می‌سازد."""
@@ -65,6 +116,23 @@ ACHIEVEMENT_RULES: dict[str, str] = {
     "secret_finder": "eggs_found",
     "secret_master": "eggs_found",
     "know_it_all": "eggs_found",
+    # --- شش اپ تازه
+    "first_call": "call_logged",
+    "calls_10": "call_logged",
+    "hours_100": "call_total_minutes",       # آستانه‌اش ۶۰۰۰ دقیقه است
+    "first_gift": "gifts_recorded",
+    "gifts_10": "gifts_recorded",
+    "gifts_50": "gifts_recorded",
+    "first_book": "reading_books",
+    "books_5": "reading_books",
+    "books_10": "reading_books",
+    "notes_100": "reading_notes",
+    "home_features_10": "home_features",
+    "home_features_50": "home_features",
+    "first_room": "home_rooms",
+    "first_word": "language_entries",
+    "words_100": "language_words",
+    "language_master": "language_practiced",
 }
 
 
@@ -90,6 +158,34 @@ def check_achievements() -> list[str]:
             notify_daddy("achievement", f"دخترت نشان «{ach.title}» رو گرفت 🏅")
             unlocked.append(ach.code)
     return unlocked
+
+
+# -------------------------------------------------- کش سبک (فقط خواندنی) ---
+_SEARCH_CACHE: dict[str, tuple[float, object]] = {}
+CACHE_TTL_SECONDS = 45
+
+
+def cached(key: str, builder, ttl: int = CACHE_TTL_SECONDS):
+    """
+    یک کش خیلی سبک در حافظه‌ی پروسه برای منابع پرمصرف جستجوی سراسری.
+    اگر داده تازه شود، بابا از پنل پاکش می‌کند یا خودش بعد از ttl منقضی می‌شود.
+    """
+    import time
+
+    now = time.time()
+    hit = _SEARCH_CACHE.get(key)
+    if hit and now - hit[0] < ttl:
+        return hit[1]
+    value = builder()
+    _SEARCH_CACHE[key] = (now, value)
+    return value
+
+
+def clear_app_cache() -> int:
+    """پاک کردن کش؛ از پنل بابا با یک کلیک."""
+    count = len(_SEARCH_CACHE)
+    _SEARCH_CACHE.clear()
+    return count
 
 
 # ------------------------------------------------------ تخم‌مرغ شانسی ------

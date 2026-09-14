@@ -53,6 +53,12 @@ INSTALLED_APPS = [
     "health",
     "library",
     "games",
+    # ---- شش اپ تازه‌ی LoveOS
+    "calls",
+    "gifts",
+    "reading",
+    "dreamhome",
+    "language",
 ]
 
 MIDDLEWARE = [

@@ -7,6 +7,7 @@ from datetime import timedelta
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 from django.utils import timezone
+from django.utils.timezone import now as tz_now
 from django.utils.crypto import get_random_string
 
 from core.models import TimeStamped
@@ -39,6 +40,22 @@ class UserConfig(TimeStamped):
     security_question = models.CharField("سؤال امنیتی", max_length=200, default="اسم گربه‌ی کوچولوی ما چی بود؟")
     security_answer_hash = models.CharField("پاسخ امنیتی (هش)", max_length=200, blank=True)
     vault_passcode_hash = models.CharField("رمز صندوقچه (هش)", max_length=200, blank=True)
+
+    # --- موقعیت زنده‌ی دخترم
+    location_enabled = models.BooleanField("استفاده از موقعیت زنده‌ی دستگاه دخترم", default=True)
+    location_ttl_minutes = models.PositiveIntegerField("اعتبار موقعیت زنده (دقیقه)", default=60)
+    location_auto_sync = models.BooleanField("به‌روزرسانی خودکار شهر/مختصات پنل از موقعیت واقعی", default=True)
+    location_sync_km = models.FloatField("حداقل جابجایی برای به‌روزرسانی پنل (کیلومتر)", default=2.0)
+    location_city_lookup = models.BooleanField("تشخیص خودکار نام شهر از مختصات", default=True)
+
+    # --- جستجوی سراسری
+    search_disabled_sources = models.JSONField(
+        "منابع خاموش جستجوی سراسری",
+        default=list,
+        blank=True,
+        help_text="کلید منابعی که نمی‌خواهی در جستجو دیده شوند؛ مثال: [\"easter_eggs\", \"chat\"]",
+    )
+    search_log_enabled = models.BooleanField("ثبت عبارت‌های پرجستجو", default=False)
 
     # --- ظاهر و متن‌ها
     boot_logo = models.ImageField("لوگوی LoveOS", upload_to="branding/", blank=True)
@@ -101,6 +118,56 @@ class UserConfig(TimeStamped):
         if not self.relationship_start:
             return 0
         return (timezone.localdate() - self.relationship_start).days
+
+
+class LiveLocation(TimeStamped):
+    """
+    آخرین موقعیت واقعی دستگاه دخترم.
+
+    «خانه‌ی ثبت‌شده» در UserConfig فقط پیش‌فرض است؛ اگر دخترم سفر کند یا شهرش
+    عوض شود، همه‌ی اپ‌ها (نقشه، آب‌وهوا، فاصله، ساعت محلی) باید بر اساس همین
+    ردیف حساب کنند. یک ردیف برای هر کاربر کافی است و همیشه به‌روز می‌شود.
+    """
+
+    SOURCES = [("device", "دستگاه دخترم"), ("config", "پنل بابا")]
+
+    lat = models.FloatField("عرض جغرافیایی", default=0)
+    lng = models.FloatField("طول جغرافیایی", default=0)
+    accuracy = models.PositiveIntegerField("دقت (متر)", null=True, blank=True)
+    city = models.CharField("شهر", max_length=60, blank=True)
+    timezone = models.CharField("منطقه زمانی", max_length=60, blank=True)
+    source = models.CharField("منبع", max_length=10, choices=SOURCES, default="device")
+    captured_at = models.DateTimeField("زمان ثبت", default=tz_now)
+    is_live = models.BooleanField("زنده", default=True)
+
+    class Meta:
+        verbose_name = "موقعیت زنده"
+        verbose_name_plural = "موقعیت زنده‌ی دخترم"
+        ordering = ["-captured_at"]
+
+    def __str__(self) -> str:
+        return f"{self.city or '—'} ({self.lat:.3f}, {self.lng:.3f})"
+
+    # ------------------------------------------------------------- helpers --
+    @classmethod
+    def current(cls) -> "LiveLocation | None":
+        return cls.objects.filter(is_live=True).order_by("-captured_at").first()
+
+    @classmethod
+    def store(cls, *, lat: float, lng: float, accuracy=None, city: str = "", timezone_name: str = "",
+              source: str = "device") -> "LiveLocation":
+        """موقعیت تازه را ثبت می‌کند و نسخه‌های قدیمی را غیرزنده می‌کند."""
+        cls.objects.filter(is_live=True).update(is_live=False)
+        return cls.objects.create(
+            lat=lat, lng=lng, accuracy=accuracy, city=city, timezone=timezone_name,
+            source=source, captured_at=timezone.now(), is_live=True,
+        )
+
+    def age_minutes(self) -> float:
+        return (timezone.now() - self.captured_at).total_seconds() / 60
+
+    def is_fresh(self, minutes: int = 60) -> bool:
+        return self.is_live and self.age_minutes() <= minutes
 
 
 class DeviceSession(TimeStamped):

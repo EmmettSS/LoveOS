@@ -23,13 +23,27 @@ interface Constellation {
 const CELL = 96 // پهنای هر حرف روی بوم
 const PAD = 22
 
+/**
+ * ستاره‌ها در مختصات ریاضی ذخیره می‌شوند (y رو به بالا) ولی بوم SVG
+ * مبدأش گوشه‌ی بالا-چپ است (y رو به پایین). بدون این تبدیل، هر حرف
+ * عمودی آینه می‌شود و مثلاً «M» شبیه «W» دیده می‌شود.
+ */
+const toCanvasY = (y: number) => 1 - y
+
 export default function Starmap() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
   const { data, loading } = useApi<{ items: Constellation[] }>('/starmap')
   const [active, setActive] = useState<Constellation | null>(null)
   const [allLit, setAllLit] = useState(false)
+  // چیدمان حروف: در فارسی اسم از راست به چپ خوانده می‌شود (حرف اول سمت راست)
+  const [rtlLayout, setRtlLayout] = useState(() => i18n.dir() !== 'ltr')
   const lastTap = useRef<{ id: number; at: number } | null>(null)
+
+  useEffect(() => {
+    setRtlLayout(i18n.dir() !== 'ltr')
+  }, [i18n, i18n.language])
+
 
   const dust = useMemo(
     () => Array.from({ length: 60 }).map((_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 100, d: Math.random() * 4, s: 1 + Math.random() * 2 })),
@@ -80,8 +94,10 @@ export default function Starmap() {
         <div className="overflow-x-auto no-scrollbar">
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="mx-auto block">
             {items.map((c, ci) => {
-              const ox = PAD + ci * CELL
-              const pts = c.stars.map(([x, y]) => [ox + x * (CELL - 26) + 13, PAD + y * (CELL - 26) + 13])
+              // در چیدمان راست‌به‌چپ، حرف اول سمت راست می‌نشیند
+              const slot = rtlLayout ? items.length - 1 - ci : ci
+              const ox = PAD + slot * CELL
+              const pts = c.stars.map(([x, y]) => [ox + x * (CELL - 26) + 13, PAD + toCanvasY(y) * (CELL - 26) + 13])
               const lit = allLit || active?.id === c.id
               return (
                 <g key={c.id} onClick={() => void tapStar(c)} style={{ cursor: 'pointer' }}>
@@ -114,9 +130,12 @@ export default function Starmap() {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button className={`os-chip ${allLit ? 'os-chip-active' : ''}`} onClick={() => setAllLit(!allLit)}>
           {t('starmap.fullName')}
+        </button>
+        <button className="os-chip" onClick={() => setRtlLayout(!rtlLayout)}>
+          {rtlLayout ? t('starmap.layoutRtl') : t('starmap.layoutLtr')}
         </button>
         <span className="os-chip">{t('starmap.tapLetter')}</span>
       </div>

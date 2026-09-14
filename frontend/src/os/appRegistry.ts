@@ -1,5 +1,5 @@
 /**
- * appRegistry.ts — فهرست ۲۷ اپ LoveOS
+ * appRegistry.ts — فهرست اپ‌های LoveOS
  * desktop=false یعنی آیکن روی دسکتاپ ندارد (مثل یادآورهای مهربان).
  */
 import type { ComponentType } from 'react'
@@ -41,6 +41,11 @@ export const APPS: AppDef[] = [
   { key: 'cycle', icon: 'cycle', titleKey: 'apps.cycle', color: '#f9a8d4', desktop: true, helpKey: 'cycle', component: lazy(() => import('../apps/CycleCare')) },
   { key: 'library', icon: 'library', titleKey: 'apps.library', color: '#fca5a5', desktop: true, helpKey: 'library', component: lazy(() => import('../apps/Library')) },
   { key: 'tutorial', icon: 'tutorial', titleKey: 'apps.tutorial', color: '#a7f3d0', desktop: true, component: lazy(() => import('../apps/Tutorial')) },
+  { key: 'call', icon: 'call', titleKey: 'apps.call', color: '#7dd3fc', desktop: true, helpKey: 'call', component: lazy(() => import('../apps/CallSync')) },
+  { key: 'gifts', icon: 'gift', titleKey: 'apps.gifts', color: '#fda4af', desktop: true, helpKey: 'gifts', component: lazy(() => import('../apps/GiftBook')) },
+  { key: 'reading', icon: 'reading', titleKey: 'apps.reading', color: '#5eead4', desktop: true, helpKey: 'reading', component: lazy(() => import('../apps/ReadTogether')) },
+  { key: 'dreamhome', icon: 'dreamhome', titleKey: 'apps.dreamhome', color: '#86efac', desktop: true, helpKey: 'dreamhome', component: lazy(() => import('../apps/DreamHome')) },
+  { key: 'language', icon: 'language', titleKey: 'apps.language', color: '#c4b5fd', desktop: true, helpKey: 'language', component: lazy(() => import('../apps/LanguageBridge')) },
   { key: 'settings', icon: 'settings', titleKey: 'apps.settingsApp', color: '#cbd5e1', desktop: true, component: lazy(() => import('../apps/Settings')) },
   { key: 'about', icon: 'about', titleKey: 'apps.about', color: '#fbcfe8', desktop: false, component: lazy(() => import('../apps/About')) },
 ]

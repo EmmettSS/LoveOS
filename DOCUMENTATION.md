@@ -3,7 +3,7 @@
 > A tiny romantic operating system in the browser.
 > Built by Daddy, for his daughter, across a distance that is only a number.
 
-**Version:** 1.0 · **Default language:** Persian (fa) · **Second language:** English (en)
+**Version:** 2.0 · **Default language:** Persian (fa) · **Second language:** English (en)
 **Persian version of this document:** [`DOCUMENTATION_FA.md`](./DOCUMENTATION_FA.md)
 
 ---
@@ -13,13 +13,15 @@
 1. [Overview](#1-overview)
 2. [Architecture](#2-architecture)
 3. [Installation & setup](#3-installation--setup)
-4. [The 27 apps](#4-the-27-apps)
-5. [The Daddy Panel](#5-the-daddy-panel)
-6. [Soroush bot integration](#6-soroush-bot-integration)
-7. [API reference](#7-api-reference)
-8. [Easter eggs](#8-easter-eggs)
-9. [Deployment](#9-deployment)
-10. [Maintenance & troubleshooting](#10-maintenance--troubleshooting)
+4. [The LoveOS apps](#4-the-loveos-apps)
+5. [Global search](#5-global-search)
+6. [The Daddy Panel](#6-the-daddy-panel)
+7. [Soroush bot integration](#7-soroush-bot-integration)
+8. [API reference](#8-api-reference)
+9. [Easter eggs & badges](#9-easter-eggs--badges)
+10. [Deployment](#10-deployment)
+11. [Maintenance, tests & troubleshooting](#11-maintenance-tests--troubleshooting)
+12. [What changed in 2.0](#12-what-changed-in-20)
 
 ---
 
@@ -28,12 +30,14 @@
 ### What LoveOS is
 
 LoveOS is a **Progressive Web App disguised as a miniature operating system**. It boots, asks for a
-passcode, shows a desktop with widgets and a dock, and hosts 27 small apps — each one a different way
+passcode, shows a desktop with widgets and a dock, and hosts 30 small apps — each one a different way
 of saying *I love you* across a long distance.
 
-It was written as a gift from a programmer father ("بابا" / Daddy) to his fiancée/daughter
-("دخترم" / my daughter). The tone throughout is warm, playful and childlike. Every visible string is
-addressed to her.
+It is my gift, as a programmer father ("بابا" / Daddy), to my daughter ("دخترم" / my daughter). The
+tone throughout is warm, playful and childlike, and every visible string speaks directly to her.
+Version 2.0 adds five apps that are all about *being together*: call planning, a gift book, reading
+together, a dream home and a language bridge — plus a global search layer across the whole system
+(six new pieces in total).
 
 ### Design principles
 
@@ -44,6 +48,7 @@ addressed to her.
 | **Mobile-first, desktop-nice** | Designed for a phone in her hand; on a wide screen apps become draggable floating windows. |
 | **Two languages, zero hardcoded text** | All UI strings live in `frontend/public/locales/{fa,en}/translation.json`. Persian is the default and the layout is RTL. |
 | **Offline-friendly** | A service worker precaches the shell, fonts and icons, so the OS opens even on a bad connection. |
+| **One truth for location** | Every app that needs "where is she" (map, weather, clock, distance) reads from the same helper; her live device location always wins over the value stored in the panel. |
 | **Gentle by default** | Sounds are synthesized (no copyrighted assets), animations respect `prefers-reduced-motion`, and the sensitive health app carries a medical disclaimer. |
 
 ### The user journey
@@ -60,47 +65,50 @@ QR code  →  secret domain
         │   LOCK   │   passcode · security question · after 5 fails: "Ask Daddy"
         └────┬─────┘
              ▼
-        ┌──────────┐   clock · countdown · both cities' weather · today's message
-        │ DESKTOP  │   24 app icons · dock · start menu · notification center
-        └────┬─────┘
+        ┌──────────┐   clock · next-meeting countdown · next call · both cities' weather
+        │ DESKTOP  │   29 app icons · dock (with the search magnifier) · start menu
+        └────┬─────┘   Ctrl/⌘ + K = global search
              ▼
-          27 apps
+          30 apps
 ```
 
 ### Repository layout
 
 ```
 LoveOS/
-├── backend/                 Django 5 + DRF
-│   ├── config/              settings, root urls
-│   ├── core/                notifications, outbox, achievements, counters,
-│   │                        easter eggs, Soroush client, sweep command
-│   ├── accounts/            UserConfig (the single source of truth), sessions
-│   ├── content/             voices, songs, memories, letters, countdowns,
-│   │                        garden, constellations, cinema, quiz, plans,
-│   │                        moods, vault, tutorial, terminal commands
-│   ├── social/              chat, hugs, gentle reminders
-│   ├── health/              cycle, symptoms, medications, self-care
-│   ├── library/             books, chapters, pages, paragraphs, notes
-│   ├── games/               heart puzzle
-│   ├── templates/           admin gate page
-│   └── media/               uploaded files
-├── frontend/                React 19 + Vite + TypeScript
-│   ├── public/
-│   │   ├── locales/         fa + en translation files
-│   │   ├── fonts/           self-hosted woff2 (no CDN)
-│   │   ├── icons/           logo + PWA icons
-│   │   └── backgrounds/     boot / lock / desktop wallpapers
-│   └── src/
-│       ├── os/              Boot, Lock, Desktop, Dock, StartMenu,
-│       │                    NotificationCenter, Window, EggOverlay
-│       ├── apps/            the 25 app components
-│       ├── shared/          api, store, i18n, format, sound, Icon, ui
-│       ├── App.tsx          phase machine + global easter-egg listeners
-│       └── main.tsx
-├── scripts/                 dev.sh · build.sh · deploy.sh · qr.py
-├── DOCUMENTATION.md         this file
-└── DOCUMENTATION_FA.md      Persian version
+├── backend/                     Django 5 + DRF
+│   ├── config/                  settings, root urls, wsgi, asgi
+│   ├── core/                    notifications, Soroush outbox, achievements,
+│   │                            counters, easter eggs, global search, cache,
+│   │                            effective location, the sweep command
+│   ├── accounts/                UserConfig (single source of truth), device
+│   │                            sessions, live location, unlock attempts
+│   ├── content/                 voices, songs, memories, letters, countdowns,
+│   │                            garden, constellations, cinema, quiz, plans,
+│   │                            moods, vault, tutorial, terminal
+│   ├── social/                  chat, hugs, notifications, reminders, weather, map
+│   ├── health/                  cycle & care, medication, gentle reminders
+│   ├── library/                 "Our Story" book (co-writing)
+│   ├── games/                   heart puzzle
+│   ├── calls/                   app 25 — Call Sync
+│   ├── gifts/                   app 26 — Gift Book
+│   ├── reading/                 app 27 — Read Together
+│   ├── dreamhome/               app 28 — Dream Home
+│   └── language/                app 29 — Language Bridge
+├── frontend/                    React 19 + Vite 8 + TS + Tailwind
+│   ├── src/os/                  boot, lock, desktop, window, dock, start menu,
+│   │                            notification center, global search, day/night
+│   ├── src/apps/                30 app files (one file per app)
+│   ├── src/shared/              store (Zustand), api, ui, Icon, i18n, format,
+│   │                            sound, geo, recorder, prefs, ErrorBoundary
+│   ├── public/locales/          fa / en
+│   └── vite.config.ts           /api & /media proxy + PWA service worker
+├── scripts/                     helper scripts (QR, backup, deploy)
+├── DOCUMENTATION.md             this document (English)
+├── DOCUMENTATION_FA.md          this document (Persian)
+├── QUICKSTART_FA.md             quick start on my own machine
+├── DEPLOY_CPANEL_FA.md          cPanel deployment guide
+└── Soroush-Docs.md              Soroush Plus API reference
 ```
 
 ---
@@ -109,78 +117,97 @@ LoveOS/
 
 ### Stack
 
-**Backend**
-
-| Piece | Choice | Why |
-|---|---|---|
-| Framework | Django 5.2 | Free admin panel — which *is* the Daddy Panel. |
-| API | Django REST Framework | Simple function-based views, one file per domain. |
-| Database | SQLite (dev) / MySQL (prod) | Switched by `DB_ENGINE`; MySQL uses `utf8mb4`. |
-| Auth | Custom token sessions | There is only one user; Django's user system is reserved for the admin. |
-| Scheduling | `manage.py sweep` via cron | One command per minute; Celery optional if Redis exists. |
-| Notifications | Soroush Plus bot | Telegram-compatible API at `api.splus.ir`. |
-
-**Frontend**
-
-| Piece | Choice |
+| Layer | What I used |
 |---|---|
-| Framework | React 19 + TypeScript + Vite 8 |
-| Styling | Tailwind CSS 3 with CSS custom properties for day/night |
-| Animation | Framer Motion (+ GSAP available) |
-| State | Zustand (`useOS`) |
-| i18n | i18next + react-i18next |
-| Maps | MapLibre GL + OpenStreetMap raster tiles (no API key) |
-| Audio | Web Audio API (synthesized) + `<audio>` for uploaded media |
-| Dates | jalaali-js for the Persian calendar |
-| PWA | vite-plugin-pwa (Workbox, autoUpdate) |
-
-> **Note on 3D:** `@react-three/fiber` requires React `>=19 <19.3`, which conflicted with the pinned
-> React version, so it was dropped. The starmap is rendered with animated SVG instead — lighter,
-> sharper, and it works on old phones.
+| Backend | Django 5.2 · Django REST Framework 3.18 · SQLite (dev) / MySQL (production) |
+| Auth | Hand-rolled token on `DeviceSession` (no JWT), `@require_session` decorator |
+| Panel | Django's own admin on a secret path + a passcode gate (`ADMIN_GATE_PASSCODE`) |
+| Frontend | React 19 · TypeScript 6 · Vite 8 · Tailwind 3 · Framer Motion 13 |
+| State | Zustand (`src/shared/store.ts`) |
+| i18n | i18next + react-i18next (automatic RTL/LTR) |
+| Map | MapLibre GL (with a light fallback when WebGL is unavailable) |
+| Sound | Web Audio API (synthesis) + Howler (media files) |
+| Recording | MediaRecorder + getUserMedia (`src/shared/recorder.ts`) |
+| PWA | vite-plugin-pwa (Workbox) with `skipWaiting` and `clientsClaim` |
 
 ### Request flow
 
 ```
-  Browser (PWA)
-      │  relative URLs only: /api/..., /media/...
-      ▼
-  Nginx  ──/api/──►  Gunicorn ──► Django
-      │              /daddy-panel-9x7k/
-      ├──/static/──► collected static
-      ├──/media/───► uploads
-      └── /  ──────► frontend/dist (SPA fallback)
+her phone ──► Vite (dev) / Nginx or Passenger (production)
+                │
+                ├─ /            → SPA files (React)
+                ├─ /api/...     → Django + DRF  →  models  →  JSON
+                ├─ /media/...   → uploads (voices, photos, PDFs, pronunciation audio)
+                └─ /daddy-panel-9x7k/  → Django admin (me only)
 ```
 
-In development, Vite proxies `/api`, `/media`, `/static`, `/healthz` and the admin path to
-`127.0.0.1:8000`, so the browser only ever talks to one origin.
+Every request carries `Authorization: Token …`. When a session expires the API answers 401 and the
+frontend raises the lock screen again (via the `loveos:locked` event).
 
 ### Authentication model
 
-There is exactly **one** daughter and **one** Daddy, so there is no user table for the app itself.
-
-1. `POST /api/auth/unlock {passcode}` → verifies against the salted hash in `UserConfig`.
-2. On success a `DeviceSession` row is created and a random token returned.
-3. The frontend stores it in `localStorage` under `loveos_token` and sends
-   `Authorization: Token <token>` on every request.
-4. Sessions expire after `SESSION_TTL_HOURS` (default 30 days).
-5. Any `401` clears the token and drops the UI back to the lock screen.
-6. The Vault has a **second** passcode that unlocks only for `VAULT_SESSION_MINUTES` (default 20).
-
-Failed attempts are recorded in `UnlockAttempt`. After `MAX_UNLOCK_ATTEMPTS` (5) the lock screen
-reveals an "Ask Daddy for help" button which pings Daddy over Soroush — and quietly triggers an
-easter egg.
+* `DeviceSession` — a 32-character token with an expiry (`SESSION_TTL_HOURS`, default 720 h = 30 days).
+* `@require_session` — the decorator wrapping every private view.
+* `UnlockAttempt` — each passcode attempt is stored; after `MAX_UNLOCK_ATTEMPTS` (5) the "Ask Daddy"
+  button appears and a Soroush message reaches me immediately.
+* A security question (`/api/auth/forgot`) and the help route (`/api/auth/help`) are the second and
+  third ways back in.
+* The vault (`/api/vault/unlock`) is a separate lock with a short timer
+  (`VAULT_SESSION_MINUTES`, default 20 minutes).
 
 ### The phase machine
 
-`useOS.phase` is `boot | lock | desktop`. `App.tsx` renders one of the three and installs the global
-keyboard listeners (Konami code, typing "دوستت دارم"). Windows are objects in `useOS.windows` with a
-z-index; on mobile they render as full-screen sheets, on desktop as draggable cards.
+```
+boot ──► lock ──► desktop
+ ↑                  │
+ └──── logout ──────┘
+```
+
+The phase lives in `useOS` and changes through `setPhase`. Moving out of the desktop closes every
+window and menu.
+
+### The window manager (2.0)
+
+The window manager was rewritten in this version. Three simple but crucial rules:
+
+1. **Geometry is decided once.** A window takes a cascade slot when it opens and keeps its position.
+   No click or focus ever moves it — that is exactly what used to make windows jump out from under
+   the finger so close/minimize looked broken.
+2. **Stacking lives on the outer wrapper.** `z-index` sits on the wrapper, not on the animated box, so
+   a window underneath can never cover the one in front.
+3. **A fading window cannot be clicked.** With `useIsPresent`, once the exit animation is done the
+   wrapper becomes `pointer-events: none` — so no "ghost" of a closed window stays on the desktop.
+
+On mobile every app is a full-height sheet with a sticky header and body padding that clears the dock;
+on desktop the same app becomes a draggable floating window. Each app remembers its size and position
+and reopens exactly there next time.
+
+### Effective location (2.0)
+
+Previously each app treated location differently and some read the stale value stored in the panel.
+Now there is a single helper:
+
+```python
+# core/services.py
+effective_daughter_location(cfg)  →  {lat, lng, city, timezone, is_live, captured_at, accuracy, source}
+```
+
+Priority order:
+
+1. **Her device's live location**, when it is fresh (younger than `location_ttl_minutes`) and I have not
+   switched live tracking off in the panel.
+2. Otherwise the **value stored in the panel** (home / default city).
+
+The map, weather, distance, time difference and desktop widgets all read from this function. On top of
+that, when her phone sends a fresh position and the move is meaningful (more than `location_sync_km`, or
+the city/timezone changed), the **stored coordinates and city are synced automatically** so there is a
+single truth — and I get a Soroush note about it.
 
 ### Day/night theming
 
-`useNightMode()` returns night between 18:00 and 06:00 (or follows the manual override from
-Settings) and writes `data-theme="night"` on `<html>`. All colours are CSS variables
-(`--os-bg`, `--os-card`, `--os-accent`, …), so the whole OS switches palette in one step.
+`src/os/daynight.ts` understands three modes: `auto` (based on the clock and her city's sunrise/sunset),
+`day` and `night`. The theme sets `data-theme` on the root and swaps every colour variable. The choice
+is stored both in `localStorage` and on the server profile, so it survives a re-login.
 
 ---
 
@@ -188,617 +215,576 @@ Settings) and writes `data-theme="night"` on `<html>`. All colours are CSS varia
 
 ### Requirements
 
-- Python 3.11+
-- Node.js 20+
-- MySQL 8 (production only — development uses SQLite)
+| Tool | Version |
+|---|---|
+| Python | 3.11 or newer |
+| Node.js | 20 or newer |
+| npm | ships with Node |
 
 ### Quick start
 
 ```bash
-git clone <repo> LoveOS && cd LoveOS
-./scripts/dev.sh
-```
+git clone https://github.com/EmmettSS/LoveOS.git
+cd LoveOS
 
-`dev.sh` creates the virtualenv, installs everything, copies `.env`, migrates, seeds and runs both
-servers. When it finishes:
-
-- **Her app:** http://localhost:5173
-- **Daddy Panel:** http://localhost:8000/daddy-panel-9x7k/
-
-### Manual setup
-
-```bash
 # ---- backend
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env            # then edit it
+cp .env.example .env
 .venv/bin/python manage.py migrate
-.venv/bin/python manage.py seed_loveos --passcode 1234 --vault 0000
-.venv/bin/python manage.py createsuperuser
+.venv/bin/python manage.py seed_loveos      # passcode: 1234 · vault: 0000
 .venv/bin/python manage.py runserver 0.0.0.0:8000
 
 # ---- frontend (second terminal)
 cd frontend
 npm install
-npm run dev -- --host 0.0.0.0
+npm run dev     # http://localhost:5173
+```
+
+The Vite proxy forwards `/api`, `/media`, `/static` and `/daddy-panel-9x7k` to `127.0.0.1:8000`, so both
+terminals are needed. A step-by-step walkthrough is in [`QUICKSTART_FA.md`](./QUICKSTART_FA.md).
+
+### Admin commands
+
+```bash
+.venv/bin/python manage.py makemigrations     # create new migrations
+.venv/bin/python manage.py migrate            # apply them
+.venv/bin/python manage.py check              # project health check
+.venv/bin/python manage.py test               # 72 backend tests
+.venv/bin/python manage.py sweep              # scheduled work (cron)
+.venv/bin/python manage.py createsuperuser    # first-time panel user
 ```
 
 ### Environment variables
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `DEBUG` | `True` | Turn **off** in production. |
-| `DJANGO_SECRET_KEY` | — | Long random string. Mandatory in production. |
-| `ALLOWED_HOSTS` | `*` | Comma-separated hostnames. |
-| `CSRF_TRUSTED_ORIGINS` | `https://*.e2b.app` | Needed for the admin over HTTPS. |
-| `TIME_ZONE` | `Asia/Tehran` | Server timezone. |
-| `ADMIN_PATH` | `daddy-panel-9x7k` | Secret admin prefix (no leading slash). |
-| `ADMIN_GATE_PASSCODE` | *(empty)* | Second passcode before Django's login. Empty = gate off. |
-| `DB_ENGINE` | `sqlite` | `sqlite` or `mysql`. |
-| `DB_NAME` / `DB_USER` / `DB_PASSWORD` / `DB_HOST` / `DB_PORT` | — | MySQL connection. |
-| `NOTIFY_PROVIDER` | `console` | `console` (log only) or `soroush` (send for real). |
-| `SOROUSH_API_BASE` | `https://api.splus.ir` | Bot API root. |
-| `SOROUSH_TOKEN` | — | Token from `splus.ir/botfather`. |
-| `SOROUSH_DADDY_CHAT_ID` | — | Daddy's chat id. |
-| `SOROUSH_WEBHOOK_SECRET` | `loveos-hook` | Secret segment of the webhook URL. |
-| `SOROUSH_PARSE_MODE` | `HTML` | `HTML`, `MarkdownV2` or `Markdown`. |
-| `SESSION_TTL_HOURS` | `720` | How long she stays unlocked (30 days). |
-| `VAULT_SESSION_MINUTES` | `20` | Vault auto-relock. |
-| `MAX_UNLOCK_ATTEMPTS` | `5` | Failures before the help button appears. |
-| `API_RATE_LIMIT` | `300/min` | Throttle. |
+`backend/.env` (sample in `.env.example`):
 
-### Seeding
+| Key | Purpose |
+|---|---|
+| `DEBUG` | development mode |
+| `DJANGO_SECRET_KEY` | Django secret key |
+| `ALLOWED_HOSTS` | allowed domains |
+| `CSRF_TRUSTED_ORIGINS` | trusted origins |
+| `TIME_ZONE` | server timezone |
+| `ADMIN_PATH` | secret admin path (default `daddy-panel-9x7k`) |
+| `ADMIN_GATE_PASSCODE` | optional second gate for the panel |
+| `DB_ENGINE` / `DB_NAME` / … | `sqlite` or `mysql` |
+| `NOTIFY_PROVIDER` | `console` · `soroush` · `null` |
+| `SOROUSH_API_BASE` / `SOROUSH_TOKEN` / `SOROUSH_DADDY_CHAT_ID` | Soroush bot wiring |
+| `SESSION_TTL_HOURS` | how long her device session lives |
+| `VAULT_SESSION_MINUTES` | how long the vault stays open |
+| `MAX_UNLOCK_ATTEMPTS` | wrong tries before "Ask Daddy" |
+| `API_RATE_LIMIT` | request ceiling |
+| `SERVE_FRONTEND` | when True, Django also serves the built frontend (cPanel) |
 
-`manage.py seed_loveos` is **idempotent** — it only fills what is missing. It creates the config row,
-the passcodes, the 6 "M-A-R-Y-A-M" constellations, 4 flowers, the quiz, wish list, mood messages,
-tutorial chapters, terminal commands, 16 achievements, 15 easter eggs and 3 puzzles.
-
-```bash
-.venv/bin/python manage.py seed_loveos --passcode 1234 --vault 0000
-```
+> ⚠️ Restart Django after editing `.env`; the environment file is read only at startup.
 
 ### Generating her QR code
 
 ```bash
-python3 scripts/qr.py https://your-secret-domain.com --out loveos-qr.svg
+.venv/bin/python ../scripts/make_qr.py https://love.example.com
 ```
-
-`scripts/qr.py` implements QR encoding from scratch (byte mode, error-correction level M,
-versions 1–10) with **no external dependency**. It prints the code to the terminal and optionally
-writes an SVG in LoveOS colours, ready to print and slip into a card.
 
 ---
 
-## 4. The 27 apps
+## 4. The LoveOS apps
 
-Twenty-four have desktop icons. **Gentle Reminders** deliberately has none (it lives only in the
-Notification Center), and **Notification Center** and **About** are shell surfaces rather than icons.
+30 apps, 29 of them with a desktop icon (the "About" app opens from the start menu only).
 
 ### Emotional core
 
-**1 · Map of Us** — `map`
-Two heart pins on an OpenStreetMap canvas, a dashed arc between them, live local time and a day/night
-badge for each city, the great-circle distance in kilometres, and a "fly the route" button that
-animates from his city to hers and back. Closes with Daddy's line: *"Distance is just a number.
-Our heart is one."*
-
-**2 · Voice Vault** — `voice`
-His voice notes, filed by how she feels: mornings, nights, when you miss me, when you're happy, when
-you're sad, when you can't sleep. A "random voice note" button pulls one at random. Every playback
-notifies Daddy. Upload is **Daddy-only**.
-
-**3 · Our Music** — `music`
-The main song sits on top with a "why this song?" note from him, plus lyrics and cover art. Below it
-the playlist, a sleep timer (10/20/30/45 minutes, then everything fades out), and — because she asked —
-**she can upload her own songs too**. Her uploads are labelled "by me", she can delete only her own,
-and Daddy is notified and sees the uploader in the admin. He can switch her upload right off with
-`allow_daughter_music_upload`.
-
-**4 · Memories** — `memories`
-A vertical timeline of photos, text, place and an optional voice note. Future memories appear as
-`؟؟؟` with a lock and a "opens on …" date — the `sweep` command unlocks them and tells her. A
-slideshow mode cross-fades through the photos.
-
-**5 · Whisper Letters** — `whisper`
-Paper envelopes on a shelf. Tapping one unfolds it with a 3D flip, paper rustle and Nastaliq
-typography. Time-locked letters stay sealed until their date. "A random letter for today" picks one.
-Opening a letter tells Daddy.
-
-**6 · Countdown** — `countdown`
-Live countdowns to the next meeting, birthdays, anniversaries — days/hours/minutes, refreshing every
-minute, each with its own icon and a celebration message when it reaches zero.
-
-**7 · Weather of Us** — `weather`
-Both cities side by side with animated skies (drifting sun, falling rain, snow), temperature,
-humidity, wind, sunrise and sunset. When the two temperatures are close it says *"Our weather is the
-same today — it's like we're side by side."* Data from Open-Meteo (no API key).
-
-**8 · Heartbeat** — `heartbeat`
-A large pulsing heart with a synthesized lub-dub and a matching short vibration on every beat. Hold
-your finger on it and the rate climbs from 72 to ~122 BPM; let go and it calms down.
-
-**9 · Our Garden** — `garden`
-Four flowers grown from SVG — stem, leaves, petals — in five stages. Watering makes the plant grow,
-plays a bloom chime and shows a random message Daddy wrote.
-
-**10 · Star Sky** — `starmap`
-Her name spelled out as constellations on a deep-navy sky with twinkling star dust. Tap a letter and
-its stars light gold while Daddy's line for that letter appears; "light up the whole name" turns them
-all on at once.
-
-**11 · Terminal of Love** — `terminal`
-A playful shell: `help`, `whoami`, `ls /heart`, `cd /us`, `love --status`, `heartbeat --live`,
-`distance --km`, `music --list`, `play voice --random`, `memory --random`, `future --countdown`,
-`clear`, `exit`. `sudo kiss` asks for a fake password and then rains kisses; `sudo hug --force`
-creates a real hug with vibration. Some commands open other apps. Custom commands and their outputs
-are editable in the admin. Arrow keys walk the history.
-
-**12 · Chat with Daddy** — `chat`
-Her messages go straight to his Soroush; his replies arrive through the webhook and appear as bubbles
-marked "via Soroush". Polls every 6 seconds.
-
-**13 · My Mood** — `mood`
-Six moods as big emoji buttons. Picking one notifies Daddy and returns the message *and voice note*
-he recorded for exactly that mood.
-
-**14 · Our Quiz** — `quiz`
-"How well do you know Daddy?" — one question at a time with a progress bar, then a score, per-question
-review with explanations, and a secret reward message for a perfect score.
-
-**15 · Future Plans** — `plans`
-A shared wish list in four categories (travel, work, wish, home). She can add and tick items; ticking
-one tells Daddy. She can delete only her own.
-
-**16 · Our Cinema** — `cinema`
-Films and series to watch together: status (not watched / watching / watched), a 5-star rating, a
-watch link and posters.
-
-**17 · The Vault** — `vault`
-A second passcode guards photos, voices, videos and notes that are just for her. The session
-auto-relocks after 20 minutes.
-
-**18 · Hug Me** — `hug`
-Two directions, **both with vibration**:
-- *Her → him:* the big heart button sends a hug, vibrates her phone, plays a heartbeat, washes the
-  screen in a warm colour and pings his Soroush instantly.
-- *Him → her:* his hug waits as a card; opening it vibrates with the pattern set in the admin
-  (default `200 / 100×3 / 200`), plays the heartbeat sound and glows warm. He is told she felt it.
-
-Counters for both directions are shown. Three hugs in a row triggers an easter egg and a "she really
-misses you" nudge to Daddy.
-
-**19 · Heart Puzzle** — `puzzle`
-A photo sliced into 3×3, 4×4 or 5×5 tiles; swap two tiles to sort them. Timer, move counter, personal
-best and a limited number of hints (a brief peek at the full picture). Finishing shows Daddy's message
-and voice, and tells him her time.
-
-**20 · Badges** — `achievements`
-Sixteen achievements with a progress bar. Locked ones are greyed out; unlocking reveals the secret
-message Daddy attached.
+| App | Icon | What it does |
+|---|---|---|
+| **Map of Us** | 🗺 | Two pins (my home, her place) with distance, time difference, a "fly along the path" button and a live-location badge. |
+| **Voice Vault** | 🎙 | Categorised archive of my voice notes, plus a "random voice" button. |
+| **Our Music** | 🎵 | Songs with "why this song" and lyrics; she can upload songs too when I allow it. |
+| **Memories** | 📸 | Shared memories; some stay locked until a chosen date (a future-memory secret). |
+| **Whisper Letters** | ✉️ | Letters typeset in a Nastaliq hand. |
+| **Countdown** | ⏳ | To the next meeting, her birthday, our anniversary. |
+| **Weather** | ⛅ | Both cities side by side with a loving line based on the temperature gap. |
+| **Heartbeat** | 💓 | "My heart beats for you" — a synthesized pulse on every tap. |
+| **Our Garden** | 🌱 | Water the flowers; each watering opens one bloom. |
+| **Star Sky** | ✨ | Her name drawn as a constellation plus wish stars. |
+| **Chat with Daddy** | 💬 | Direct messages, short and affectionate. |
+| **My Mood** | 🌈 | Log today's mood and receive a matching message from me. |
+| **Our Quiz** | 🧠 | Quizzes I write about our memories, with rewards. |
+| **Our Wishes** | 🎯 | Shared wish list with categories and a "done" tick. |
+| **Our Cinema** | 🎬 | Watch list with "watched / want to watch". |
+| **The Vault** | 🔐 | Private treasures behind a separate passcode. |
+| **Hug** | 🫂 | Instant hugs, back and forth; every hug tells me on Soroush. |
 
 ### Care & everyday
 
-**21 · Cycle & Care** — `cycle` *(sensitive)*
-Five tabs:
-- **Calendar** — start/end the period; a six-week grid shows actual, predicted and ovulation days.
-- **Symptoms** — eight 0–5 scales (mood, energy, headache, backache, cramps, nausea, sleep, appetite)
-  plus a note. Severe days quietly ask Daddy to send her something kind.
-- **Medications** — today's doses with **Took it / Remind me later / Can't take it**; each choice is
-  a distinct Soroush event.
-- **Reports** — 30-day adherence percentage and a bar chart of cycle lengths, with out-of-range bars
-  in red.
-- **Self care** — gentle toggles (drink water, stretch, rest) from the admin.
+| App | Icon | What it does |
+|---|---|---|
+| **Cycle & Care** | 🌸 | Period, symptoms and medication logging with gentle wording and clear medical boundaries. |
+| **Our Library** | 📚 | "Our Story" written together, chapter by chapter, with comments on every paragraph. |
+| **Heart Puzzle** | 🧩 | Picture puzzle in easy/medium/hard with a custom ending line. |
+| **Settings** | ⚙️ | Language, theme, sound, font scale, live location and the PWA install guide. |
+| **Tutorial** | 🎓 | "What an operating system is" lessons, all written by me in the panel. |
+| **Terminal** | ⌨️ | Commands like `help`, `love`, `whoami` with playful answers. |
+| **Badges** | 🏅 | 32 achievements unlocked by real activity. |
+| **About LoveOS** | 💗 | The story of the project and my closing words. |
 
-All statistics are computed **only** from her own history. If the cycle length leaves the 21–35 day
-range the app says so, and Daddy is nudged to remind her to see a doctor. Every screen carries:
-*"This app is not a substitute for medical advice."* On the admin side the whole section requires a
-**second confirmation password** and every view is written to `HealthAccessLog`. Daddy has full
-visibility — there is no private mode.
+### Being together (new in 2.0)
 
-**22 · Our Library** — `library`
-A shelf of books. Reading is page-by-page with a 3D page turn, paper texture, adjustable text size,
-optional page images and audio, bookmarks, and margin notes (double-tap a paragraph). She can write
-her own chapters — save as **draft**, then **publish**, which notifies Daddy. Paragraphs are
-colour-coded by author, and she can only edit her own.
-
-**23 · Gentle Reminders** *(no desktop icon)*
-Lives only in the Notification Center, under its own tab. Reminders come from Daddy's manual entries
-and from automatic rules in `sweep`: weather-based ("take an umbrella", "keep warm", "drink more
-water", "have a warm tea"), cycle-aware, anniversaries, birthdays and occasional random warmth. Hard
-rules: **no daily nagging** and **at most 5 active reminders at a time**. She can mute any of them,
-and Daddy is told when she has seen one.
+| App | Icon | What it does |
+|---|---|---|
+| **Call Sync** | 📞 | We publish our weekly free windows; the system finds the overlap. We propose, approve, decline or reschedule calls, then log each call with duration, moods and a note. Voice notes can be recorded straight from the microphone. |
+| **Gift Book** | 🎁 | Every gift is recorded: occasion, price (or price band), photo and "the reaction in that moment", plus yearly stats and a chart. |
+| **Read Together** | 📖 | A shared shelf that also shows the Library app's books. Per chapter: notes with a star rating, treasured quotes and a conversation thread. Progress is tracked for both of us separately. |
+| **Dream Home** | 🏡 | Our dream-home checklist with importance levels, a room layout you drag around on a map, and an inspiration gallery with comments. |
+| **Language Bridge** | 💬 | Our four-language dictionary (Mazandarani, Turkish, Persian, English), flashcards with a day-streak counter, microphone pronunciation recording, and quizzes that only come from my panel. |
 
 ### System
 
-**24 · Tutorial** — `tutorial`
-Friendly lessons written by Daddy — what an OS is, what apps are, the desktop and dock, what a
-terminal is, how the library works, and so on. The **Help** button in an app's title bar opens the
-exact lesson for that app. It contains **no mention of easter eggs**.
-
-**25 · Settings** — `settings`
-Language (fa/en), theme (auto/day/night), sound, vibration, font size (85–140%), notification
-permission, install-as-app prompt, About and log out. Settings are saved server-side so they follow
-her to any device.
-
-**26 · Notification Center** *(dock)*
-All system notifications — new letter, memory unlocked, achievement, hug, chat, medication — plus the
-Gentle Reminders tab. Unread badge on the dock bell, "mark all read", and tapping a notification opens
-the relevant app. Polls every 45 seconds.
-
-**27 · About LoveOS** *(start menu)*
-Logo, version, a text from Daddy, both names and the number of days together.
+| Part | What it does |
+|---|---|
+| **Boot** | Typing lines, the logo, a soft melody and my welcome message. |
+| **Lock** | Passcode + security question + the "Ask Daddy" button. |
+| **Desktop** | Clock, next-meeting countdown, next call, both cities' weather, today's message and app icons. |
+| **Dock** | Start menu, open apps, search (magnifier), notifications, settings, logout. |
+| **Notification centre** | Every notification for her, with an unread badge. |
+| **Error boundary** | If one app breaks, the whole OS does not go white — that app shows a gentle "try again" and the rest keeps working. |
 
 ---
 
-## 5. The Daddy Panel
+## 5. Global search
+
+Global search is not a separate app; it is a layer over the whole system.
+
+**Three ways to open it:**
+
+* `Ctrl + K` or `⌘ + K` from anywhere in LoveOS
+* the magnifier icon in the dock
+* the "Global search" row at the top of the start menu
+
+**The 21 sources it searches:** chat messages · letters · voices · memories · music · our story books ·
+chapters · paragraphs · gifts · home features · home rooms · language words · shared reading books ·
+chapter notes · quotes · quiz questions · wishes · achievements · call logs · call appointments ·
+easter eggs.
+
+**Implementation notes:**
+
+* **Persian-tolerant matching:** Arabic `ي/ك`, diacritics and ZWNJ are normalised before comparison; if
+  an exact match fails, a fuzzy match (similarity ≥ 0.62) is tried. So "كتاب يادگاري" still finds
+  "کتاب یادگاری".
+* **Filters:** by app/source, by date range (`from`/`to`) and by record kind.
+* **Empty state:** instead of "nothing found" it offers real suggestions (last message, last memory,
+  last book…).
+* **Cache:** each query result is cached for 45 seconds (the cache key covers every input) so typing
+  stays smooth; the panel has a "clear cache" action for me.
+* **Optional logging:** when enabled in the panel, only the query text is written to `ActivityLog` —
+  nothing else.
+* **Secrets** are deliberately searchable by *title only*, never by their text.
+
+---
+
+## 6. The Daddy Panel
 
 ### Getting in
 
 ```
-https://your-domain.com/<ADMIN_PATH>/        e.g. /daddy-panel-9x7k/
+https://your-domain/daddy-panel-9x7k/
 ```
 
-Two layers:
-1. **The gate** (`AdminGateMiddleware`) — a small pink page asking for `ADMIN_GATE_PASSCODE`. It runs
-   before CSRF so the plain form works, and stores a flag in the session.
-2. **Django login** — the superuser created with `createsuperuser`.
+* The path comes from `ADMIN_PATH` and I change it in production.
+* It has an optional second passcode gate (`ADMIN_GATE_PASSCODE`) enforced through the session.
+* All activity is stored in `ActivityLog`, filterable in the panel.
 
-Every response carries `X-Robots-Tag: noindex, nofollow, noarchive`.
+### What I control
 
-### What he controls
-
-| Section | Models | What it drives |
-|---|---|---|
-| **Config** | `UserConfig` | Names, nickname, cities and coordinates, timezones, anniversary, birthday, next meeting, boot greeting, wrong-password message, help message, security question/answer, today's message, about text, logo, all four wallpapers, language, theme, sound, font scale, passcodes, `allow_daughter_music_upload`. |
-| **Content** | `Voice`, `Song`, `Memory`, `Letter`, `Countdown`, `Flower`, `FlowerMessage`, `Constellation`, `CinemaItem`, `QuizQuestion`, `QuizReward`, `FuturePlan`, `MoodMessage`, `VaultItem`, `TutorialChapter`, `TerminalCommand` | Every word and file she sees. |
-| **Social** | `ChatMessage`, `Hug`, `HugSettings`, `Reminder`, `ReminderLog` | Chat history, sending hugs, the vibration pattern and warm colour, gentle reminders. |
-| **Health** | `CycleEntry`, `SymptomLog`, `Medication`, `MedicationLog`, `CareReminder`, `HealthAccessLog` | Behind the second password; access is logged. |
-| **Library** | `Book`, `Chapter`, `Page`, `Paragraph`, `MarginNote`, `Bookmark` | Writing books with her; `allow_daughter_edit` per book. |
-| **Games** | `Puzzle`, `PuzzleRecord` | Puzzle images, difficulty, hints, end message and voice. |
-| **Core** | `OSNotification`, `SoroushOutbox`, `ActivityLog`, `Achievement`, `AchievementUnlock`, `Counter`, `EasterEgg`, `EasterEggLog` | Notifications, the Soroush queue, her activity, badges and the easter-egg texts. |
+| Panel section | What I change |
+|---|---|
+| **UserConfig** | Names and nicknames, boot/lock messages, security question, default theme and language, font scale, boot/lock/desktop backgrounds, birthday and anniversary, both cities and coordinates, live-location settings (on/off, TTL, sync distance), and the "Global search" fieldset (disabling sources, query logging) |
+| **LiveLocation** | Her current live position, accuracy, source and age — handy when I need to correct it by hand |
+| **Calls** | Free windows, appointments, call logs and "call settings" (default duration, proposal/approval/rejection templates, notification and reminder switches) |
+| **Gifts** | Occasions (with icons) and gift records with price band, photo and favourites |
+| **Reading** | Books, chapters, notes, quotes and comments — all with inlines |
+| **Dream Home** | Categories, features (photo preview, colour chips), room layout with inline ideas and the inspiration gallery with comments |
+| **Language** | Categories, words/idioms with translations, quiz questions and both progress rows |
+| **Content** | Voices, songs, memories, letters, countdowns, garden, constellations, cinema, quiz, wishes, moods, vault, tutorial, terminal commands |
+| **Achievements & secrets** | 32 badges with thresholds and secret messages, 15 easter eggs with their trigger |
+| **Health** | Medication, care reminders and mood messages |
+| **Soroush** | The outbox (`SoroushOutbox`) with status, tries and errors, plus a retry action |
+| **ActivityLog** | Everything that happened + the "clear app cache" action |
 
 ### Everyday recipes
 
-**Send her a hug right now** — Social → Hugs → Add, direction `daddy_to_daughter`, write the text,
-save. It appears in her Hug app and vibrates when she opens it.
-
-**Record a voice for a mood** — Content → Voices → upload the file, then Content → Mood messages →
-pick the mood → attach that voice. Next time she taps that mood, she hears him.
-
-**Write a letter for her birthday** — Content → Letters → Add, set `open_at`. It stays sealed until
-that moment, then `sweep` opens it and notifies her.
-
-**Change an easter-egg message** — Core → Easter eggs → pick the trigger → edit title/message/
-attachment. The trigger logic is in code; every word is his.
-
-**Turn her music uploads off** — Config → uncheck `allow_daughter_music_upload`.
+| I want to… | I do this |
+|---|---|
+| add a new voice note | Content → Voices → Add → audio file + category + title |
+| change today's desktop message | UserConfig → "today's message" |
+| lock a memory until a date | Memories → "future memory" + unlock time → `sweep` (cron) opens it |
+| remind her about medication | Medication & care reminders → time and text → `sweep` checks every 15 minutes |
+| fix her stored location by hand | Location → city/coordinates |
+| make search lighter | UserConfig → "Global search" → pick the sources that should stay quiet |
+| see what she did today | ActivityLog (filter by app) |
 
 ---
 
-## 6. Soroush bot integration
+## 7. Soroush bot integration
 
 ### Setup
 
-1. Talk to `@botfather` on Soroush Plus and create a bot; copy the token.
-2. Put `SOROUSH_TOKEN`, `SOROUSH_DADDY_CHAT_ID` and `SOROUSH_WEBHOOK_SECRET` in `.env` and set
-   `NOTIFY_PROVIDER=soroush`.
-3. Register the webhook (ports 443, 80, 88 and 8443 only):
-
-```bash
-curl "https://api.splus.ir/bot<TOKEN>/setWebhook?url=https://your-domain.com/api/soroush/webhook/<SECRET>/"
-curl "https://api.splus.ir/bot<TOKEN>/getWebhookInfo"
+```ini
+NOTIFY_PROVIDER=soroush
+SOROUSH_API_BASE=https://api.splus.ir
+SOROUSH_TOKEN=bot-token
+SOROUSH_DADDY_CHAT_ID=my-chat-id
+SOROUSH_WEBHOOK_SECRET=some-random-string
+SOROUSH_PARSE_MODE=HTML
 ```
 
-The API is Telegram-compatible: `https://api.splus.ir/bot<token>/METHOD`, every response is
-`{ok, result | description}`.
+* Every message is stored in `SoroushOutbox` first and **then** sent, so a broken token or a bad
+  connection never loses anything. `manage.py sweep` retries the queue (up to `OUTBOX_MAX_RETRY`,
+  default 5 attempts).
+* Incoming webhook: `/api/soroush/webhook/<SOROUSH_WEBHOOK_SECRET>/` — that is how I can reply from
+  Soroush and have the app react.
+* **Nothing is ever pushed to her side through Soroush**; that channel is mine only. Her notifications
+  are created inside the app (`OSNotification`).
 
-### The ~20 events he receives
+### Events I receive
 
-| Event | Fires when |
+| Group | Events |
 |---|---|
-| `login` | She unlocks LoveOS. |
-| `lock_help` | She presses "Ask Daddy for help" after 5 wrong passcodes. |
-| `forgot_ok` | She gets in via the security question. |
-| `voice_played` | She listens to one of his voice notes. |
-| `letter_opened` | She opens a letter. |
-| `memory_unlocked` | A future memory unlocks for her. |
-| `song_uploaded` | She uploads a song. |
-| `mood` | She sets her mood. |
-| `chat` | She sends a chat message. |
-| `hug` | She hugs him. |
-| `hug_seen` | She opens a hug he sent. |
-| `hug_miss` | Three hugs in a row — she really misses him. |
-| `quiz_perfect` | She scores full marks. |
-| `puzzle` | She finishes a puzzle (with her time). |
-| `plan_add` / `plan_done` | She adds or ticks a wish. |
-| `cinema_add` | She adds a film or series. |
-| `book_new` / `book_chapter` / `book_comment` | She creates a book, publishes a chapter, or leaves a margin note. |
-| `period_start` / `period_end` | She logs the start or end of her period. |
-| `cycle_anomaly` | Her cycle length leaves the normal range. |
-| `symptoms` | She logs a hard day (severity ≥ 4). |
-| `med_taken` / `med_skipped` / `med_added` | Medication actions. |
-| `reminder_sent` / `reminder_viewed` | A gentle reminder was sent / she saw it. |
-| `achievement` | She unlocks a badge. |
-| `easter_egg` | She discovers a secret. |
-
-### Delivery guarantees
-
-`notify_daddy()` writes the message to `SoroushOutbox` and tries to send immediately. If the network
-or token is unavailable it stays queued; `manage.py sweep` calls `flush_outbox()` every minute and
-retries. With `NOTIFY_PROVIDER=console` nothing leaves the machine — it just logs, which is what the
-development environment uses.
-
-### Chat back
-
-When Daddy replies to the bot, Soroush POSTs an `Update` to
-`/api/soroush/webhook/<secret>/`. The handler checks the secret, filters by `SOROUSH_DADDY_CHAT_ID`,
-stores the text as a `ChatMessage` with `via="soroush"` and raises a notification. Inline-button
-callbacks are always acknowledged with `answerCallbackQuery`, as the API requires.
+| Login & lock | `login` · `lock_help` · `forgot_ok` |
+| Chat & hugs | `chat` · `hug` · `hug_seen` · `hug_miss` |
+| Content | `voice_played` · `song_uploaded` · `letter_opened` · `memory_unlocked` · `mood` · `easter_egg` |
+| Quiz & games | `quiz_perfect` · `puzzle` · `achievement` |
+| Health | `med_added` · `med_taken` · `med_skipped` · `symptoms` · `period_start` · `period_end` · `cycle_anomaly` |
+| Reminders | `reminder_sent` · `reminder_viewed` |
+| Books & films | `book_new` · `book_chapter` · `book_comment` · `cinema_add` · `plan_add` · `plan_done` |
+| **Calls** | `call_proposed` · `call_approved` · `call_rejected` · `call_rescheduled` · `call_logged` · `call_reminder` |
+| **Gifts** | `gift_added` |
+| **Reading together** | `reading_book` · `reading_note` · `reading_quote` · `reading_comment` |
+| **Dream home** | `home_room` · `home_feature` · `home_idea` · `home_inspiration` · `home_comment` |
+| **Language bridge** | `language_entry` · `language_quiz` · `language_practice` |
+| **Location** | `location_change` |
 
 ---
 
-## 7. API reference
+## 8. API reference
 
-Base: `/api`. Everything except `/boot`, `/auth/unlock`, `/auth/forgot` and `/auth/help` needs
-`Authorization: Token <token>`.
+Every private route needs `Authorization: Token <token>`. Responses are JSON.
 
 ### Shell & auth
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/boot` | Public config that drives Boot and Lock. |
-| POST | `/auth/unlock` | `{passcode}` → `{ok, token}` or a playful failure message. |
-| POST | `/auth/forgot` | `{answer}` → token if the security answer matches. |
-| POST | `/auth/help` | Ping Daddy over Soroush. |
-| POST | `/auth/logout` | End the session. |
-| GET | `/me` | Full config for the unlocked session. |
-| PATCH | `/settings` | Language, theme, sound, font scale. |
-| POST | `/vault/unlock` | `{passcode}` → opens the vault for 20 minutes. |
-
-`GET /boot` returns:
-
-```json
-{
-  "config": {
-    "daughter_name": "مریم", "daughter_nickname": "دخترم", "daddy_name": "بابا",
-    "days_together": 365,
-    "next_meeting": "2026-10-29T07:31:46Z",
-    "next_meeting_delta": { "days": 44, "hours": 23 },
-    "boot_greeting": "سلام دخترم...",
-    "wrong_pass_message": "...", "lock_help_message": "...", "security_question": "...",
-    "language": "fa", "theme": "auto", "sound_enabled": true, "font_scale": 1.0,
-    "logo": null, "boot_background": null, "lock_background": null,
-    "desktop_background_day": null, "desktop_background_night": null,
-    "is_birthday": false, "is_anniversary": false, "has_passcode": true
-  },
-  "unlocked": false
-}
-```
+| GET | `/api/boot` | public config + lock state (no secrets) |
+| POST | `/api/auth/unlock` | open the lock with the passcode → session token |
+| POST | `/api/auth/forgot` | answer the security question → unlock |
+| POST | `/api/auth/help` | "Ask Daddy" → immediate Soroush message |
+| POST | `/api/auth/logout` | end the session |
+| GET | `/api/me` | full config once unlocked |
+| GET/POST/PATCH | `/api/settings` | language, theme, sound, font scale |
+| GET/POST | `/api/location` | read the effective location / report a fresh device position |
+| GET | `/api/search` | global search (`q`, `app`, `kind`, `from`, `to`, `suggest`) |
+| POST | `/api/vault/unlock` | open the vault |
+| GET | `/healthz` | service health |
 
 ### Content
 
-```
-GET    /voices                     GET    /voices/random
-POST   /voices/<id>/played
-GET    /songs                      POST   /songs/upload      (multipart)
-DELETE /songs/<id>                 POST   /songs/<id>/played
-GET    /memories
-GET    /letters                    GET    /letters/random
-POST   /letters/<id>/open
-GET    /countdowns
-GET    /garden                     POST   /garden/<id>/water
-GET    /starmap
-GET    /cinema                     POST   /cinema
-PATCH  /cinema/<id>                DELETE /cinema/<id>
-GET    /quiz                       POST   /quiz/submit
-GET    /plans                      POST   /plans
-PATCH  /plans/<id>                 DELETE /plans/<id>
-GET    /moods                      POST   /moods/set
-GET    /vault
-GET    /tutorial[?key=...]
-```
+`/api/voices` (`…/random`, `…/<id>/played`) · `/api/songs` (`…/upload`, `…/<id>`, `…/<id>/played`) ·
+`/api/memories` · `/api/letters` (`…/random`, `…/<id>/open`) · `/api/countdowns` · `/api/garden`
+(`…/<id>/water`) · `/api/starmap` · `/api/cinema` (`…/<id>`) · `/api/quiz` (`…/submit`) · `/api/plans`
+(`…/<id>`) · `/api/moods` (`…/set`) · `/api/vault` · `/api/tutorial` · `/api/terminal` (`…/sudo`) ·
+`/api/egg` · `/api/achievements`
 
 ### Social
 
-```
-GET    /chat[?since=<id>]          POST   /chat
-GET    /hug                        POST   /hug/send          POST /hug/<id>/open
-GET    /notifications              POST   /notifications/read-all
-POST   /notifications/<id>/read
-GET    /reminders                  POST   /reminders/<id>/mute
-POST   /terminal                   POST   /terminal/sudo
-POST   /egg                        GET    /achievements
-GET    /weather                    GET    /map
-```
+`/api/chat` · `/api/hug` (`…/send`, `…/<id>/open`) · `/api/notifications` (`…/read-all`, `…/<id>/read`) ·
+`/api/reminders` (`…/<id>/mute`) · `/api/weather` · `/api/map`
 
 ### Health
 
-```
-GET    /cycle                      POST   /cycle/start       POST /cycle/end
-GET    /cycle/symptoms             POST   /cycle/symptoms
-GET    /meds                       POST   /meds
-GET    /meds/today                 POST   /meds/act
-GET    /meds/report
-GET    /care                       POST   /care/<id>/toggle
-```
+`/api/cycle` (`…/start`, `…/end`, `…/symptoms`) · `/api/meds` (`…/today`, `…/act`, `…/report`) ·
+`/api/care` (`…/<id>/toggle`)
 
 ### Library & games
 
-```
-GET    /books                      POST   /books
-GET    /books/<id>                 POST   /books/<id>/chapters
-POST   /chapters/<id>/publish
-POST   /pages/<id>/paragraphs      POST   /pages/<id>/bookmark
-PATCH  /paragraphs/<id>            DELETE /paragraphs/<id>
-POST   /paragraphs/<id>/notes
-GET    /puzzles                    POST   /puzzles/<id>/start
-POST   /puzzles/<id>/complete
-```
+`/api/books` (`…/<id>`, `…/<book_id>/chapters`) · `/api/chapters/<id>/publish` ·
+`/api/pages/<page_id>/paragraphs` · `/api/pages/<page_id>/bookmark` · `/api/paragraphs/<id>` ·
+`/api/paragraphs/<paragraph_id>/notes` · `/api/puzzles` (`…/<id>/start`, `…/<id>/complete`)
+
+### Calls (`/api/calls`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/calls/overview` | everything the app needs in one request |
+| GET/POST | `/api/calls/slots` | free windows + shared overlap |
+| POST/DELETE | `/api/calls/slots/<id>` | remove a window |
+| GET/POST | `/api/calls/appointments` | list / propose a call |
+| POST | `/api/calls/appointments/<id>/respond` | approve, reject or propose an alternative |
+| POST/DELETE | `/api/calls/appointments/<id>/cancel` | cancel |
+| GET/POST | `/api/calls/logs` | call log (voice attachment via `multipart`) |
+| PATCH/POST | `/api/calls/logs/<id>` | edit a log |
+| GET | `/api/calls/stats` | month, six-month chart, record and average |
+| GET | `/api/calls/next` | next call (for the desktop widget) |
+
+### Gifts (`/api/gifts`)
+
+`GET/POST /api/gifts` · `GET/PATCH/POST/DELETE /api/gifts/<id>` · `GET /api/gifts/occasions` ·
+`GET /api/gifts/stats` — filters: `giver`, `receiver`, `occasion`, `year`, `band`, `q`.
+
+### Read together (`/api/reading`)
+
+`GET /api/reading/overview` · `GET/POST /api/reading/books` · `GET/PATCH/POST/DELETE /api/reading/books/<id>` ·
+`POST /api/reading/books/<id>/chapters` · `POST /api/reading/books/<id>/progress` ·
+`POST/GET /api/reading/chapters/<id>/notes` · `POST/GET /api/reading/chapters/<id>/quotes` ·
+`POST /api/reading/chapters/<id>/comments` · `GET /api/reading/quotes` · `GET /api/reading/stats`.
+
+To put a Library-app book on the shared shelf, send its `library_book` id with `POST /books`; if it is
+already linked the same record comes back with `already: true`.
+
+### Dream home (`/api/home`)
+
+`GET /api/home/overview` · `GET/POST /api/home/features` · `PATCH/POST/DELETE /api/home/features/<id>` ·
+`GET/POST /api/home/rooms` · `PATCH/POST/DELETE /api/home/rooms/<id>` ·
+`POST/GET /api/home/rooms/<id>/ideas` · `GET/POST /api/home/inspirations` ·
+`GET/POST/DELETE /api/home/inspirations/<id>` · `POST/GET /api/home/inspirations/<id>/comments` ·
+`GET /api/home/categories` · `GET /api/home/stats` — room coordinates are percentages (0..100) and are
+clamped server-side.
+
+### Language bridge (`/api/language`)
+
+`GET /api/language/overview` · `GET/POST /api/language/entries` ·
+`GET/PATCH/POST/DELETE /api/language/entries/<id>` (pronunciation uploads use `pronunciation`) ·
+`GET /api/language/categories` · `GET /api/language/flashcards` ·
+`POST /api/language/practice` · `GET /api/language/quiz` · `POST /api/language/quiz/submit` ·
+`GET /api/language/stats`.
 
 ### Outside `/api`
 
-```
-POST   /api/soroush/webhook/<secret>/     Soroush updates
-GET    /robots.txt                        Disallow: /
-GET    /healthz                           "ok"
-ANY    /<ADMIN_PATH>/                     Daddy Panel
-```
+| Path | Purpose |
+|---|---|
+| `/` | LoveOS itself (SPA) |
+| `/daddy-panel-9x7k/` | the Daddy Panel |
+| `/media/…` | uploaded files |
+| `/robots.txt` | keeps every crawler out |
 
 ---
 
-## 8. Easter eggs
+## 9. Easter eggs & badges
 
-> **This section is for Daddy only.** The tutorial, the About page and every other surface contain
-> **zero hints** that easter eggs exist. She should only ever stumble on them.
+### 15 easter eggs
 
-The *trigger logic* is in code; the *title, message and attachment* of every egg live in
-Core → Easter eggs, so he can rewrite them whenever he wants. Discovering one rains hearts across the
-screen, vibrates gently and notifies Daddy.
-
-| # | Key | How she finds it |
+| Egg | Trigger | What happens |
 |---|---|---|
-| 1 | `click_logo_5` | Tap the logo five times on the boot screen. |
-| 2 | `type_love` | Type "دوستت دارم" (or "i love you") anywhere in the OS. |
-| 3 | `konami` | ↑ ↑ ↓ ↓ ← → ← → B A on a keyboard. |
-| 4 | `terminal_rm` | `sudo rm -rf /loneliness` in the terminal. |
-| 5 | `terminal_sandwich` | `sudo make me a sandwich`. |
-| 6 | `midnight` | Open LoveOS between 00:00 and 05:00 — the sky fills with hearts and stars. |
-| 7 | `birthday` | On her birthday a cake icon appears on the desktop. |
-| 8 | `anniversary` | On their anniversary a beating heart icon appears. |
-| 9 | `map_zoom` | Zoom all the way into Daddy's city on the map. |
-| 10 | `star_double_click` | Double-tap a single star in the star sky. |
-| 11 | `garden_5_water` | Water the same flower five times. |
-| 12 | `hug_3` | Send three hugs in a row (Daddy also gets "she really misses you"). |
-| 13 | `chat_love` | Write "دوستت دارم" in the chat. |
-| 14 | `music_3_play` | Play the main song three times. |
-| 15 | `lock_5_wrong` | Get the passcode wrong five times. |
+| Midnight sky | between 00:00 and 05:00 | the sky fills with hearts and stars |
+| Anniversary heart | anniversary day | a floating heart on the desktop |
+| Birthday cake | her birthday | a hidden cake icon |
+| Magic sentence | typing "دوستت دارم" in chat | a rain of hearts |
+| Old code | the Konami code on the desktop | a secret message |
+| Sandwich | `sudo make sandwich` in the terminal | a playful reply |
+| Delete loneliness | `rm -rf tanhayi` | a dedicated message |
+| Heart rain | typing "love" anywhere | hearts across the screen |
+| Daddy's help | five wrong passcodes | a help message from me |
+| Hidden logo heart | five clicks on the logo | a hidden heart |
+| Centre star | double-clicking a star | a special wish |
+| Daddy's home | zooming far into the map | a home message |
+| Our song | playing one song three times | an "our song" message |
+| Missing you | three hugs in a row | a longing message |
+| Special flower | watering one flower five times | a unique bloom |
 
-Discoveries are recorded in `EasterEggLog`, feed the `eggs_found` counter and unlock the
-`secret_finder` / `secret_master` badges.
+### Badges (32)
 
-### Badges (16)
+*The original 16:* first login · first voice · 100 days with Daddy · perfect quiz · all letters ·
+puzzle player · puzzle master · Daddy's cuddly chick · Daddy's kind girl · regular · self care ·
+writer · storyteller · secret finder · secret master · know-it-all
 
-`first_login`, `first_voice`, `days_100`, `quiz_perfect`, `all_letters`, `puzzle_player`,
-`puzzle_master`, `hug_bunny`, `kind_daughter`, `med_regular`, `self_care`, `writer`, `storyteller`,
-`secret_finder`, `secret_master`, `know_it_all`.
+*16 new in 2.0:* first call · ten calls · a hundred call hours · first gift · ten gifts · fifty gifts ·
+first shared book · five books · ten books · a hundred notes · ten home features · fifty home features ·
+first room · first word · a hundred words · language master
+
+Every threshold is editable in the panel, as is each badge's secret message. When one unlocks, she gets
+an in-app notification and I get a Soroush message.
 
 ---
 
-## 9. Deployment
+## 10. Deployment
 
 ### One command
 
 ```bash
-sudo APP_DIR=/srv/loveos DOMAIN=loveos.example.com ./scripts/deploy.sh
+./scripts/deploy.sh
 ```
 
-It pulls, installs, builds the frontend, migrates, collects static, writes the systemd unit and the
-Nginx site, installs the cron job and reloads everything.
+The script installs dependencies, collects static files, builds the frontend, applies migrations and
+restarts the service. The full cPanel walkthrough is in [`DEPLOY_CPANEL_FA.md`](./DEPLOY_CPANEL_FA.md).
 
 ### Production checklist
 
-- [ ] `DEBUG=False` and a long random `DJANGO_SECRET_KEY`
-- [ ] `ALLOWED_HOSTS` set to the real domain
-- [ ] `ADMIN_PATH` changed from the default
-- [ ] `ADMIN_GATE_PASSCODE` set
-- [ ] `DB_ENGINE=mysql` with `utf8mb4` and `mysqlclient` installed
-- [ ] HTTPS certificate (`certbot --nginx -d your-domain.com`)
-- [ ] Soroush webhook registered; `getWebhookInfo` clean
-- [ ] Cron installed: `* * * * * cd /srv/loveos/backend && .venv/bin/python manage.py sweep`
-- [ ] `media/` backed up (it holds his voice)
-- [ ] QR code printed from `scripts/qr.py`
+- [ ] `DEBUG=False`
+- [ ] a long random `DJANGO_SECRET_KEY`
+- [ ] `ALLOWED_HOSTS` limited to my domain
+- [ ] change `ADMIN_PATH` and set `ADMIN_GATE_PASSCODE`
+- [ ] `SERVE_FRONTEND=True` on single-app hosting
+- [ ] `NOTIFY_PROVIDER=soroush` with a real token
+- [ ] `python manage.py check --deploy`
+- [ ] `python manage.py migrate` then `collectstatic --noinput`
+- [ ] `cd frontend && npm run build`
+- [ ] a cron entry for `manage.py sweep` (every 15 minutes)
+- [ ] daily backups of the database and `media/`
+
+> Version 2.0 adds five migrations (`calls`, `gifts`, `reading`, `dreamhome`, `language`) plus
+> `accounts.0003`. When upgrading, run `migrate` first.
 
 ### MySQL
 
-```sql
-CREATE DATABASE loveos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'loveos'@'localhost' IDENTIFIED BY 'strong-password';
-GRANT ALL PRIVILEGES ON loveos.* TO 'loveos'@'localhost';
-FLUSH PRIVILEGES;
+Set `DB_ENGINE=mysql` in `.env` and fill the remaining `DB_*` keys. No code changes needed.
+
+### Scheduled work (cron)
+
+```cron
+*/15 * * * * cd /home/USER/loveos/backend && .venv/bin/python manage.py sweep >> /home/USER/loveos-sweep.log 2>&1
 ```
 
-### Optional Celery
-
-If Redis is available, replace the cron job with:
-
-```bash
-celery -A config worker -l info
-celery -A config beat -l info
-```
-
-The cron path is the default because it needs no extra services.
+`sweep` opens timed memories, releases future letters, sends medication and care reminders, delivers
+pending notifications, **fires approved-call reminders** and flushes the Soroush queue.
 
 ---
 
-## 10. Maintenance & troubleshooting
+## 11. Maintenance, tests & troubleshooting
 
 ### Routine
 
-| Task | Command |
+| Cadence | What I do |
 |---|---|
-| Database backup | `mysqldump loveos > backup-$(date +%F).sql` |
-| Media backup | `tar czf media-$(date +%F).tar.gz backend/media` |
-| Check the queue | Admin → Core → Soroush outbox (`sent=False` = still pending) |
-| Run the scheduler by hand | `.venv/bin/python manage.py sweep` |
-| Deploy checks | `.venv/bin/python manage.py check --deploy` |
-| Health probe | `curl https://your-domain.com/healthz` → `ok` |
+| daily | glance at `ActivityLog` and the Soroush outbox |
+| weekly | back up the database + `media/`, check disk space |
+| monthly | `pip list --outdated` and `npm outdated`, review panel content |
+| every update | `migrate` → `npm run build` → restart the service |
+
+### Tests
+
+```bash
+# backend: 72 tests (models, APIs, search, location, panel)
+cd backend && .venv/bin/python manage.py test
+
+# frontend: type-check, lint, build and 47 UI checks
+cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
+```
+
+The backend tests lock in: call overlap detection, approve/reject/reschedule flows, a single-shot call
+reminder, gift stats and price bands, reading progress and the shared shelf, room-coordinate clamping,
+language flashcards/streak and the rule that quizzes only come from panel questions, Persian-tolerant
+search, effective location (live vs. panel vs. stale) and the fact that every registered model renders
+in the panel without errors.
+
+### Frontend UI tests (no browser needed)
+
+These tests run under **jsdom** so that checking the interface never requires opening a browser: each
+`frontend/tests/*.tsx` file is bundled with esbuild and then executed as a Node program.
+
+```bash
+cd frontend
+npm run test:ui            # both files
+npm run test:ui window-manager-settings
+```
+
+| File | What it locks down |
+|---|---|
+| `tests/window-manager-settings.tsx` | Open/close/minimize, geometry staying put while clicking, correct z-order, no ghost of a closed window, reopening at the previous position, and language + theme actually being applied and stored |
+| `tests/apps-render.tsx` | All five new apps booting against real backend responses (`tests/fixtures.json`), global search, desktop icons and the next-call widget |
+
+The backend responses in `tests/fixtures.json` were captured from the live API, so if an endpoint
+contract changes, these tests complain before the app does.
 
 ### Common problems
 
-**She can't get in.** Reset the passcode:
-
-```bash
-.venv/bin/python manage.py shell -c "
-from accounts.models import UserConfig
-c = UserConfig.get_solo(); c.set_passcode('1234'); c.save()"
-```
-
-**Soroush messages never arrive.** Check `NOTIFY_PROVIDER=soroush`, then
-`curl https://api.splus.ir/bot<TOKEN>/getMe`, then look at `SoroushOutbox` for the stored error.
-Remember `console` mode only logs.
-
-**His replies don't show up in chat.** Run `getWebhookInfo` and read `last_error_message`. The URL
-must be HTTPS on port 443/80/88/8443, the secret must match `SOROUSH_WEBHOOK_SECRET`, and
-`SOROUSH_DADDY_CHAT_ID` must be his real chat id (a mismatch silently ignores the message).
-
-**Scheduled things never happen.** The cron job is missing — `crontab -l | grep sweep`. Run
-`manage.py sweep` manually and read the summary line it prints.
-
-**The service worker serves a stale build.** `registerType` is `autoUpdate`, so a reload normally
-fixes it; otherwise clear the site data. Nginx is configured never to cache `/sw.js`.
-
-**Weather shows "—".** Open-Meteo was unreachable; the app degrades gracefully and retries every
-15 minutes. Check outbound HTTPS from the server.
-
-**Vibration does nothing.** `navigator.vibrate` is unsupported on iOS Safari — this is a platform
-limitation. Everything else (warm glow, heartbeat sound, message) still works.
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "app opens but the page is blank" | an old service-worker release | The service worker now updates itself (`skipWaiting`/`clientsClaim`); if you still see it, hard-refresh once and ship a fresh `npm run build` |
+| close/minimize on a window does nothing | window geometry changing under the pointer | Since 2.0 geometry is frozen; if it recurs, check the console that `AppWindow` renders its `z-index` on the wrapper |
+| letters/numbers look mirrored | the y-axis in the star map | Since 2.0 the y-axis is corrected and the letter direction is switchable (RTL/LTR) |
+| location, clock or weather looks stale | the panel value is being used because the live fix is old | Turn on live location in her Settings, or update the panel value |
+| `/api/settings` returns 405 | unsupported method | Since 2.0 it accepts `GET`/`POST`/`PATCH`/`PUT` |
+| Soroush messages do not arrive | token or connectivity | Inspect `SoroushOutbox` (status, tries, error) then run `manage.py sweep` |
+| white screen after an update | stale build files in the browser cache | fresh build + one hard refresh |
+| the panel will not load | `ADMIN_PATH` or the gate | read the path from `.env` and enter the gate passcode if enabled |
 
 ### Useful queries
 
 ```bash
-# What has she been doing?
+# what did she do today?
 .venv/bin/python manage.py shell -c "
 from core.models import ActivityLog
 [print(a.created_at, a.title, a.detail) for a in ActivityLog.objects.all()[:20]]"
 
-# Which secrets has she found?
+# which secrets has she found?
 .venv/bin/python manage.py shell -c "
 from core.models import EasterEggLog
-[print(l.created_at, l.egg.trigger) for l in EasterEggLog.objects.all()]"
+[print(l.created_at, l.egg.title) for l in EasterEggLog.objects.all()]"
 
-# Force the Soroush queue
+# her latest live position
+.venv/bin/python manage.py shell -c "
+from accounts.models import LiveLocation
+l = LiveLocation.current()
+print(l.city, l.lat, l.lng, l.age_minutes(), 'minutes ago') if l else print('not recorded')"
+
+# force the Soroush queue
 .venv/bin/python manage.py shell -c "
 from core.soroush import flush_outbox; print(flush_outbox())"
+
+# clear the search cache
+.venv/bin/python manage.py shell -c "
+from core.services import clear_app_cache; print(clear_app_cache())"
 ```
+
+---
+
+## 12. What changed in 2.0
+
+### Bugs fixed
+
+1. **Closed windows would not reopen.** The window manager was rewritten: geometry is chosen once and
+   then frozen, stacking lives on the outer wrapper, and a fading window no longer captures clicks.
+2. **Letters in the star map were mirrored.** The y-axis was inverted (an `M` used to look like a `W`)
+   and letter order was fixed for RTL; there is now a toggle between right-to-left and left-to-right.
+3. **Location was measured from the stale stored value.** Every app now reads the "effective location"
+   whose first priority is her live device position, and the stored coordinates/city are synced
+   automatically so all apps agree.
+4. **Desktop apps "did not work".** The shared cause was a stale cached PWA shell and chunk loading:
+   `skipWaiting`, `clientsClaim` and `cleanupOutdatedCaches` were enabled and a `vite:preloadError`
+   handler now performs a clean reload. An error boundary was also added around every app so one
+   failure can no longer blank the whole OS.
+5. **The settings theme toggle had no effect.** The theme is now stored on the server and on the
+   device, applied immediately, and works with `auto/day/night`.
+6. **Changing language only flipped the text direction.** All the new apps and their locale keys are
+   fully bilingual, and switching language now swaps the whole interface, not just the direction.
+7. **`PATCH /api/settings` returned 405.** The view now accepts `GET`, `POST`, `PATCH` and `PUT`, and
+   silently ignores invalid values instead of failing.
+8. **The date range in global search was not precise.** The "from … to …" filter passed a raw `date`
+   to datetime fields (which also produced naive-datetime warnings) and the fuzzy fallback ignored the
+   range altogether, so out-of-range records could surface. Range boundaries are now timezone-aware,
+   "to this date" includes the whole day, and both search paths (exact and fuzzy) honour the range.
+9. **Denying microphone permission failed silently.** Call Sync and Language Bridge now show a clear
+   line saying microphone access was refused and that the browser settings need to allow it.
+
+### New in this version
+
+* **Five new apps** (Call Sync, Gift Book, Read Together, Dream Home, Language Bridge) plus
+  **global search** — six new pieces in total.
+* **Five new model groups** across those apps + `LiveLocation` in `accounts` and two search-related
+  settings keys on `UserConfig`.
+* **21 search sources** with Persian-tolerant matching, app/date/kind filters and a 45-second cache.
+* **16 new badges and 6 new tutorial chapters** for the new apps.
+* **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
+* **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
+* **72 backend tests** plus 47 frontend checks (`npm run test:ui`) covering the window manager,
+  settings (language/theme), global search and the rendering of every new app against real backend
+  responses.
 
 ---
 
 <div align="center">
 
-**LoveOS v1.0**
+**LoveOS, version 2.0**
 
-*Made by Daddy, for his daughter.*
-*Distance is just a number. Our heart is one.* ❤
+*Built by Daddy, for his daughter.*
+*The distance is only a number. Our hearts are always in the same place.* ❤
 
 </div>

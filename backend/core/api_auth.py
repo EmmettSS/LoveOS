@@ -9,9 +9,9 @@ from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from accounts.models import DeviceSession, UnlockAttempt, UserConfig
+from accounts.models import DeviceSession, LiveLocation, UnlockAttempt, UserConfig
 from core.auth import get_session, require_session
-from core.services import bump, log_activity, push_notification
+from core.services import bump, effective_daughter_location, log_activity, push_notification
 from core.soroush import notify_daddy
 
 
@@ -24,6 +24,8 @@ def _media(field) -> str | None:
 
 def public_config(cfg: UserConfig) -> dict:
     """اطلاعاتی که حتی پشت صفحه‌ی قفل لازم است (بدون هیچ رازی)."""
+    effective = effective_daughter_location(cfg)
+    live_payload = effective if effective["is_live"] else None
     today = timezone.localdate()
     next_meeting = cfg.next_meeting
     delta = None
@@ -54,6 +56,9 @@ def public_config(cfg: UserConfig) -> dict:
         "is_birthday": bool(cfg.daughter_birthday and (cfg.daughter_birthday.month, cfg.daughter_birthday.day) == (today.month, today.day)),
         "is_anniversary": bool(cfg.anniversary and (cfg.anniversary.month, cfg.anniversary.day) == (today.month, today.day)),
         "has_passcode": bool(cfg.passcode_hash),
+        # موقعیت واقعی و مؤثر (نه فقط شهر ثبت‌شده) — حتی پشت قفل هم شهر جاری لازم است
+        "daughter_city": effective["city"],
+        "live_location": live_payload,
     }
 
 
@@ -147,6 +152,7 @@ def logout(request):
 def me(request):
     """پیکربندی کامل بعد از باز شدن قفل."""
     cfg = UserConfig.get_solo()
+    eff = effective_daughter_location(cfg)
     data = public_config(cfg)
     data.update(
         {
@@ -154,10 +160,12 @@ def me(request):
             "daddy_lat": cfg.daddy_lat,
             "daddy_lng": cfg.daddy_lng,
             "daddy_timezone": cfg.daddy_timezone,
-            "daughter_city": cfg.daughter_city,
-            "daughter_lat": cfg.daughter_lat,
-            "daughter_lng": cfg.daughter_lng,
-            "daughter_timezone": cfg.daughter_timezone,
+            "daughter_city": eff["city"],
+            "daughter_lat": eff["lat"],
+            "daughter_lng": eff["lng"],
+            "daughter_timezone": eff["timezone"],
+            "daughter_is_live": eff["is_live"],
+            "live_location": eff if eff["is_live"] else None,
             "today_message": cfg.today_message,
             "about_text": cfg.about_text,
             "birthday": cfg.daughter_birthday.isoformat() if cfg.daughter_birthday else None,
@@ -170,15 +178,36 @@ def me(request):
     return Response(data)
 
 
-@api_view(["POST"])
+@api_view(["GET", "POST", "PATCH", "PUT"])
 @require_session
 def update_settings(request):
-    """تنظیمات سمت دخترم: زبان، تم، صدا، اندازه فونت."""
+    """
+    تنظیمات سمت دخترم: زبان، تم، صدا، اندازه فونت.
+
+    هم POST و هم PATCH پذیرفته می‌شود (و GET آخرین وضعیت را برمی‌گرداند) تا
+    صفحه‌ی تنظیمات روی هر نسخه‌ای از فرانت‌اند بدون خطای 405 کار کند.
+    """
     cfg = UserConfig.get_solo()
-    for field in ("language", "theme", "sound_enabled", "font_scale"):
-        if field in request.data:
-            setattr(cfg, field, request.data[field])
+    if request.method == "GET":
+        return Response({"ok": True, "config": public_config(cfg)})
+
+    data = request.data if isinstance(request.data, dict) else {}
+    validators = {
+        "language": ("fa", "en"),
+        "theme": ("auto", "day", "night"),
+    }
+    for field in ("language", "theme"):
+        if field in data and str(data[field]) in validators[field]:
+            setattr(cfg, field, str(data[field]))
+    if "sound_enabled" in data:
+        cfg.sound_enabled = bool(data["sound_enabled"])
+    if "font_scale" in data:
+        try:
+            cfg.font_scale = min(1.6, max(0.7, float(data["font_scale"])))
+        except (TypeError, ValueError):
+            pass
     cfg.save()
+    log_activity("تغییر تنظیمات", "settings", ", ".join(sorted(data.keys()))[:120])
     return Response({"ok": True, "config": public_config(cfg)})
 
 
@@ -195,3 +224,166 @@ def vault_unlock(request):
         return Response({"ok": True, "until": session.vault_until})
     push_notification("system", "تلاش برای باز کردن صندوقچه", "رمز اشتباه بود")
     return Response({"ok": False, "message": "رمز صندوقچه درست نیست 🔐"})
+
+
+# ----------------------------------------------------------- موقعیت زنده ---
+def _location_json(cfg: UserConfig) -> dict:
+    eff = effective_daughter_location(cfg)
+    return {
+        "lat": eff["lat"],
+        "lng": eff["lng"],
+        "accuracy": eff["accuracy"],
+        "city": eff["city"],
+        "timezone": eff["timezone"],
+        "source": eff["source"],
+        "captured_at": eff["captured_at"],
+        "is_live": eff["is_live"],
+    }
+
+
+@api_view(["GET", "POST"])
+@require_session
+def location(request):
+    """
+    موقعیت جغرافیایی دخترم.
+
+    • POST: دستگاهش مختصات تازه را می‌فرستد؛ اینجا شهر/منطقه‌ی زمانی تشخیص داده
+      می‌شود و اگر جابجایی معناداری رخ داده باشد، خانه‌ی ثبت‌شده در پنل بابا هم
+      خودکار هم‌آهنگ می‌شود (تا همه‌ی اپ‌ها یک حقیقت واحد ببینند).
+    • GET: آخرین موقعیت مؤثر را برمی‌گرداند (زنده یا مقدار پنل بابا).
+    """
+    cfg = UserConfig.get_solo()
+
+    if request.method == "GET":
+        return Response({"ok": True, "location": _location_json(cfg)})
+
+    data = request.data if isinstance(request.data, dict) else {}
+    try:
+        lat = float(data.get("lat"))
+        lng = float(data.get("lng"))
+    except (TypeError, ValueError):
+        return Response({"ok": False, "message": "مختصات نامعتبر است"}, status=400)
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return Response({"ok": False, "message": "مختصات بیرون از محدوده است"}, status=400)
+
+    accuracy = data.get("accuracy")
+    try:
+        accuracy = int(accuracy) if accuracy is not None else None
+    except (TypeError, ValueError):
+        accuracy = None
+    city = str(data.get("city") or "").strip()[:60]
+    tz_name = str(data.get("timezone") or "").strip()[:60]
+
+    previous = LiveLocation.current()
+    live = LiveLocation.store(lat=lat, lng=lng, accuracy=accuracy, city=city, timezone_name=tz_name)
+
+    # آیا آن‌قدر جابجا شده که «خانه»ی ثبت‌شده هم عوض شود؟
+    moved_km = _distance_km(cfg.daughter_lat, cfg.daughter_lng, lat, lng)
+    city_changed = bool(city) and city != cfg.daughter_city
+    tz_changed = bool(tz_name) and tz_name != cfg.daughter_timezone
+    should_sync = cfg.location_auto_sync and (
+        moved_km >= cfg.location_sync_km or city_changed or tz_changed
+    )
+
+    if should_sync:
+        old_city = cfg.daughter_city
+        cfg.daughter_city = city or cfg.daughter_city
+        cfg.daughter_lat = lat
+        cfg.daughter_lng = lng
+        cfg.daughter_timezone = tz_name or cfg.daughter_timezone
+        cfg.save(update_fields=["daughter_city", "daughter_lat", "daughter_lng", "daughter_timezone", "updated_at"])
+        log_activity(
+            "به‌روزرسانی موقعیت",
+            "location",
+            f"{old_city} → {cfg.daughter_city} ({moved_km:.1f} کیلومتر)",
+            moved_km=round(moved_km, 2),
+        )
+        if old_city != cfg.daughter_city:
+            notify_daddy("location_change", f"📍 دخترم از «{old_city}» به «{cfg.daughter_city}» رسید")
+
+    log_activity("ثبت موقعیت زنده", "location", f"{city or '—'} ({lat:.3f}, {lng:.3f})")
+    return Response({"ok": True, "location": _location_json(cfg), "synced": should_sync, "moved_km": round(moved_km, 2)})
+
+
+def _distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """فاصله‌ی دو نقطه روی زمین (هاورساین) — برای تشخیص جابجایی معنادار."""
+    import math
+
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(max(0.0, min(1.0, a))))
+
+
+# --------------------------------------------------------- جستجوی سراسری ---
+@api_view(["GET"])
+@require_session
+def search(request):
+    """
+    جستجوی سراسری در همه‌ی اپ‌ها.
+
+    پارامترها:
+      q      عبارت جستجو (فازی؛ «بابا» همان «بابایی» را هم می‌گیرد)
+      app    فیلتر روی یک اپ/منبع (مثلاً gifts یا reading)
+      kind   فیلتر نوع (مثلاً reading_notes)
+      from   از تاریخ (YYYY-MM-DD)
+      to     تا تاریخ
+      suggest=1 → به‌جای نتایج، پیشنهادهای حالت خالی را بده
+    """
+    from core.search import log_query, run_search, smart_suggestions
+    from core.services import cached
+
+    cfg = UserConfig.get_solo()
+    today = timezone.localdate().isoformat()
+
+    if request.GET.get("suggest") in ("1", "true", "yes"):
+        return Response({"items": cached(f"suggest:{today}", smart_suggestions, ttl=120)})
+
+    query = str(request.GET.get("q") or "").strip()
+    if len(query) < 2:
+        return Response(
+            {
+                "query": query,
+                "total": 0,
+                "groups": [],
+                "sources": [],
+                "suggestions": cached(f"suggest:{today}", smart_suggestions, ttl=120),
+            }
+        )
+
+    date_from = _parse_iso_date(request.GET.get("from"))
+    date_to = _parse_iso_date(request.GET.get("to"))
+    only = request.GET.get("app") or request.GET.get("kind") or ""
+    disabled = cfg.search_disabled_sources or []
+
+    # نتیجه‌ی جستجو برای چند ثانیه کش می‌شود تا تایپ‌کردن سریع و روان باشد؛
+    # کلید کش شامل همه‌ی ورودی‌هاست، پس فیلترها هیچ‌وقت قاطی نمی‌شوند.
+    cache_key = (
+        f"search:{today}:{query}:{only}:{date_from}:{date_to}:{','.join(sorted(str(x) for x in disabled))}"
+    )
+    payload = cached(
+        cache_key,
+        lambda: run_search(
+            query,
+            disabled=disabled,
+            only=only or None,
+            date_from=date_from,
+            date_to=date_to,
+        ),
+        ttl=45,
+    )
+    log_query(query)
+    return Response(payload)
+
+
+def _parse_iso_date(value):
+    if not value:
+        return None
+    from datetime import date as date_cls
+
+    try:
+        return date_cls.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None

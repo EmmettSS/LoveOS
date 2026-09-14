@@ -27,6 +27,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // نسخه‌ی تازه فوراً جای قدیمی را می‌گیرد تا هیچ‌وقت «اپ باز می‌شود ولی خالی است» پیش نیاید
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [

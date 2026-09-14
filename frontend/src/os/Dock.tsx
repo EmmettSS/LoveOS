@@ -16,6 +16,7 @@ export function Dock() {
   const unread = useOS((s) => s.unreadCount)
   const toggleStartMenu = useOS((s) => s.toggleStartMenu)
   const toggleNotifications = useOS((s) => s.toggleNotifications)
+  const toggleCommand = useOS((s) => s.toggleCommand)
   const focusApp = useOS((s) => s.focusApp)
   const openApp = useOS((s) => s.openApp)
   const logout = useOS((s) => s.logout)
@@ -36,6 +37,16 @@ export function Dock() {
           aria-label={t('desktop.startMenu')}
         >
           <Icon name="grid" size={21} />
+        </button>
+
+        <button
+          onClick={() => { playClick(); toggleCommand(true) }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition active:scale-90"
+          style={{ background: 'linear-gradient(135deg,#f0abfc33,#7dd3fc33)', color: '#7dd3fc' }}
+          aria-label={t('search.title')}
+          title={t('search.title')}
+        >
+          <Icon name="findheart" size={20} />
         </button>
 
         {windows.length > 0 && <span className="h-7 w-px shrink-0" style={{ background: 'var(--os-border)' }} />}
