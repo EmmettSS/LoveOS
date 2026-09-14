@@ -87,7 +87,10 @@ export function AppWindow({ win }: { win: WindowState }) {
       >
         <Icon name={def.icon} size={18} />
       </span>
-      <h2 className="os-title min-w-0 flex-1 truncate text-base">{t(def.titleKey)}</h2>
+      {/* عنوان اپ نقطه‌چین نمی‌شود؛ اگر بلند باشد به خط بعد می‌رود */}
+      <h2 className="os-title min-w-0 flex-1 text-base leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+        {t(def.titleKey)}
+      </h2>
       {def.helpKey && (
         <button className="os-chip shrink-0" onClick={() => openApp('tutorial', { focus: def.helpKey })} title={t('os.help')}>
           {t('os.help')}

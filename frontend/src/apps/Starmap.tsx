@@ -31,18 +31,15 @@ const PAD = 22
 const toCanvasY = (y: number) => 1 - y
 
 export default function Starmap() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
   const { data, loading } = useApi<{ items: Constellation[] }>('/starmap')
   const [active, setActive] = useState<Constellation | null>(null)
   const [allLit, setAllLit] = useState(false)
-  // چیدمان حروف: در فارسی اسم از راست به چپ خوانده می‌شود (حرف اول سمت راست)
-  const [rtlLayout, setRtlLayout] = useState(() => i18n.dir() !== 'ltr')
+  // چیدمان پیش‌فرض: چپ به راست (حرف اول سمت چپ). دخترم می‌تواند با چیپ
+  // پایین آن را به راست به چپ عوض کند.
+  const [rtlLayout, setRtlLayout] = useState(false)
   const lastTap = useRef<{ id: number; at: number } | null>(null)
-
-  useEffect(() => {
-    setRtlLayout(i18n.dir() !== 'ltr')
-  }, [i18n, i18n.language])
 
 
   const dust = useMemo(

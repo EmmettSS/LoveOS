@@ -51,3 +51,30 @@ export const APPS: AppDef[] = [
 ]
 
 export const appByKey = (key: string) => APPS.find((a) => a.key === key)
+
+/**
+ * چیدمان پیش‌فرض دسکتاپ — «طبق جذابیت»:
+ * اول اپ‌های احساسی و تعاملی (بغل، نقشه، صدا، ضربان…)، بعد بازی‌ها و
+ * برنامه‌ریزی‌ها، بعد ابزارها؛ و اپ‌های عمومی (آموزش، تنظیمات) آخرِ همه.
+ * دخترم می‌تواند این ترتیب را با درگ‌اند‌دراپ عوض کند (localStorage).
+ */
+export const DEFAULT_APP_ORDER: string[] = [
+  'hug', 'map', 'voice', 'heartbeat', 'whisper', 'memories', 'music', 'garden',
+  'starmap', 'countdown', 'call', 'plans', 'cinema', 'reading', 'dreamhome',
+  'language', 'puzzle', 'quiz', 'mood', 'chat', 'gifts', 'cycle', 'weather',
+  'achievements', 'vault', 'terminal', 'library', 'tutorial', 'settings',
+]
+
+/**
+ * ترتیب مؤثر اپ‌های دسکتاپ: اگر کاربر ترتیب خودش را ذخیره کرده، آن (به‌همراه
+ * اپ‌های تازه‌ی اضافه‌شده بعداً) برمی‌گردد؛ وگرنه ترتیب پیش‌فرض.
+ */
+export function effectiveAppOrder(saved: string[] | null): string[] {
+  const all = APPS.map((a) => a.key)
+  const known = Array.from(new Set((saved || []).filter((k) => all.includes(k))))
+  // بدون ترتیب ذخیره‌شده (یا ترتیبی که همه‌ی آیتم‌هایش قدیمی شده) → پیش‌فرض
+  if (known.length === 0) return DEFAULT_APP_ORDER.filter((k) => all.includes(k))
+  // اپ‌های تازه‌ی اضافه‌شده بعد از ذخیره‌کردن، به انتها می‌پیوندند
+  const missing = all.filter((k) => !known.includes(k))
+  return [...known, ...missing]
+}

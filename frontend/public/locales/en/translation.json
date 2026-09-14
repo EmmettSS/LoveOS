@@ -34,16 +34,43 @@
     "uploading": "Uploading...",
     "saved": "Saved ✅",
     "minimize": "Minimize",
-    "alwaysOnTop": "Bring to front"
+    "alwaysOnTop": "Bring to front",
+    "refresh": "Refresh"
   },
   "boot": {
-    "line1": "LoveOS v1.0 — only for my daughter",
-    "line2": "Loading heart ............ ok",
-    "line3": "Distance module ......... solved",
-    "line4": "Love memory ............. ready",
-    "line5": "Voice vault ............. active",
-    "line6": "Preparing desktop...",
-    "skip": "Skip"
+    "version": "LoveOS v1.0",
+    "forYou": "Only for my daughter ❤",
+    "copyright": "© {{daddy}} ❤ {{daughter}} — made with love",
+    "lines": [
+      {
+        "label": "LoveOS kernel — only for my daughter",
+        "status": "OK"
+      },
+      {
+        "label": "Mounting heart device",
+        "status": "OK"
+      },
+      {
+        "label": "Distance module (3500 km)",
+        "status": "resolved"
+      },
+      {
+        "label": "Memory of our moments",
+        "status": "ready"
+      },
+      {
+        "label": "Voice & hug boxes",
+        "status": "active"
+      },
+      {
+        "label": "Calibrating next call countdown",
+        "status": "done"
+      },
+      {
+        "label": "Waking the desktop",
+        "status": "❤"
+      }
+    ]
   },
   "lock": {
     "title": "It's locked, sweetheart",
@@ -153,7 +180,8 @@
     "byMe": "by me",
     "lyrics": "Lyrics",
     "playlist": "Playlist",
-    "off": "Off"
+    "off": "Off",
+    "cover": "Cover"
   },
   "memories": {
     "timeline": "Timeline",
@@ -184,7 +212,13 @@
     "sunset": "Sunset",
     "unavailable": "Couldn't fetch the weather right now",
     "daddyCity": "Daddy's weather",
-    "daughterCity": "Your weather"
+    "daughterCity": "Your weather",
+    "feelsLike": "Feels like",
+    "pressure": "Pressure",
+    "cloudCover": "Cloud cover",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "tempDiff": "Diff from Daddy's weather: {{diff}}°"
   },
   "heartbeat": {
     "feelIt": "Feel my heartbeat",
@@ -266,7 +300,8 @@
     "rating": "Rating",
     "watchTogether": "Let's watch together",
     "myRating": "My rating",
-    "daddyRating": "Daddy's rating"
+    "daddyRating": "Daddy's rating",
+    "poster": "Poster"
   },
   "vault": {
     "locked": "This place has its own passcode 🔐",
@@ -299,7 +334,12 @@
     "done": "You solved it! 🎉",
     "start": "Start",
     "moves": "moves",
-    "choose": "Pick a puzzle"
+    "choose": "Pick a puzzle",
+    "create": "Create your own puzzle",
+    "newTitle": "Puzzle name",
+    "winStats": "Time: {{time}} • Moves: {{moves}}",
+    "playAgain": "Play again",
+    "byMe": "Made by me"
   },
   "hug": {
     "hugDaddy": "Hug Daddy",
@@ -349,7 +389,29 @@
       "nausea": "Nausea",
       "sleep": "Sleep",
       "appetite": "Appetite"
-    }
+    },
+    "prevMonth": "Prev month",
+    "nextMonth": "Next month",
+    "lastPeriod": "Last period",
+    "trendTitle": "Cycle length trend",
+    "trendRange": "Normal range: 21–35 days",
+    "lengthTitle": "Period length",
+    "totalDoses": "Recent doses",
+    "taken": "Taken",
+    "skipped": "Skipped",
+    "lastTwoWeeks": "Last two weeks",
+    "symptomReport": "Symptoms",
+    "days30": "30 days",
+    "days90": "90 days",
+    "severityTrend": "Symptom severity",
+    "insights": "Insights",
+    "insightRegular": "Your cycles are regular (spread under 3 days) 🌸",
+    "insightIrregular": "Your cycle length varies a bit — mention it to your doctor if it continues 🌿",
+    "insightOutlier": "A {{n}}-day cycle fell outside 21–35 days — worth a look 👀",
+    "insightMedsGood": "Great medication adherence ({{n}}%) 💪",
+    "insightMedsLow": "You missed many doses ({{n}}%) — try not to forget 💊",
+    "insightTopSymptom": "Most frequent symptom lately: {{name}}",
+    "insightNext": "Next period predicted: {{date}}"
   },
   "library": {
     "shelf": "Shelf",
@@ -373,7 +435,17 @@
     "page": "Page {{n}}",
     "addNote": "Add a note",
     "noteSaved": "Your note was saved",
-    "fontSize": "Text size"
+    "fontSize": "Text size",
+    "newBook": "New book",
+    "bookTitle": "Book title",
+    "bookSubtitle": "Subtitle (optional)",
+    "startWriting": "Start writing",
+    "bookCreated": "Your book is ready ✍",
+    "download": "Download book (PDF)",
+    "pdfPreparing": "Preparing the print edition…",
+    "pdfBuilding": "Building PDF: {{cur}} of {{total}}",
+    "pdfReady": "Your book PDF is ready ✨",
+    "pdfFailed": "Couldn't build the PDF; please try again"
   },
   "settings": {
     "language": "Language",
@@ -399,7 +471,17 @@
     "locationDenied": "Couldn't find you, sweetheart; I'll use the city Baba saved.",
     "locationUpdated": "Your location is fresh ❤",
     "privacy": "Location is used inside this app only. The city and coordinates stay on our own server and are never sent anywhere else.",
-    "savedLocally": "Saved on your device; I will send it when the internet is better ❤"
+    "savedLocally": "Saved on your device; I will send it when the internet is better ❤",
+    "backgrounds": "Backgrounds",
+    "backgroundsHint": "Lock and desktop wallpapers — both you and Daddy can change them",
+    "bgLock": "Lock screen background",
+    "bgDesktopDay": "Desktop background (day)",
+    "bgDesktopNight": "Desktop background (night)",
+    "bgChoose": "Choose image",
+    "layout": "Desktop layout",
+    "layoutHint": "Drag icons to rearrange; the order is saved",
+    "layoutReset": "Reset layout",
+    "layoutResetDone": "Layout restored to its default ✨"
   },
   "notifications": {
     "title": "Notification Center",
@@ -505,10 +587,6 @@
     "stats": {
       "received": "Received",
       "given": "Given",
-      "value": "Total value",
-      "average": "Average",
-      "tomans": "Toman",
-      "noPrice": "No price recorded",
       "pieces": "gifts"
     },
     "years": "Gift years",
@@ -517,12 +595,6 @@
     "fromDaddy": "From daddy",
     "searchPlaceholder": "Which gift are you looking for?",
     "empty": "The book is empty. Log the first gift 🎁",
-    "bands": {
-      "low": "Small and simple",
-      "medium": "Nice",
-      "high": "Special",
-      "unknown": "Unknown"
-    },
     "reaction": "Your reaction",
     "reactionPlaceholder": "How did it feel? What did you say?",
     "favorite": "Favourite",
@@ -536,10 +608,6 @@
     "me": "Me",
     "occasion": "Occasion",
     "date": "Date",
-    "price": "Price",
-    "pricePlaceholder": "e.g. 250 (Toman)",
-    "band": "Price band",
-    "bandAuto": "Calculate for me",
     "descriptionPlaceholder": "Short description",
     "photo": "Gift photo"
   },

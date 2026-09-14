@@ -9,6 +9,7 @@ from core.models import TimeStamped
 
 class Puzzle(TimeStamped):
     LEVELS = [(3, "۳×۳ آسان"), (4, "۴×۴ متوسط"), (5, "۵×۵ سخت")]
+    AUTHORS = [("daddy", "بابا"), ("daughter", "دخترم")]
     title = models.CharField("عنوان", max_length=140)
     level = models.PositiveSmallIntegerField("سطح", choices=LEVELS, default=3)
     image = models.ImageField("تصویر پازل", upload_to="puzzles/")
@@ -17,6 +18,7 @@ class Puzzle(TimeStamped):
     hint_text = models.CharField("متن راهنما", max_length=200, default="بابا اومد کمکت ❤")
     max_hints = models.PositiveSmallIntegerField("حداکثر راهنما", default=3)
     is_active = models.BooleanField("فعال", default=True)
+    created_by = models.CharField("سازنده", max_length=10, choices=AUTHORS, default="daddy")
 
     class Meta:
         verbose_name = "پازل"

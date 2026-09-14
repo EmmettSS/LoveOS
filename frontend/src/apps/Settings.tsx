@@ -1,21 +1,24 @@
 /**
  * Settings — تنظیمات
- * زبان، تم، صدا، لرزش، اندازه‌ی فونت، موقعیت مکانی، اعلان و نصب PWA.
+ * زبان، تم، صدا، لرزش، اندازه‌ی فونت، پس‌زمینه‌ها، موقعیت مکانی، اعلان و نصب PWA.
  *
  * روش کار: هر تغییر **بلافاصله** روی خود دستگاه اعمال می‌شود (خوش‌بینانه) و
  * بعد برای سرور فرستاده می‌شود؛ اگر شبکه/سرور در دسترس نبود، تغییر محلی می‌ماند
  * و در اولین فرصت همگام می‌شود. این‌طوری هیچ‌وقت «دکمه را زدم ولی هیچی نشد» پیش نمی‌آید.
+ *
+ * پس‌زمینه‌های قفل و دسکتاپ را هر دو طرف (بابا و دخترم) می‌توانند عوض کنند.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
-import { patch } from '../shared/api'
+import { patch, upload } from '../shared/api'
 import { getStoredSettings, setStoredSetting, syncSettings } from '../shared/prefs'
 import { setLanguage } from '../shared/i18n'
 import { digits } from '../shared/format'
 import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../shared/geo'
-import { playClick, setSoundEnabled, vibrate } from '../shared/sound'
+import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
+import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -30,24 +33,12 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   )
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!on)}
-      className="h-7 w-12 shrink-0 rounded-full p-0.5 transition"
-      style={{ background: on ? 'var(--os-accent)' : 'var(--os-border)' }}
-      aria-label="toggle"
-    >
-      <span className="block h-6 w-6 rounded-full bg-white transition-transform" style={{ transform: `translateX(${on ? 20 : 0}px)` }} />
-    </button>
-  )
-}
-
 export default function Settings() {
   const { t, i18n } = useTranslation()
   const config = useOS((s) => s.config)
   const setConfig = useOS((s) => s.setConfig)
   const patchConfig = useOS((s) => s.patchConfig)
+  const resetAppOrder = useOS((s) => s.resetAppOrder)
   const logout = useOS((s) => s.logout)
   const openApp = useOS((s) => s.openApp)
   const showToast = useOS((s) => s.showToast)
@@ -171,6 +162,45 @@ export default function Settings() {
         </div>
       </Row>
 
+      {/* ---------------------------------------------------- پس‌زمینه‌ها --- */}
+      <Row label={t('settings.backgrounds')} hint={t('settings.backgroundsHint')}>
+        <div />
+      </Row>
+      <BackgroundPicker
+        field="lock_background"
+        label={t('settings.bgLock')}
+        current={config.lock_background}
+        onUploaded={(url) => { patchConfig({ lock_background: url }); void save({ lock_background: url }, { silent: true }) }}
+        onReset={() => void save({ lock_background: '' }, { silent: true })}
+      />
+      <BackgroundPicker
+        field="desktop_background_day"
+        label={t('settings.bgDesktopDay')}
+        current={config.desktop_background_day}
+        onUploaded={(url) => { patchConfig({ desktop_background_day: url }); void save({ desktop_background_day: url }, { silent: true }) }}
+        onReset={() => void save({ desktop_background_day: '' }, { silent: true })}
+      />
+      <BackgroundPicker
+        field="desktop_background_night"
+        label={t('settings.bgDesktopNight')}
+        current={config.desktop_background_night}
+        onUploaded={(url) => { patchConfig({ desktop_background_night: url }); void save({ desktop_background_night: url }, { silent: true }) }}
+        onReset={() => void save({ desktop_background_night: '' }, { silent: true })}
+      />
+
+      {/* --------------------------------------------------- چیدمان دسکتاپ */}
+      <Row label={t('settings.layout')} hint={t('settings.layoutHint')}>
+        <button
+          className="os-chip"
+          onClick={() => {
+            resetAppOrder()
+            showToast(t('settings.layoutResetDone'), 'love')
+          }}
+        >
+          <span className="inline-flex items-center gap-1"><Icon name="retry" size={13} /> {t('settings.layoutReset')}</span>
+        </button>
+      </Row>
+
       {/* ------------------------------------------------ موقعیت مکانی --- */}
       <Row label={t('settings.location')} hint={locationHint || t('settings.locationHint')}>
         <div className="flex flex-wrap items-center gap-2">
@@ -227,6 +257,74 @@ export default function Settings() {
       <button className="os-btn w-full" onClick={() => void logout()}>
         <span className="inline-flex items-center justify-center gap-2"><Icon name="logout" size={15} /> {t('settings.logout')}</span>
       </button>
+    </div>
+  )
+}
+
+/** انتخاب‌گر یک تصویر پس‌زمینه: پیش‌نمایش + آپلود + بازنشانی */
+function BackgroundPicker({
+  field,
+  label,
+  current,
+  onUploaded,
+  onReset,
+}: {
+  field: 'lock_background' | 'desktop_background_day' | 'desktop_background_night'
+  label: string
+  current: string | null
+  onUploaded: (url: string) => void
+  onReset: () => void
+}) {
+  const { t } = useTranslation()
+  const showToast = useOS((s) => s.showToast)
+  const fileRef = useRef<HTMLInputElement | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const pick = async (file: File) => {
+    setBusy(true)
+    const fd = new FormData()
+    fd.append(field, file, file.name)
+    try {
+      const res = await upload<{ config: Config }>('/settings', fd)
+      const url = res?.config?.[field] || ''
+      if (url) onUploaded(url)
+      else showToast(t('settings.savedLocally'), 'info')
+    } catch {
+      playError()
+      showToast(t('settings.savedLocally'), 'info')
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="os-card flex flex-wrap items-center gap-3 p-3">
+      <div className="min-w-0 flex-1">
+        <span className="block text-sm">{label}</span>
+        {current && (
+          <img src={current} alt="" className="mt-2 h-14 w-24 rounded-lg object-cover" style={{ border: '1px solid var(--os-border)' }} />
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button className="os-chip" disabled={busy} onClick={() => fileRef.current?.click()}>
+          <span className="inline-flex items-center gap-1"><Icon name="camera" size={13} /> {t('settings.bgChoose')}</span>
+        </button>
+        {current && (
+          <button className="os-chip" onClick={onReset} title={t('os.delete')}>
+            <Icon name="trash" size={13} />
+          </button>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void pick(f)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }

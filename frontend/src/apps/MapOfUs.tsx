@@ -39,6 +39,15 @@ interface MapData {
   end_message: string
 }
 
+/**
+ * مرز تقریبی کشور ایران — دید اولیه‌ی نقشه روی ایران باشد نه کل دنیا.
+ * [west, south, east, north]
+ */
+const IRAN_BOUNDS: [[number, number], [number, number]] = [
+  [44.3, 25.2],
+  [63.3, 39.5],
+]
+
 /** خط منحنی (کمان) بین دو نقطه برای حس «پرواز» */
 function arc(a: [number, number], b: [number, number], steps = 64): [number, number][] {
   const pts: [number, number][] = []
@@ -114,8 +123,9 @@ export default function MapOfUs() {
         },
         layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
       },
-      center: [(daddy[0] + daughter[0]) / 2, (daddy[1] + daughter[1]) / 2],
-      zoom: 4,
+      // دید اولیه: کشور ایران (نه کل دنیا)
+      center: [(IRAN_BOUNDS[0][0] + IRAN_BOUNDS[1][0]) / 2, (IRAN_BOUNDS[0][1] + IRAN_BOUNDS[1][1]) / 2],
+      zoom: 5.2,
       attributionControl: { compact: true },
     })
     map.current = m
@@ -139,7 +149,8 @@ export default function MapOfUs() {
           .setLngLat(daughter)
           .addTo(m),
       ]
-      m.fitBounds([daddy, daughter], { padding: 70, duration: 1400 })
+      // روی ایران بنشینیم نه روی کل دنیا؛ دکمه‌ی «پرواز» بعد مسیر را نشان می‌دهد
+      m.fitBounds(IRAN_BOUNDS, { padding: 30, duration: 1400 })
     })
 
     // راز ⑨ — زوم کامل روی شهر بابا

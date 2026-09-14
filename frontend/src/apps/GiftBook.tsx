@@ -1,15 +1,18 @@
 /**
  * GiftBook — دفتر هدیه‌ها 🎁
  *
- * هر هدیه‌ای که رد و بدل می‌شود اینجا ثبت می‌شود: کِی، برای کی، با چه قیمتی و
- * مهم‌تر از همه «واکنشِ لحظه‌ی گرفتنش». صفحه‌ی اول آمار کلی است (تعداد، ارزش کل،
- * نمودار سال‌ها) و بعد دفتر با فیلترهای سال/مناسبت/دهنده.
+ * هر هدیه‌ای که رد و بدل می‌شود اینجا ثبت می‌شود: کِی، برای کی و مهم‌تر از همه
+ * «واکنشِ لحظه‌ی گرفتنش». صفحه‌ی اول آمار کلی است (تعداد دریافتی/داده‌شده،
+ * نمودار سال‌های شمسی) و بعد دفتر با فیلترهای سال/مناسبت/دهنده.
+ *
+ * نکته: هدیه با پول قابل سنجیدن نیست؛ هیچ بخش قیمت/مبلغی در این اپ وجود ندارد.
  */
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
+import { DateField } from '../shared/JalaliDatePicker'
 import { del, patch, upload } from '../shared/api'
 import { digits, formatDate } from '../shared/format'
 import { playError, playSuccess } from '../shared/sound'
@@ -29,9 +32,6 @@ interface Gift {
   giver_label: string
   receiver: Owner
   receiver_label: string
-  price: number | null
-  currency: string
-  price_band: string
   description: string
   reaction: string
   photo: string | null
@@ -46,10 +46,7 @@ interface Stats {
   given_count: number
   from_daddy_count: number
   total_count: number
-  total_value: number | null
-  has_prices: boolean
-  average_value: number | null
-  years: { year: number; count: number; from_daddy: number; from_daughter: number; value: number }[]
+  years: { year: number; count: number; from_daddy: number; from_daughter: number }[]
   max_year_count: number
   by_occasion: { name: string; icon: string; count: number }[]
   favorites: Gift[]
@@ -59,16 +56,12 @@ interface Stats {
 interface Occasions {
   items: { id: number; name: string; icon: string; count: number }[]
   years: number[]
-  bands: { key: string; label: string }[]
 }
-
-const BAND_EMOJI: Record<string, string> = { low: '🌱', medium: '🎈', high: '💎' }
 
 export default function GiftBook() {
   const { t } = useTranslation()
-  const [filters, setFilters] = useState<{ giver: string; band: string; year: string; occasion: string }>({
+  const [filters, setFilters] = useState<{ giver: string; year: string; occasion: string }>({
     giver: 'all',
-    band: 'all',
     year: 'all',
     occasion: 'all',
   })
@@ -78,7 +71,6 @@ export default function GiftBook() {
   const query = useMemo(() => {
     const p = new URLSearchParams()
     if (filters.giver !== 'all') p.set('giver', filters.giver)
-    if (filters.band !== 'all') p.set('band', filters.band)
     if (filters.year !== 'all') p.set('year', filters.year)
     if (filters.occasion !== 'all') p.set('occasion', filters.occasion)
     if (q.trim()) p.set('q', q.trim())
@@ -102,21 +94,9 @@ export default function GiftBook() {
     <div className="space-y-3">
       {/* ------------------------------------------------------------ آمار */}
       {s && (
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2">
           <StatCard label={t('gifts.stats.received')} value={digits(s.received_count)} emoji="🎀" />
           <StatCard label={t('gifts.stats.given')} value={digits(s.given_count)} emoji="🤲" />
-          <StatCard
-            label={t('gifts.stats.value')}
-            value={s.has_prices ? digits(s.total_value ?? 0) : '—'}
-            emoji="💰"
-            hint={s.has_prices ? t('gifts.stats.tomans') : t('gifts.stats.noPrice')}
-          />
-          <StatCard
-            label={t('gifts.stats.average')}
-            value={s.average_value ? digits(s.average_value) : '—'}
-            emoji="📊"
-            hint={s.has_prices ? t('gifts.stats.tomans') : undefined}
-          />
         </div>
       )}
 
@@ -142,7 +122,7 @@ export default function GiftBook() {
           <span className="text-2xl">{s.latest.occasion_icon}</span>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] os-muted">{t('gifts.latest')}</p>
-            <p className="truncate text-sm font-semibold">{s.latest.name}</p>
+            <p className="break-words text-sm font-semibold">{s.latest.name}</p>
           </div>
           <span className="shrink-0 text-[11px] os-muted">{formatDate(s.latest.given_on)}</span>
         </div>
@@ -172,15 +152,6 @@ export default function GiftBook() {
           onChange={(v) => setFilters((f) => ({ ...f, giver: v }))}
         />
         <div className="flex flex-wrap gap-1.5">
-          {(meta.data?.bands || []).map((b) => (
-            <button
-              key={b.key}
-              className={`os-chip ${filters.band === b.key ? 'os-chip-active' : ''}`}
-              onClick={() => setFilters((f) => ({ ...f, band: f.band === b.key ? 'all' : b.key }))}
-            >
-              {BAND_EMOJI[b.key] || '🎁'} {t(`gifts.bands.${b.key}`, { defaultValue: b.label })}
-            </button>
-          ))}
           {(meta.data?.years || []).map((y) => (
             <button
               key={y}
@@ -197,7 +168,6 @@ export default function GiftBook() {
         {adding && meta.data && (
           <AddGiftForm
             occasions={meta.data.items}
-            bands={meta.data.bands}
             onDone={async () => {
               setAdding(false)
               await reloadAll()
@@ -220,14 +190,13 @@ export default function GiftBook() {
   )
 }
 
-function StatCard({ label, value, emoji, hint }: { label: string; value: string; emoji: string; hint?: string }) {
+function StatCard({ label, value, emoji }: { label: string; value: string; emoji: string }) {
   return (
     <div className="os-card p-3">
       <p className="text-[10px] os-muted">
         {emoji} {label}
       </p>
       <p className="mt-1 text-lg font-bold">{value}</p>
-      {hint && <p className="text-[9px] os-muted">{hint}</p>}
     </div>
   )
 }
@@ -242,7 +211,6 @@ function YearChart({ years, maxCount }: { years: Stats['years']; maxCount: numbe
             <span>{digits(y.year)}</span>
             <span className="os-muted">
               {digits(y.count)} {t('gifts.stats.pieces')}
-              {y.value ? ` • ${digits(y.value)}` : ''}
             </span>
           </div>
           <div className="flex h-2.5 overflow-hidden rounded-full" style={{ background: 'var(--os-border)' }}>
@@ -300,13 +268,12 @@ function GiftCard({ gift, index, onChange }: { gift: Gift; index: number; onChan
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
+          <p className="break-words text-sm font-semibold">
             {gift.is_favorite && '⭐ '}
             {gift.name}
           </p>
-          <p className="truncate text-[11px] os-muted">
+          <p className="break-words text-[11px] os-muted">
             {gift.giver_label} → {gift.receiver_label} • {formatDate(gift.given_on)}
-            {gift.price ? ` • ${digits(gift.price)}` : ''}
           </p>
         </div>
         <Icon name={open ? 'minus' : 'forward'} size={15} />
@@ -324,9 +291,6 @@ function GiftCard({ gift, index, onChange }: { gift: Gift; index: number; onChan
               {gift.description && <p className="text-xs leading-6 os-muted">{gift.description}</p>}
               <div className="flex flex-wrap gap-1.5 text-[10px]">
                 {gift.occasion_name && <span className="os-chip">{gift.occasion_icon} {gift.occasion_name}</span>}
-                <span className="os-chip">
-                  {BAND_EMOJI[gift.price_band] || '🎁'} {t(`gifts.bands.${gift.price_band || 'unknown'}`)}
-                </span>
                 <span className="os-chip">{gift.recorded_by_label}</span>
               </div>
 
@@ -370,11 +334,9 @@ function GiftCard({ gift, index, onChange }: { gift: Gift; index: number; onChan
 
 function AddGiftForm({
   occasions,
-  bands,
   onDone,
 }: {
   occasions: Occasions['items']
-  bands: Occasions['bands']
   onDone: () => Promise<void>
 }) {
   const { t } = useTranslation()
@@ -383,8 +345,6 @@ function AddGiftForm({
   const [receiver, setReceiver] = useState<Owner>('daughter')
   const [occasion, setOccasion] = useState('')
   const [givenOn, setGivenOn] = useState(() => new Date().toISOString().slice(0, 10))
-  const [price, setPrice] = useState('')
-  const [band, setBand] = useState('')
   const [description, setDescription] = useState('')
   const [reaction, setReaction] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
@@ -408,8 +368,6 @@ function AddGiftForm({
     fd.append('description', description)
     fd.append('reaction', reaction)
     if (occasion) fd.append('occasion', occasion)
-    if (price) fd.append('price', price)
-    if (band) fd.append('price_band', band)
     if (photo) fd.append('photo', photo, photo.name)
     try {
       await upload('/gifts', fd)
@@ -461,30 +419,9 @@ function AddGiftForm({
         </label>
         <label className="os-label">
           {t('gifts.date')}
-          <input className="os-input mt-1" type="date" value={givenOn} onChange={(e) => setGivenOn(e.target.value)} />
-        </label>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="os-label">
-          {t('gifts.price')}
-          <input
-            className="os-input mt-1"
-            inputMode="numeric"
-            placeholder={t('gifts.pricePlaceholder')}
-            value={price}
-            onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ''))}
-          />
-        </label>
-        <label className="os-label">
-          {t('gifts.band')}
-          <select className="os-input mt-1" value={band} onChange={(e) => setBand(e.target.value)}>
-            <option value="">{t('gifts.bandAuto')}</option>
-            {bands.map((b) => (
-              <option key={b.key} value={b.key}>
-                {BAND_EMOJI[b.key] || '🎁'} {b.label}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <DateField value={givenOn} onChange={setGivenOn} />
+          </div>
         </label>
       </div>
       <textarea

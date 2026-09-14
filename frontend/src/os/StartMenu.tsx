@@ -76,7 +76,12 @@ export function StartMenu() {
                   >
                     <Icon name={app.icon} size={22} />
                   </span>
-                  <span className="max-w-[72px] truncate text-[11px]">{t(app.titleKey)}</span>
+                  <span
+                className="max-w-[86px] text-center text-[11px] leading-4 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
+                title={t(app.titleKey)}
+              >
+                {t(app.titleKey)}
+              </span>
                 </button>
               ))}
             </div>

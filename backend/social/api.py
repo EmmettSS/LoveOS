@@ -377,18 +377,41 @@ WEATHER_CODES = {
 }
 
 
+def _wind_compass(deg: float | None) -> str:
+    if deg is None:
+        return "—"
+    points = ["شمالی", "شمال‌شرقی", "شرقی", "جنوب‌شرقی", "جنوبی", "جنوب‌غربی", "غربی", "شمال‌غربی"]
+    return points[int(((deg % 360) + 22.5) // 45) % 8]
+
+
+def _forecast_day(day: dict, i: int) -> dict:
+    code = int(day.get("weather_code") or 0)
+    label, icon = WEATHER_CODES.get(code, ("نامعلوم", "cloud"))
+    return {
+        "date": (day.get("date") or [None])[i],
+        "t_max": (day.get("temperature_2m_max") or [None])[i],
+        "t_min": (day.get("temperature_2m_min") or [None])[i],
+        "precip_prob": (day.get("precipitation_probability_max") or [None])[i],
+        "label": label,
+        "icon": icon,
+    }
+
+
 def fetch_weather(lat: float, lng: float, tz: str) -> dict:
-    """Open-Meteo — بدون کلید، رایگان."""
+    """Open-Meteo — بدون کلید، رایگان. جزئیات کامل + پیش‌بینی ۵ روزه."""
     try:
         resp = requests.get(
             "https://api.open-meteo.com/v1/forecast",
             params={
                 "latitude": lat,
                 "longitude": lng,
-                "current": "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
-                "daily": "sunrise,sunset",
+                "current": (
+                    "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,"
+                    "wind_speed_10m,wind_direction_10m,pressure_msl,cloud_cover,is_day,uv_index"
+                ),
+                "daily": "sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code",
                 "timezone": tz,
-                "forecast_days": 1,
+                "forecast_days": 5,
             },
             timeout=8,
         )
@@ -400,16 +423,23 @@ def fetch_weather(lat: float, lng: float, tz: str) -> dict:
         return {
             "ok": True,
             "temp": cur.get("temperature_2m"),
+            "feels_like": cur.get("apparent_temperature"),
             "humidity": cur.get("relative_humidity_2m"),
             "wind": cur.get("wind_speed_10m"),
+            "wind_dir": _wind_compass(cur.get("wind_direction_10m")),
+            "pressure": cur.get("pressure_msl"),
+            "cloud_cover": cur.get("cloud_cover"),
+            "uv": cur.get("uv_index"),
+            "is_day": bool(cur.get("is_day", 1)),
             "code": code,
             "label": label,
             "icon": icon,
             "sunrise": (daily.get("sunrise") or [None])[0],
             "sunset": (daily.get("sunset") or [None])[0],
+            "forecast": [_forecast_day(daily, i) for i in range(min(5, len(daily.get("date") or [])))],
         }
     except Exception as exc:  # offline sandbox fallback
-        return {"ok": False, "error": str(exc), "temp": None, "label": "—", "icon": "cloud"}
+        return {"ok": False, "error": str(exc), "temp": None, "label": "—", "icon": "cloud", "forecast": []}
 
 
 @api_view(["GET"])

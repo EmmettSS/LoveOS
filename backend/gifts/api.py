@@ -120,7 +120,16 @@ def gifts(request):
             qs = qs.filter(occasion_id=int(occasion))
         year = request.GET.get("year")
         if year and str(year).isdigit():
-            qs = qs.filter(given_on__year=int(year))
+            # «سال» در LoveOS یعنی سال شمسی؛ فیلتر به بازه‌ی میلادی تبدیل می‌شود
+            from core.jalali import from_jalali
+
+            jy = int(year)
+            try:
+                start = from_jalali(jy, 1, 1)
+                end = from_jalali(jy + 1, 1, 1)
+                qs = qs.filter(given_on__gte=start, given_on__lt=end)
+            except (ValueError, OverflowError):
+                pass
         band = request.GET.get("band")
         if band in dict(PRICE_BANDS):
             # هم رنج دستی و هم رنج محاسبه‌شده از قیمت، هر دو معیارند
@@ -191,8 +200,10 @@ def gift_item(request, pk: int):
 @api_view(["GET"])
 @require_session
 def occasions(request):
+    from core.jalali import to_jalali
+
     items = GiftOccasion.objects.filter(is_active=True)
-    years = sorted({g.given_on.year for g in Gift.objects.all()}, reverse=True)
+    years = sorted({to_jalali(g.given_on)[0] for g in Gift.objects.all()}, reverse=True)
     return Response(
         {
             "items": [
@@ -215,9 +226,12 @@ def stats(request):
     priced = [g for g in gifts_qs if g.price is not None]
     total_value = round(sum(float(g.price) for g in priced)) if priced else None
 
+    from core.jalali import to_jalali
+
     years: dict[int, dict] = {}
     for g in gifts_qs:
-        bucket = years.setdefault(g.year, {"year": g.year, "count": 0, "from_daddy": 0, "from_daughter": 0, "value": 0})
+        jy = to_jalali(g.given_on)[0]
+        bucket = years.setdefault(jy, {"year": jy, "count": 0, "from_daddy": 0, "from_daughter": 0, "value": 0})
         bucket["count"] += 1
         if g.giver == "daddy":
             bucket["from_daddy"] += 1

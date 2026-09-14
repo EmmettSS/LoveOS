@@ -3,7 +3,7 @@
  * boot → lock → desktop، به‌علاوه‌ی پرده‌ی رازها، توست، کد کونامی و تم روز/شب.
  */
 import { AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Boot } from './os/Boot'
@@ -73,6 +73,19 @@ export default function App() {
       setPhase('desktop')
     }
   }, [ready, phase, setPhase])
+
+  // باغچه: با هر «ورود به پروژه» (باز شدن قفل / ورود تازه) گل‌ها به
+  // مرحله‌ی اول برمی‌گردند تا هر بازدید یک باغ تازه باشد.
+  const wasDesktop = useRef(false)
+  useEffect(() => {
+    if (phase !== 'desktop') {
+      wasDesktop.current = false
+      return
+    }
+    if (wasDesktop.current) return
+    wasDesktop.current = true
+    post('/garden/reset').catch(() => undefined)
+  }, [phase])
 
   // پایان نشست از سمت سرور
   useEffect(() => {

@@ -170,3 +170,45 @@ export function SectionTitle({ children, action }: { children: React.ReactNode; 
     </div>
   )
 }
+
+/**
+ * Toggle — کلید روشن/خاموش مشترک
+ *
+ * باگ قدیمی: در حالت RTL دایره با translateX(20px) همیشه به راست می‌رفت و
+ * از ریل بیرون می‌زد. حالا دایره absolute است و جابه‌جایی به‌صورت
+ * «آغاز/پایان منطقی» محاسبه می‌شود؛ در هر جهت کاملاً داخل ریل می‌ماند.
+ */
+export function Toggle({
+  on,
+  onChange,
+  disabled = false,
+  label = 'toggle',
+}: {
+  on: boolean
+  onChange: (v: boolean) => void
+  disabled?: boolean
+  label?: string
+}) {
+  const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
+  const TRAVEL = 20 // 48 (ریل) − 24 (دایره) − ۲×۲ (حاشیه)
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      className="relative h-7 w-12 shrink-0 rounded-full transition-colors duration-300 disabled:opacity-50"
+      style={{ background: on ? 'var(--os-accent)' : 'var(--os-border)' }}
+    >
+      <motion.span
+        className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow"
+        style={{ insetInlineStart: '2px' }}
+        initial={false}
+        animate={{ x: on ? (isRtl ? -TRAVEL : TRAVEL) : 0 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+      />
+    </button>
+  )
+}

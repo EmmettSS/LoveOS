@@ -6,7 +6,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from accounts.models import DeviceSession, LiveLocation, UnlockAttempt, UserConfig
@@ -178,20 +179,28 @@ def me(request):
     return Response(data)
 
 
+BACKGROUND_FIELDS = ("lock_background", "desktop_background_day", "desktop_background_night")
+
+
 @api_view(["GET", "POST", "PATCH", "PUT"])
+@parser_classes([MultiPartParser, FormParser])
 @require_session
 def update_settings(request):
     """
-    تنظیمات سمت دخترم: زبان، تم، صدا، اندازه فونت.
+    تنظیمات سمت دخترم: زبان، تم، صدا، اندازه فونت و تصاویر پس‌زمینه.
 
-    هم POST و هم PATCH پذیرفته می‌شود (و GET آخرین وضعیت را برمی‌گرداند) تا
-    صفحه‌ی تنظیمات روی هر نسخه‌ای از فرانت‌اند بدون خطای 405 کار کند.
+    • زبان/تم/صدا/فونت: JSON معمولی
+    • تصاویر (پس‌زمینه‌ی قفل و دسکتاپ): multipart با فیلد عکس؛ مقدار خالی = حذف
+      هر دو طرف (بابا و دخترم) می‌توانند این تصاویر را عوض کنند.
     """
     cfg = UserConfig.get_solo()
     if request.method == "GET":
         return Response({"ok": True, "config": public_config(cfg)})
 
-    data = request.data if isinstance(request.data, dict) else {}
+    # multipart یک QueryDict برمی‌گرداند؛ JSON یک dict — هر دو را یک‌دست می‌کنیم
+    raw = request.data
+    data = dict(raw.items()) if not isinstance(raw, dict) else raw
+
     validators = {
         "language": ("fa", "en"),
         "theme": ("auto", "day", "night"),
@@ -206,8 +215,24 @@ def update_settings(request):
             cfg.font_scale = min(1.6, max(0.7, float(data["font_scale"])))
         except (TypeError, ValueError):
             pass
+
+    # تصاویر پس‌زمینه: فایل = جایگزینی، رشته‌ی خالی = بازنشانی
+    changed_bg = []
+    for field in BACKGROUND_FIELDS:
+        upload = request.FILES.get(field)
+        if upload is not None:
+            setattr(cfg, field, upload)
+            changed_bg.append(field)
+        elif data.get(field) == "":
+            setattr(cfg, field, None)
+            changed_bg.append(f"{field}=reset")
+
     cfg.save()
-    log_activity("تغییر تنظیمات", "settings", ", ".join(sorted(data.keys()))[:120])
+    log_activity(
+        "تغییر تنظیمات",
+        "settings",
+        (", ".join(sorted(data.keys())) + (" " if changed_bg else "") + " ".join(changed_bg))[:120],
+    )
     return Response({"ok": True, "config": public_config(cfg)})
 
 

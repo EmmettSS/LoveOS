@@ -12,8 +12,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
+import { DateField } from '../shared/JalaliDatePicker'
 import { del, post, upload } from '../shared/api'
-import { digits, formatDate, weekdayName } from '../shared/format'
+import { digits, formatDate, monthKeyLabel, weekdayName, weekdayNameByIndex } from '../shared/format'
 import { formatClock, micSupported, useRecorder } from '../shared/recorder'
 import { playError, playSuccess, vibrate } from '../shared/sound'
 import { Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
@@ -205,7 +206,9 @@ function NextCallHero({ next, stats, onGo }: { next: Appointment | null; stats: 
 
       <div className="flex items-center justify-between text-[11px] os-muted">
         <span>⏰ {t('calls.reminderAt', { minutes: digits(60) })}</span>
-        <span>🎯 {t('calls.record')}: {stats.record_title ? stats.record_title.replace('رکورد تماس: ', '') : '—'}</span>
+        <span>
+          🎯 {t('calls.record')}: {stats.longest ? `${stats.longest.duration_label} • ${formatDate(stats.longest.happened_on)}` : '—'}
+        </span>
       </div>
     </div>
   )
@@ -292,7 +295,7 @@ function MonthChart({ months }: { months: Stats['months'] }) {
             animate={{ height: `${Math.max(6, (m.minutes / max) * 88)}px` }}
             transition={{ type: 'spring', stiffness: 200, damping: 24 }}
           />
-          <span className="text-[9px] os-muted">{m.label.slice(5)}</span>
+          <span className="text-[9px] os-muted">{monthKeyLabel(m.key)}</span>
         </div>
       ))}
     </div>
@@ -382,7 +385,7 @@ function WeekTab({
           if (list.length === 0) return null
           return (
             <div key={d} className="os-card p-2.5">
-              <p className="mb-1.5 text-[11px] font-semibold os-muted">{new Date(2024, 0, 6 + d).toLocaleDateString('fa-IR', { weekday: 'long' })}</p>
+              <p className="mb-1.5 text-[11px] font-semibold os-muted">{weekdayNameByIndex(d)}</p>
               <div className="flex flex-wrap gap-1.5">
                 {list.map((s) => (
                   <span
@@ -423,7 +426,7 @@ function WeekTab({
           <select className="os-input" value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
             {[0, 1, 2, 3, 4, 5, 6].map((d) => (
               <option key={d} value={d}>
-                {new Date(2024, 0, 6 + d).toLocaleDateString('fa-IR', { weekday: 'long' })}
+                {weekdayNameByIndex(d)}
               </option>
             ))}
           </select>
@@ -492,8 +495,10 @@ function PlanTab({ appointments, reload }: { appointments: Appointment[]; reload
           onChange={setProposer}
         />
         <div className="flex gap-2">
-          <input className="os-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <input className="os-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <div className="flex-1">
+            <DateField value={date} onChange={setDate} />
+          </div>
+          <input className="os-input w-28" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         <div className="flex items-center gap-2">
           {[15, 30, 45, 60].map((d) => (
@@ -595,8 +600,10 @@ function RescheduleForm({ appointment, onSubmit }: { appointment: Appointment; o
   return (
     <div className="space-y-2 rounded-xl p-2" style={{ background: 'var(--os-border)' }}>
       <div className="flex gap-2">
-        <input className="os-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="os-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <div className="flex-1">
+          <DateField value={date} onChange={setDate} />
+        </div>
+        <input className="os-input w-28" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </div>
       <button className="os-btn w-full !py-2 text-xs" onClick={() => onSubmit(date, time)}>
         {t('calls.sendAlternative')}

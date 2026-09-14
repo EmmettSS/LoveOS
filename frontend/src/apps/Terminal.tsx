@@ -98,7 +98,9 @@ export default function Terminal() {
         onClick={() => inputRef.current?.focus()}
       >
         {lines.map((l, i) => (
-          <pre key={i} className="whitespace-pre-wrap break-words" style={{ color: l.kind === 'in' ? '#ffd98a' : '#b6f4c8' }}>
+          /* term-line → unicode-bidi: plaintext؛ قاطی فارسی و انگلیسی
+             دیگر نمی‌ریزد: هر خط با زبان خودش درست چیده می‌شود */
+          <pre key={i} className="term-line whitespace-pre-wrap" style={{ color: l.kind === 'in' ? '#ffd98a' : '#b6f4c8' }}>
             {l.kind === 'in' ? `$ ${l.text}` : l.text}
           </pre>
         ))}

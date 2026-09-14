@@ -102,13 +102,35 @@ body {
   color: #4b3a2a;
 }
 
-/* ترمینال */
+/* ترمینال
+   نکته‌ی مهم: خروجی ترمینال فارسی و انگلیسی را قاطی دارد. اگر فونت فقط
+   لاتین (monospace) باشد، فارسی با فونت جایگزین و اندازه‌ی متفاوت رندر
+   می‌شود و به‌هم‌ریختگی رخ می‌دهد. Vazirmatn هر دو خط را با یک شکل‌دهی
+   (shaping) یکدست می‌کند و unicode-bidi: plaintext هم ترتیب هر خط را
+   بر اساس نخستین حرف قوی همان خط درست قرار می‌دهد. */
 .terminal {
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
   background: #0d1020;
   color: #b6f4c8;
   direction: ltr;
   text-align: left;
+  letter-spacing: 0;
+}
+.terminal .term-line {
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.terminal input {
+  unicode-bidi: plaintext;
+}
+
+/* رنگ وضعیت‌های موفق در صفحه‌ی بوت */
+:root {
+  --ok: #3fa36a;
+}
+html[data-theme='night'] {
+  --ok: #5fd39a;
 }
 
 /* نبض نشانگر «زنده» روی نقشه */
@@ -116,6 +138,48 @@ body {
   0% { transform: scale(.6); opacity: .45; }
   70% { transform: scale(2.1); opacity: 0; }
   100% { transform: scale(2.1); opacity: 0; }
+}
+
+/* --------------------------------------------------- انیمیشن‌های هوا ---- */
+/* پرتوهای آفتاب */
+@keyframes loveos-rays {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* حرکت افقی ابرها */
+@keyframes loveos-drift {
+  from { transform: translateX(-8%); }
+  50% { transform: translateX(8%); }
+  to { transform: translateX(-8%); }
+}
+/* رعد و برق */
+@keyframes loveos-lightning {
+  0%, 86%, 100% { opacity: 0; }
+  87% { opacity: 0.85; }
+  89% { opacity: 0.15; }
+  91% { opacity: 0.7; }
+  93% { opacity: 0; }
+}
+/* نوسان ملایم برای باد */
+@keyframes loveos-wind {
+  0%, 100% { transform: translateX(0) scaleX(1); opacity: .55; }
+  50% { transform: translateX(14px) scaleX(1.12); opacity: .95; }
+}
+/* بارش عمودی (باران/برف) با CSS خالص تا درکارت زیاد مصرف نشود */
+@keyframes loveos-fall {
+  from { transform: translateY(-18%); }
+  to { transform: translateY(118%); }
+}
+/* شناور شدن ملایم (بغل) */
+@keyframes loveos-heart-rise {
+  0% { transform: translateY(0) scale(.6) rotate(0deg); opacity: 0; }
+  12% { opacity: .9; }
+  100% { transform: translateY(-46vh) scale(1.15) rotate(14deg); opacity: 0; }
+}
+/* درخشش متحرک برای متن گرادیانی */
+@keyframes loveos-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
 
 /* هاله‌ی نرم زیر پنجره‌های دسکتاپ */

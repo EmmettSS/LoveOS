@@ -13,7 +13,7 @@ import { get, post } from '../shared/api'
 import { digits, formatDate, formatTime, weekdayName } from '../shared/format'
 import { playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { APPS } from './appRegistry'
+import { APPS, effectiveAppOrder } from './appRegistry'
 import { Dock } from './Dock'
 import { GlobalSearch } from './GlobalSearch'
 import { NotificationCenter } from './NotificationCenter'
@@ -51,10 +51,32 @@ export function Desktop() {
   const openApp = useOS((s) => s.openApp)
   const showEgg = useOS((s) => s.showEgg)
   const isNight = useNightMode()
+  const appOrder = useOS((s) => s.appOrder)
+  const setAppOrder = useOS((s) => s.setAppOrder)
 
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)
   const [nextCall, setNextCall] = useState<NextCallPayload['item']>(null)
+  // ------------------------------------------------- درگ‌اند‌دراپ آیکن‌ها
+  const [dragKey, setDragKey] = useState<string | null>(null)
+  const [overKey, setOverKey] = useState<string | null>(null)
+
+  const desktopApps = useMemo(() => {
+    const byKey = new Map(APPS.map((a) => [a.key, a]))
+    return effectiveAppOrder(appOrder)
+      .filter((k) => byKey.get(k)?.desktop)
+      .map((k) => byKey.get(k)!)
+  }, [appOrder])
+
+  const dropOn = (targetKey: string) => {
+    if (!dragKey || dragKey === targetKey) return
+    const keys = effectiveAppOrder(appOrder)
+    const from = keys.indexOf(dragKey)
+    const to = keys.indexOf(targetKey)
+    if (from < 0 || to < 0) return
+    keys.splice(to, 0, keys.splice(from, 1)[0])
+    setAppOrder(keys)
+  }
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 15_000)
@@ -90,7 +112,6 @@ export function Desktop() {
       .catch(() => undefined)
   }, [midnight, now, showEgg])
 
-  const desktopApps = useMemo(() => APPS.filter((a) => a.desktop), [])
   const delta = config?.next_meeting_delta
   const bg = isNight
     ? config?.desktop_background_night || '/backgrounds/desktop-night.jpg'
@@ -225,6 +246,7 @@ export function Desktop() {
         </div>
 
         {/* ------------------------------------------------ شبکه‌ی اپ‌ها */}
+        {/* روی دسکتاپ با درگ‌اند‌دراپ می‌توان ترتیب را عوض کرد (ذخیره می‌شود) */}
         <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
           {desktopApps.map((app, i) => (
             <motion.button
@@ -235,15 +257,47 @@ export function Desktop() {
               whileHover={{ y: -6, scale: 1.06 }}
               whileTap={{ scale: 0.94 }}
               onClick={() => { playOpen(); openApp(app.key) }}
+              onDragOver={(e) => {
+                if (!dragKey) return
+                e.preventDefault()
+                setOverKey(app.key)
+              }}
+              onDragLeave={() => setOverKey((k) => (k === app.key ? null : k))}
+              onDrop={(e) => {
+                e.preventDefault()
+                dropOn(app.key)
+                setDragKey(null)
+                setOverKey(null)
+              }}
               className="flex flex-col items-center gap-1.5"
+              style={{
+                opacity: dragKey === app.key ? 0.4 : 1,
+                outline: overKey === app.key && dragKey && dragKey !== app.key ? '2px dashed var(--os-accent)' : 'none',
+                outlineOffset: 4,
+                borderRadius: 18,
+              }}
+              title={t(app.titleKey)}
             >
+              {/* دستگیره‌ی درگ‌اند‌دراپ (فقط دسکتاپ) */}
               <span
-                className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft"
+                draggable
+                onDragStart={(e) => {
+                  setDragKey(app.key)
+                  e.dataTransfer.setData('text/plain', app.key)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => {
+                  setDragKey(null)
+                  setOverKey(null)
+                }}
+                className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
                 style={{ background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`, color: app.color }}
               >
                 <Icon name={app.icon} size={26} />
               </span>
-              <span className="max-w-[76px] truncate text-[11px] leading-4">{t(app.titleKey)}</span>
+              <span className="max-w-[86px] text-center text-[11px] leading-4 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                {t(app.titleKey)}
+              </span>
             </motion.button>
           ))}
         </div>

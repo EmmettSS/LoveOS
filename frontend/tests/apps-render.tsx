@@ -69,9 +69,23 @@ g.fetch = async (url: string, opts: any = {}) => {
   }
   // مسیرهای پویا (کتاب/فصل/اتاق/الهام) از فایل fixture
   if (path.startsWith('/api/weather')) {
+    const day = (offset: number, icon: string, hi: number, lo: number) => ({
+      date: new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10),
+      icon,
+      temp_high: hi,
+      temp_low: lo,
+    })
     return json({
-      daddy: { city: 'رشت', temp: 22, label: 'آفتابی', icon: 'sun' },
-      daughter: { city: 'استانبول', temp: 27, label: 'ابری', icon: 'cloud', is_live: true },
+      daddy: {
+        city: 'رشت', temp: 22, feels_like: 24, humidity: 68, wind: 14, pressure: 1012, cloud_cover: 20,
+        sunrise: '05:41', sunset: '18:55', label: 'آفتابی', icon: 'sun',
+        forecast: [day(1, 'sun', 24, 16), day(2, 'cloud', 23, 15), day(3, 'rain', 20, 14), day(4, 'sun', 25, 16), day(5, 'sun', 26, 17)],
+      },
+      daughter: {
+        city: 'استانبول', temp: 27, feels_like: 29, humidity: 55, wind: 9, pressure: 1008, cloud_cover: 60,
+        sunrise: '06:02', sunset: '19:20', label: 'ابری', icon: 'cloud', is_live: true,
+        forecast: [day(1, 'cloud', 28, 19), day(2, 'rain', 25, 18), day(3, 'sun', 29, 19), day(4, 'cloud', 27, 18), day(5, 'storm', 26, 17)],
+      },
       message: 'هوای جفتمون یه شکله ☁️',
     })
   }
@@ -160,19 +174,20 @@ const giftBook = (await import('../src/apps/GiftBook')).default
 {
   const { html, host } = await mount('GiftBook', h(giftBook))
   check('GiftBook بالا آمد', html.length > 600)
-  check('آمار هدیه‌ها نمایش داده می‌شود', html.includes('ارزش کل') && html.includes('میانگین'))
-  const band = byText(host, 'ساده و کوچیک') || byText(host, 'کم')
-  const before = host.innerHTML
-  await click(band)
+  check('آمار دریافتی/داده‌شده نمایش داده می‌شود', html.includes('هدیه‌های دریافتی') && html.includes('هدیه‌های داده‌شده'))
+  check('هیچ بخش قیمت/مبلغی در دفتر نیست', !html.includes('تومان') && !html.includes('ارزش کل') && !html.includes('میانگین'))
+  check('نمودار سال‌های شمسی دیده می‌شود', html.includes('۱۴۰۵'))
+  // چیپ سال: دکمه‌ای که متنش دقیقاً همان سال است (نه کارت هدیه که تاریخش این سال را دارد)
+    const yearChip = Array.from(host.querySelectorAll('button')).find((b) => (b.textContent || '').trim() === String.fromCharCode(0x06F1, 0x06F4, 0x06F0, 0x06F5))
+  await click(yearChip)
   check(
-    'فیلتر رنج قیمت درخواست فیلترشده می‌فرستد',
-    requested.some((r) => r.includes('band=')),
+    'فیلتر سال شمسی درخواست فیلترشده می‌فرستد',
+    requested.some((r) => r.includes('/api/gifts') && r.includes('year=1405')),
     requested.filter((r) => r.includes('/api/gifts')).slice(-3).join(' | '),
   )
-  void before
   const addToggle = host.querySelector('.os-btn-primary')
   await click(addToggle)
-  check('فرم افزودن هدیه باز می‌شود', host.innerHTML.includes('ثبت هدیه‌ی جدید'))
+  check('فرم افزودن هدیه باز می‌شود (بدون کادر قیمت)', host.innerHTML.includes('ثبت هدیه‌ی جدید') && !host.innerHTML.includes('رنج قیمت'))
 }
 
 /* --------------------------------------------------- کتاب‌خوانی مشترک */
