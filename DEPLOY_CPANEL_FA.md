@@ -189,7 +189,13 @@ python manage.py migrate
 python manage.py seed_loveos --passcode 1234 --vault 0000
 python manage.py collectstatic --noinput
 python manage.py createsuperuser
+python manage.py check          # باید بدون خطا تمام شود
 ```
+
+> از نسخه‌ی ۲.۰ پنج اپ تازه (تماس، هدیه‌ها، کتاب‌خوانی مشترک، خونه‌ی رویایی، پل زبان) به پروژه
+> اضافه شده و مهاجرت‌های `calls`، `gifts`، `reading`، `dreamhome`، `language` و
+> `accounts.0003` را با خودش آورده. روی هاستی که از قبل نصب شده، فقط `migrate` و بعد
+> **Restart** لازم است.
 
 ---
 
@@ -295,11 +301,14 @@ python3 scripts/qr.py https://yourdomain.com --out loveos-qr.svg
 
 هر بار که کد یا محتوا را عوض کردی:
 
-1. روی سیستم شخصی: `cd frontend && npm run build`.
+1. روی سیستم شخصی: `cd frontend && npx tsc -b && npx oxlint src && npm run build`.
 2. فایل‌های تغییرکرده + پوشه‌ی جدید `frontend/dist` را آپلود کن (جاگزین).
 3. اگر مدل‌های جنگو تغییر کرده: `python manage.py migrate`.
 4. اگر فایل‌های استاتیک جنگو (پنل ادمین) عوض شده: `python manage.py collectstatic --noinput`.
 5. در پایان حتماً **Restart** بزن.
+6. اگر «اپ باز می‌شود ولی سفید است»، سرویس‌ورکر تازه پس از یک رفرش سخت
+   (`Ctrl + Shift + R`) جایگزین می‌شود؛ خود اپ هم با `skipWaiting`/`clientsClaim` نسخه‌ی
+   قدیمی را کنار می‌گذارد.
 
 ---
 

@@ -16,9 +16,10 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import UserConfig
+from calls.models import CallAppointment, CallSettings
 from content.models import Letter, Memory
 from core.models import OSNotification
-from core.services import push_notification
+from core.services import effective_daughter_location, push_notification
 from core.soroush import flush_outbox, notify_daddy
 from health.models import CareReminder, CycleEntry, Medication, MedicationLog
 from social.models import Reminder, ReminderLog
@@ -50,9 +51,42 @@ class Command(BaseCommand):
         done.append(f"meds={self.medication_slots(now)}")
         done.append(f"care={self.care_reminders(now)}")
         done.append(f"reminders={self.gentle_reminders(now, cfg)}")
+        done.append(f"calls={self.call_reminders(now)}")
         done.append(f"outbox={flush_outbox()}")
 
         self.stdout.write(self.style.SUCCESS("sweep ok: " + " ".join(done)))
+
+    # ------------------------------------------------------ یادآور تماس ----
+    def call_reminders(self, now) -> int:
+        """
+        نیم ساعت (یا هر عددی که بابا تنظیم کرده) قبل از تماس تأییدشده،
+        به هر دو طرف خبر می‌دهد و در سروش هم به بابا پیام می‌رود.
+        """
+        settings_obj = CallSettings.get_solo()
+        if not settings_obj.notify_reminder:
+            return 0
+        window = min(max(5, settings_obj.reminder_minutes), 180)
+        count = 0
+        for appt in CallAppointment.objects.filter(status="approved", reminder_sent=False, date__gte=now.date()):
+            seconds = appt.seconds_to_start
+            if 0 < seconds <= window * 60:
+                minutes_left = max(1, seconds // 60)
+                push_notification(
+                    "call",
+                    "تماس بعدی نزدیکه ❤",
+                    f"{minutes_left} دقیقه تا تماس با «{(appt.proposee == 'daddy') and (UserConfig.get_solo().daddy_name or 'بابا') or 'دخترم'}» — {appt.topic or 'بدون موضوع'}",
+                    icon="call",
+                    action_app="call",
+                )
+                notify_daddy(
+                    "call_reminder",
+                    f"⏰ {minutes_left} دقیقه تا تماس با {appt.proposee == 'daddy' and 'دخترم' or 'بابا'} "
+                    f"({appt.date} ساعت {appt.time:%H:%M})",
+                )
+                appt.reminder_sent = True
+                appt.save(update_fields=["reminder_sent", "updated_at"])
+                count += 1
+        return count
 
     # ------------------------------------------------------------ خاطره‌ها
     def unlock_memories(self, now) -> int:
@@ -200,7 +234,8 @@ class Command(BaseCommand):
     def weather_rules(self, cfg, fire) -> None:
         from social.api import fetch_weather
 
-        data = fetch_weather(cfg.daughter_lat, cfg.daughter_lng, cfg.daughter_timezone)
+        eff = effective_daughter_location(cfg)
+        data = fetch_weather(eff["lat"], eff["lng"], eff["timezone"])
         if not data.get("ok"):
             return
         icon, temp = data.get("icon"), data.get("temp")

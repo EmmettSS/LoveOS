@@ -12,6 +12,8 @@ import { EggOverlay, Toast } from './os/EggOverlay'
 import { Lock } from './os/Lock'
 import { useNightMode } from './os/daynight'
 import { post, tokenStore } from './shared/api'
+import { refreshLocationIfStale } from './shared/geo'
+import { applyLocalPrefs, syncSettings } from './shared/prefs'
 import { setSoundEnabled } from './shared/sound'
 import { useOS } from './shared/store'
 
@@ -27,6 +29,7 @@ export default function App() {
   const bootstrap = useOS((s) => s.bootstrap)
   const setPhase = useOS((s) => s.setPhase)
   const showEgg = useOS((s) => s.showEgg)
+  const patchConfig = useOS((s) => s.patchConfig)
   const [ready, setReady] = useState(false)
 
   useNightMode()
@@ -38,13 +41,30 @@ export default function App() {
       .finally(() => setReady(true))
   }, [bootstrap])
 
-  // زبان، اندازه‌ی فونت و صدا از تنظیمات پنل بابا
+  // زبان، اندازه‌ی فونت و صدا از تنظیمات پنل بابا (با احترام به انتخاب محلی دستگاه)
   useEffect(() => {
     if (!config) return
-    if (config.language && config.language !== i18n.language) void i18n.changeLanguage(config.language)
-    document.documentElement.style.setProperty('--font-scale', String(config.font_scale || 1))
-    setSoundEnabled(config.sound_enabled !== false)
+    const merged = applyLocalPrefs(config)
+    if (merged.language && merged.language !== i18n.language) void i18n.changeLanguage(merged.language)
+    document.documentElement.style.setProperty('--font-scale', String(merged.font_scale || 1))
+    setSoundEnabled(merged.sound_enabled !== false)
+    document.documentElement.dir = merged.language === 'en' ? 'ltr' : 'rtl'
   }, [config, i18n])
+
+  // اگر تنظیمات محلی‌ای بود که ذخیره‌اش نیمه‌کاره مانده، یک بار سرِ فرصت سینک می‌شود
+  useEffect(() => {
+    if (phase !== 'desktop') return
+    void syncSettings()
+  }, [phase])
+
+  // موقعیت واقعی دخترم: تازه‌سازی محترمانه (بدون پنجره‌ی اجازه اگر قبلاً داده نشده)
+  useEffect(() => {
+    if (phase !== 'desktop') return
+    void (async () => {
+      const loc = await refreshLocationIfStale()
+      if (loc?.is_live) patchConfig({ live_location: loc })
+    })()
+  }, [phase, patchConfig])
 
   // اگر توکن معتبر داریم، پس از بوت مستقیم وارد دسکتاپ شو
   useEffect(() => {

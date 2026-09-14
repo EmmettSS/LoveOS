@@ -102,6 +102,7 @@ class QuizRewardAdmin(admin.ModelAdmin):
 class FuturePlanAdmin(admin.ModelAdmin):
     list_display = ("title", "category", "is_done", "added_by")
     list_filter = ("category", "is_done", "added_by")
+    search_fields = ("title", "note")
 
 
 @admin.register(MoodMessage)

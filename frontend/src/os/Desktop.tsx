@@ -15,10 +15,24 @@ import { playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { APPS } from './appRegistry'
 import { Dock } from './Dock'
+import { GlobalSearch } from './GlobalSearch'
 import { NotificationCenter } from './NotificationCenter'
 import { StartMenu } from './StartMenu'
 import { AppWindow } from './Window'
 import { useNightMode } from './daynight'
+
+interface NextCallPayload {
+  item: {
+    id: number
+    date: string
+    time: string
+    status_label?: string
+    duration_minutes?: number
+    topic?: string
+    seconds_to_start: number
+    sides_time?: Record<string, { city: string; time: string }>
+  } | null
+}
 
 interface WeatherPayload {
   daddy: { city: string; temp: number | null; label: string; icon: string }
@@ -40,9 +54,21 @@ export function Desktop() {
 
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)
+  const [nextCall, setNextCall] = useState<NextCallPayload['item']>(null)
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 15_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // تماس بعدی: ویجت شمارش معکوس روی دسکتاپ
+  useEffect(() => {
+    const load = () =>
+      get<NextCallPayload>('/calls/next')
+        .then((r) => setNextCall(r.item))
+        .catch(() => undefined)
+    void load()
+    const id = setInterval(load, 60_000)
     return () => clearInterval(id)
   }, [])
 
@@ -116,23 +142,45 @@ export function Desktop() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.09 }}
+            className="os-card cursor-pointer p-4"
+            onClick={() => { playOpen(); openApp('call') }}
+          >
+            <p className="text-xs os-muted">{t('desktop.nextCall')}</p>
+            {nextCall && nextCall.date && nextCall.time ? (
+              <>
+                <p className="os-title mt-1 text-2xl" style={{ color: 'var(--os-accent)' }}>
+                  {countdownText(nextCall.seconds_to_start, t('os.hours'), t('os.minutes'))}
+                </p>
+                <p className="mt-1 truncate text-[11px] os-muted">
+                  {formatDate(nextCall.date)} • {digits(nextCall.time)}
+                  {nextCall.topic ? ` • ${nextCall.topic}` : ''}
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm os-muted">{t('calls.noNextShort')}</p>
+            )}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
             className="os-card cursor-pointer p-4"
             onClick={() => { playOpen(); openApp('weather') }}
           >
             <p className="text-xs os-muted">{t('desktop.weather')}</p>
-            {weather ? (
+            {weather?.daddy && weather?.daughter ? (
               <div className="mt-1.5 space-y-1 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <Icon name={WEATHER_ICON[weather.daddy.icon] || 'cloud'} size={16} />
-                  <span className="truncate">{weather.daddy.city}</span>
-                  <span className="ms-auto">{weather.daddy.temp != null ? digits(Math.round(weather.daddy.temp)) : '—'}°</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Icon name={WEATHER_ICON[weather.daughter.icon] || 'cloud'} size={16} />
-                  <span className="truncate">{weather.daughter.city}</span>
-                  <span className="ms-auto">{weather.daughter.temp != null ? digits(Math.round(weather.daughter.temp)) : '—'}°</span>
-                </div>
+                {[weather.daddy, weather.daughter].map((side, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <Icon name={WEATHER_ICON[side?.icon] || 'cloud'} size={16} />
+                    <span className="truncate">{side?.city || '—'}</span>
+                    <span className="ms-auto">
+                      {side?.temp != null ? digits(Math.round(side.temp)) : '—'}°
+                    </span>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="mt-1 text-sm os-muted">…</p>
@@ -209,9 +257,21 @@ export function Desktop() {
 
       <StartMenu />
       <NotificationCenter />
+      <GlobalSearch />
       <Dock />
     </div>
   )
+}
+
+/** «۲ روز و ۳ ساعت» از ثانیه — برای ویجت تماس بعدی */
+function countdownText(total: number, hoursWord: string, minutesWord: string) {
+  if (total <= 0) return '❤'
+  const days = Math.floor(total / 86_400)
+  const hours = Math.floor((total % 86_400) / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  if (days > 0) return `${digits(days)} ${hoursWord}`
+  if (hours > 0) return `${digits(hours)} ${hoursWord} ${digits(minutes)} ${minutesWord}`
+  return `${digits(Math.max(1, minutes))} ${minutesWord}`
 }
 
 /** راز ⑥ — آسمان نیمه‌شب پر از قلب و ستاره */

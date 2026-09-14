@@ -15,6 +15,7 @@ export function StartMenu() {
   const open = useOS((s) => s.startMenuOpen)
   const toggle = useOS((s) => s.toggleStartMenu)
   const openApp = useOS((s) => s.openApp)
+  const toggleCommand = useOS((s) => s.toggleCommand)
   const [q, setQ] = useState('')
 
   const items = useMemo(() => {
@@ -34,6 +35,17 @@ export function StartMenu() {
             exit={{ opacity: 0 }}
             onClick={() => toggle(false)}
           />
+          <motion.button
+            onClick={() => { playOpen(); toggle(false); toggleCommand(true) }}
+            className="fixed inset-x-3 bottom-[8.6rem] z-50 mx-auto flex max-w-[620px] items-center gap-2 rounded-2xl px-3 py-2.5 text-start text-xs shadow-soft transition active:scale-[0.99]"
+            style={{ background: 'var(--os-card, rgba(255,255,255,.9))', color: 'var(--os-muted)' }}
+          >
+            <Icon name="findheart" size={15} />
+            <span className="flex-1">{t('search.title')}</span>
+            <kbd className="rounded-md px-1.5 py-0.5 text-[10px]" style={{ background: 'var(--os-border)' }}>
+              Ctrl/⌘ K
+            </kbd>
+          </motion.button>
           <motion.div
             initial={{ y: 40, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}

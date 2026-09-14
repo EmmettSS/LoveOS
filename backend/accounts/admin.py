@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib import admin, messages
 
-from accounts.models import DeviceSession, UnlockAttempt, UserConfig
+from accounts.models import DeviceSession, LiveLocation, UnlockAttempt, UserConfig
 
 
 class UserConfigForm(forms.ModelForm):
@@ -45,6 +45,21 @@ class UserConfigAdmin(admin.ModelAdmin):
         ("متن‌ها", {
             "fields": ("boot_greeting", "wrong_pass_message", "lock_help_message", "today_message", "about_text")
         }),
+        ("موقعیت زنده‌ی دخترم 📍", {
+            "fields": (
+                "location_enabled", "location_ttl_minutes", "location_auto_sync",
+                "location_sync_km", "location_city_lookup",
+            ),
+            "description": "اگر دخترم جابجا شود (سفر، اسباب‌کشی، تغییر شهر)، همه‌ی اپ‌ها "
+                           "از موقعیت واقعی دستگاهش حساب می‌کنند. اینجا تعیین می‌کنی "
+                           "این موقعیت چند دقیقه معتبر بماند و آیا مختصات این صفحه هم "
+                           "خودکار با آن هم‌آهنگ شود یا نه.",
+        }),
+        ("جستجوی سراسری 🔎", {
+            "fields": ("search_disabled_sources", "search_log_enabled"),
+            "description": "اگر منبعی را از جستجو کنار بگذاری، همان‌جا خاموش می‌شود. "
+                           "با روشن‌کردن ثبت عبارت‌ها، پرجستجوترین‌ها در لاگ فعالیت‌ها دیده می‌شوند.",
+        }),
         ("تنظیمات", {
             "fields": ("language", "theme", "sound_enabled", "font_scale", "allow_daughter_music_upload")
         }),
@@ -81,3 +96,20 @@ class DeviceSessionAdmin(admin.ModelAdmin):
 class UnlockAttemptAdmin(admin.ModelAdmin):
     list_display = ("created_at", "success", "ip")
     list_filter = ("success",)
+
+
+@admin.register(LiveLocation)
+class LiveLocationAdmin(admin.ModelAdmin):
+    """آخرین موقعیت‌های ثبت‌شده‌ی دستگاه دخترم (فقط خواندنی؛ از خود اپ می‌آید)."""
+
+    list_display = ("city", "lat", "lng", "accuracy", "source", "captured_at", "is_live")
+    list_filter = ("source", "is_live")
+    search_fields = ("city",)
+    readonly_fields = ("lat", "lng", "accuracy", "city", "timezone", "source", "captured_at", "is_live", "created_at", "updated_at")
+    date_hierarchy = "captured_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser

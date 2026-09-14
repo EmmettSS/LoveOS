@@ -11,6 +11,7 @@ from core.models import (
     OSNotification,
     SoroushOutbox,
 )
+from core.services import clear_app_cache
 from core.soroush import flush_one, get_provider
 
 
@@ -50,6 +51,12 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ("created_at", "action", "app", "detail")
     list_filter = ("app",)
     search_fields = ("action", "detail")
+    actions = ["clear_cache_action"]
+
+    @admin.action(description="پاک کردن کش اپ‌ها (نتیجه‌ی جستجو/آمار تازه شود)")
+    def clear_cache_action(self, request, queryset):
+        cleared = clear_app_cache()
+        self.message_user(request, f"کش پاک شد ({cleared} مورد).")
 
 
 @admin.register(Achievement)

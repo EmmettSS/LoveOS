@@ -12,10 +12,15 @@ env/
 .env
 staticfiles/
 # رسانه‌های آپلودی بابا و دخترم در گیت نمی‌روند (نمونه‌های اولیه استثنا شده‌اند)
+# مسیر واقعی رسانه‌ها backend/media است؛ فقط نمونه‌های اولیه در گیت می‌مانند
 media/*
 !media/.gitkeep
 !media/puzzles/
 !media/books/
+backend/media/*
+!backend/media/.gitkeep
+!backend/media/puzzles/
+!backend/media/books/
 
 # ------------------------------------------------------------------ Node ---
 node_modules/
@@ -34,3 +39,6 @@ logs/
 !.vscode/extensions.json
 *.pid
 celerybeat-schedule
+
+# خروجی موقت آزمون‌های رابط کاربری (با npm run test:ui ساخته می‌شود)
+frontend/tests/.build/
