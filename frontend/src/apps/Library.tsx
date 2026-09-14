@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
 import { digits } from '../shared/format'
+import { exportBookPdf } from '../shared/printBook'
 import { playPaper } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { AudioPlayer, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
@@ -40,23 +41,40 @@ interface BookCard {
 export default function Library() {
   const { t } = useTranslation()
   const [bookId, setBookId] = useState<number | null>(null)
-  const { data: shelf, loading } = useApi<{ items: BookCard[] }>('/books')
+  const [creating, setCreating] = useState(false)
+  const { data: shelf, loading, reload } = useApi<{ items: BookCard[] }>('/books')
 
   if (bookId) return <BookReader id={bookId} onBack={() => setBookId(null)} />
   if (loading) return <Loading />
   const items = shelf?.items || []
-  if (items.length === 0) return <Empty />
 
   return (
     <div className="space-y-3">
       <SectionTitle>{t('library.shelf')}</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {/* کارت «کتاب جدید» — دخترم خودش کتاب می‌سازد */}
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -5, rotate: 1 }}
+          onClick={() => setCreating(true)}
+          className="flex h-[190px] flex-col items-center justify-center gap-2 rounded-2xl text-sm shadow-soft"
+          style={{
+            border: '2px dashed var(--os-accent)',
+            background: 'var(--os-accent-soft)',
+            color: 'var(--os-accent)',
+          }}
+        >
+          <Icon name="pen" size={30} />
+          <span className="os-title">{t('library.newBook')}</span>
+        </motion.button>
+
         {items.map((b, i) => (
           <motion.button
             key={b.id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: 0.05 + i * 0.05 }}
             whileHover={{ y: -5, rotate: -1 }}
             onClick={() => { playPaper(); setBookId(b.id) }}
             className="overflow-hidden rounded-2xl text-start shadow-soft"
@@ -70,14 +88,71 @@ export default function Library() {
               </div>
             )}
             <div className="p-2.5">
-              <p className="os-title truncate text-sm">{b.title}</p>
-              <p className="truncate text-[11px] os-muted">{b.subtitle}</p>
+              <p className="os-title break-words text-sm">{b.title}</p>
+              <p className="break-words text-[11px] os-muted">{b.subtitle}</p>
               <p className="mt-0.5 text-[10px] os-muted">{digits(b.chapters)} {t('library.toc')}</p>
             </div>
           </motion.button>
         ))}
       </div>
+
+      <AnimatePresence>
+        {creating && (
+          <NewBook
+            onDone={async (id) => {
+              setCreating(false)
+              await reload()
+              if (id) setBookId(id)
+            }}
+            onCancel={() => setCreating(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  )
+}
+
+/* -------------------------------------------------------- کتاب جدید ---- */
+function NewBook({ onDone, onCancel }: { onDone: (id: number | null) => void; onCancel: () => void }) {
+  const { t } = useTranslation()
+  const showToast = useOS((s) => s.showToast)
+  const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async () => {
+    if (!title.trim()) return
+    setBusy(true)
+    try {
+      const res = await post<{ ok: boolean; id: number }>('/books', { title: title.trim(), subtitle: subtitle.trim() })
+      showToast(t('library.bookCreated'), 'love')
+      onDone(res.id ?? null)
+    } catch {
+      showToast(t('os.error'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden"
+    >
+      <div className="os-card space-y-2 p-3">
+        <p className="text-sm font-semibold">✨ {t('library.newBook')}</p>
+        <input className="os-input" placeholder={t('library.bookTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input className="os-input" placeholder={t('library.bookSubtitle')} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+        <div className="flex gap-2">
+          <button className="os-btn flex-1" onClick={onCancel}>{t('os.cancel')}</button>
+          <button className="os-btn-primary flex-1" onClick={() => void submit()} disabled={busy || !title.trim()}>
+            {t('library.startWriting')}
+          </button>
+        </div>
+      </div>
+    </motion.div>
   )
 }
 
@@ -93,6 +168,21 @@ function BookReader({ id, onBack }: { id: number; onBack: () => void }) {
   const [noteFor, setNoteFor] = useState<number | null>(null)
   const [noteText, setNoteText] = useState('')
   const [writing, setWriting] = useState(false)
+  const [pdfProgress, setPdfProgress] = useState<{ cur: number; total: number } | null>(null)
+
+  /** نسخه‌ی چاپی: PDF کامل با جلد + فهرست + هدر + شماره‌ی صفحه */
+  const downloadPdf = async () => {
+    if (!data || pdfProgress) return
+    setPdfProgress({ cur: 0, total: 0 })
+    try {
+      await exportBookPdf(data, (cur, total) => setPdfProgress({ cur, total }))
+      showToast(t('library.pdfReady'), 'love')
+    } catch {
+      showToast(t('library.pdfFailed'), 'info')
+    } finally {
+      setPdfProgress(null)
+    }
+  }
 
   if (loading || !data) return <Loading />
   const chapters = data.chapters
@@ -145,9 +235,14 @@ function BookReader({ id, onBack }: { id: number; onBack: () => void }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <button className="os-chip" onClick={onBack}>{t('os.back')}</button>
-        <span className="os-title flex-1 truncate text-sm">{data.title}</span>
+        <span className="os-title min-w-0 flex-1 break-words text-sm">{data.title}</span>
         <button className="os-chip" onClick={() => void bookmark()}>
           <span className="inline-flex items-center gap-1"><Icon name="star" size={12} /> {t('library.bookmark')}</span>
+        </button>
+        <button className="os-chip" disabled={!!pdfProgress} onClick={() => void downloadPdf()}>
+          <span className="inline-flex items-center gap-1">
+            ⬇️ {pdfProgress ? t('library.pdfBuilding', { cur: digits(pdfProgress.cur), total: digits(pdfProgress.total) }) : t('library.download')}
+          </span>
         </button>
         <button className="os-chip" onClick={() => setFontSize((f) => (f >= 20 ? 13 : f + 1))}>
           {t('library.fontSize')} {digits(fontSize)}

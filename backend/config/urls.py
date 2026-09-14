@@ -64,6 +64,7 @@ urlpatterns = [
     path("api/letters/<int:pk>/open", content_api.letter_open),
     path("api/countdowns", content_api.countdowns),
     path("api/garden", content_api.garden),
+    path("api/garden/reset", content_api.garden_reset),
     path("api/garden/<int:pk>/water", content_api.garden_water),
     path("api/starmap", content_api.starmap),
     path("api/cinema", content_api.cinema),
@@ -114,8 +115,10 @@ urlpatterns = [
     path("api/paragraphs/<int:paragraph_id>/notes", library_api.note_create),
     # --------------------------------------------------------------- games
     path("api/puzzles", games_api.puzzles),
+    path("api/puzzles/upload", games_api.puzzle_upload),
     path("api/puzzles/<int:pk>/start", games_api.puzzle_start),
     path("api/puzzles/<int:pk>/complete", games_api.puzzle_complete),
+    path("api/puzzles/<int:pk>", games_api.puzzle_delete),
     # --------------------------------------------------------- call sync
     path("api/calls/overview", calls_api.overview),
     path("api/calls/slots", calls_api.slots),

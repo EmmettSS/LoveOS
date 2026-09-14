@@ -75,6 +75,19 @@ export interface WindowState {
   h?: number
 }
 
+const APP_ORDER_KEY = 'loveos_app_order_v1'
+
+function readAppOrder(): string[] | null {
+  try {
+    const raw = localStorage.getItem(APP_ORDER_KEY)
+    if (!raw) return null
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : null
+  } catch {
+    return null
+  }
+}
+
 interface OSState {
   phase: Phase
   config: Config | null
@@ -87,6 +100,10 @@ interface OSState {
   eggOverlay: null | { title: string; message: string; attachment?: string | null; kind?: string }
   toast: null | { text: string; tone?: 'love' | 'info' }
   nightOverride: boolean | null
+  /** ترتیب سفارشی آیکن‌های دسکتاپ (درگ‌اند‌دراپ) */
+  appOrder: string[] | null
+  setAppOrder: (order: string[]) => void
+  resetAppOrder: () => void
 
   bootstrap: () => Promise<void>
   setPhase: (p: Phase) => void
@@ -129,6 +146,25 @@ export const useOS = create<OSState>((set, get) => ({
   eggOverlay: null,
   toast: null,
   nightOverride: null,
+  appOrder: readAppOrder(),
+
+  setAppOrder: (order) => {
+    try {
+      localStorage.setItem(APP_ORDER_KEY, JSON.stringify(order))
+    } catch {
+      /* حافظه‌ی دستگاه پر است — فقط در حافظه‌ی نشست می‌ماند */
+    }
+    set({ appOrder: order })
+  },
+
+  resetAppOrder: () => {
+    try {
+      localStorage.removeItem(APP_ORDER_KEY)
+    } catch {
+      /* ignore */
+    }
+    set({ appOrder: null })
+  },
 
   bootstrap: async () => {
     const data = await apiGet<{ config: Config; unlocked: boolean }>('/boot')

@@ -1,18 +1,27 @@
 /**
  * CycleCare — چرخه و مراقبت
- * تقویم پریود، ثبت علائم، داروها (خوردم/بعداً/نمی‌تونم)، گزارش پایبندی و مراقبت از خود.
+ * تقویم پریود (در فارسی: تقویم شمسی)، ثبت علائم، داروها (خوردم/بعداً/نمی‌تونم)،
+ * گزارش‌های حرفه‌ای با نمودارهای جذاب و مراقبت از خود.
  * حساس است: همه‌چیز فقط از تاریخچه‌ی خود دخترم محاسبه می‌شود و پیام سلب مسئولیت دارد.
  */
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { post } from '../shared/api'
-import { digits, formatDate } from '../shared/format'
+import {
+  digits,
+  formatDate,
+  isFa,
+  jalaliMonthGrid,
+  jalaliToday,
+  JALALI_MONTHS,
+  WEEKDAYS_FA_SHORT,
+} from '../shared/format'
 import { playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Chips, Loading, SectionTitle, useApi } from '../shared/ui'
+import { Chips, Loading, SectionTitle, Toggle, useApi } from '../shared/ui'
 
 interface Overview {
   disclaimer: string
@@ -43,6 +52,7 @@ interface MedSlot {
 }
 
 interface CareItem { id: number; text: string; hour: number; minute: number; enabled: boolean }
+interface SymptomDay { day: string; mood: number; energy: number; headache: number; backache: number; stomachache: number; nausea: number; sleep: number; appetite: number; note: string; severity: number }
 
 type Tab = 'calendar' | 'symptoms' | 'meds' | 'reports' | 'care'
 
@@ -85,6 +95,8 @@ export default function CycleCare() {
 function CalendarTab({ ov, reload, showToast }: { ov: Overview; reload: () => Promise<void>; showToast: (s: string, tone?: 'love' | 'info') => void }) {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
+  const todayJ = jalaliToday()
+  const [view, setView] = useState(() => ({ jy: todayJ.jy, jm: todayJ.jm }))
 
   const act = async (which: 'start' | 'end') => {
     setBusy(true)
@@ -97,24 +109,40 @@ function CalendarTab({ ov, reload, showToast }: { ov: Overview; reload: () => Pr
     }
   }
 
-  // ۶ هفته‌ی اخیر برای نمایش سریع
-  const today = new Date()
-  const days = Array.from({ length: 42 }).map((_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() - 35 + i)
-    return d
-  })
+  const dateStr = (d: Date) => d.toDateString()
   const inPeriod = (d: Date) =>
     ov.entries.some((e) => {
       const s = new Date(e.start_date)
       const en = e.end_date ? new Date(e.end_date) : new Date()
-      return d >= new Date(s.toDateString()) && d <= new Date(en.toDateString())
+      return dateStr(d) >= dateStr(new Date(s.toDateString())) && dateStr(d) <= dateStr(new Date(en.toDateString()))
     })
   const isPredicted = (d: Date) => {
     if (!ov.stats.next_start || !ov.stats.next_end) return false
-    return d >= new Date(ov.stats.next_start) && d <= new Date(ov.stats.next_end)
+    return dateStr(d) >= dateStr(new Date(ov.stats.next_start)) && dateStr(d) <= dateStr(new Date(ov.stats.next_end))
   }
-  const isOvulation = (d: Date) => ov.stats.ovulation && d.toDateString() === new Date(ov.stats.ovulation).toDateString()
+  const isOvulation = (d: Date) => !!ov.stats.ovulation && dateStr(d) === dateStr(new Date(ov.stats.ovulation))
+
+  const cells = isFa() ? jalaliMonthGrid(view.jy, view.jm) : null
+  const today = new Date()
+  const gregCells = useMemo(() => {
+    // در حالت انگلیسی همان نمای میلادی ساده (۶ هفته‌ی اخیر)
+    return Array.from({ length: 42 }).map((_, i) => {
+      const d = new Date(today)
+      d.setDate(today.getDate() - 35 + i)
+      return d
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const moveMonth = (dir: number) => {
+    setView((v) => {
+      let jm = v.jm + dir
+      let jy = v.jy
+      if (jm < 1) { jm = 12; jy -= 1 }
+      if (jm > 12) { jm = 1; jy += 1 }
+      return { jy, jm }
+    })
+  }
 
   return (
     <div className="space-y-3">
@@ -128,33 +156,76 @@ function CalendarTab({ ov, reload, showToast }: { ov: Overview; reload: () => Pr
       </div>
 
       {ov.active_period && (
-        <p className="os-card p-3 text-center text-sm" style={{ color: 'var(--os-accent)' }}>
+        <motion.p
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="os-card p-3 text-center text-sm"
+          style={{ color: 'var(--os-accent)' }}
+        >
           {t('cycle.inPeriod')} • {formatDate(ov.active_period.start_date)}
-        </p>
+        </motion.p>
       )}
 
       <div className="os-card p-3">
-        <div className="grid grid-cols-7 gap-1.5">
-          {days.map((d, i) => {
-            const period = inPeriod(d)
-            const pred = !period && isPredicted(d)
-            const ovu = isOvulation(d)
-            const isToday = d.toDateString() === today.toDateString()
-            return (
-              <div
-                key={i}
-                className="flex aspect-square items-center justify-center rounded-lg text-[10px]"
-                style={{
-                  background: period ? '#f767a8' : pred ? 'rgba(247,103,168,.22)' : ovu ? 'rgba(124,203,128,.35)' : 'var(--os-accent-soft)',
-                  color: period ? '#fff' : 'inherit',
-                  outline: isToday ? '2px solid var(--os-accent)' : 'none',
-                }}
-              >
-                {digits(d.getDate())}
-              </div>
-            )
-          })}
-        </div>
+        {isFa() && cells ? (
+          <>
+            {/* نوار ماه شمسی */}
+            <div className="mb-2 flex items-center justify-between">
+              <button className="os-chip !text-[10px]" onClick={() => moveMonth(-1)}>← {t('cycle.prevMonth')}</button>
+              <p className="os-title text-base">
+                {JALALI_MONTHS[view.jm - 1]} {digits(view.jy)}
+              </p>
+              <button className="os-chip !text-[10px]" onClick={() => moveMonth(1)}>{t('cycle.nextMonth')} →</button>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {WEEKDAYS_FA_SHORT.map((d, i) => (
+                <span key={i} className="pb-1 text-center text-[10px] os-muted">{d}</span>
+              ))}
+              {cells.map((c, i) => {
+                const period = inPeriod(c.date)
+                const pred = !period && isPredicted(c.date)
+                const ovu = isOvulation(c.date)
+                return (
+                  <div
+                    key={i}
+                    className="flex aspect-square items-center justify-center rounded-lg text-[11px]"
+                    style={{
+                      background: period ? '#f767a8' : pred ? 'rgba(247,103,168,.22)' : ovu ? 'rgba(124,203,128,.35)' : c.inMonth ? 'var(--os-accent-soft)' : 'transparent',
+                      color: period ? '#fff' : c.inMonth ? 'inherit' : 'var(--os-border)',
+                      outline: c.isToday ? '2px solid var(--os-accent)' : 'none',
+                      fontWeight: c.isToday ? 700 : 400,
+                      opacity: c.inMonth ? 1 : 0.5,
+                    }}
+                  >
+                    {digits(c.jd)}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-7 gap-1.5">
+            {gregCells.map((d, i) => {
+              const period = inPeriod(d)
+              const pred = !period && isPredicted(d)
+              const ovu = isOvulation(d)
+              const isToday = d.toDateString() === today.toDateString()
+              return (
+                <div
+                  key={i}
+                  className="flex aspect-square items-center justify-center rounded-lg text-[10px]"
+                  style={{
+                    background: period ? '#f767a8' : pred ? 'rgba(247,103,168,.22)' : ovu ? 'rgba(124,203,128,.35)' : 'var(--os-accent-soft)',
+                    color: period ? '#fff' : 'inherit',
+                    outline: isToday ? '2px solid var(--os-accent)' : 'none',
+                  }}
+                >
+                  {digits(d.getDate())}
+                </div>
+              )
+            })}
+          </div>
+        )}
         <div className="mt-2 flex flex-wrap gap-2 text-[10px] os-muted">
           <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full" style={{ background: '#f767a8' }} /> {t('cycle.period')}</span>
           <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full" style={{ background: 'rgba(247,103,168,.35)' }} /> {t('cycle.predicted')}</span>
@@ -178,9 +249,17 @@ function CalendarTab({ ov, reload, showToast }: { ov: Overview; reload: () => Pr
       </div>
 
       {ov.stats.messages.map((m, i) => (
-        <p key={i} className="os-card p-3 text-sm" style={{ color: ov.stats.alert ? '#e0478d' : 'var(--os-text)' }}>
+        <motion.p
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: i * 0.12 }}
+          className="os-card flex items-center gap-2 p-3 text-sm"
+          style={{ color: ov.stats.alert ? '#e0478d' : 'var(--os-text)' }}
+        >
+          <span>{ov.stats.alert ? '⚠️' : '🌸'}</span>
           {m}
-        </p>
+        </motion.p>
       ))}
     </div>
   )
@@ -313,41 +392,320 @@ function MedsTab({ showToast }: { showToast: (s: string, tone?: 'love' | 'info')
   )
 }
 
+/* ----------------------------------------------------------- نمودارها -- */
+/** نمودار خطی با نوار محدوده‌ی طبیعی (برای روند طول چرخه) */
+function TrendLine({ values, normal = [21, 35], labels }: { values: number[]; normal?: [number, number]; labels: string[] }) {
+  const W = 300
+  const H = 120
+  const PAD = 22
+  const maxV = Math.max(...values, normal[1] + 2)
+  const minV = Math.min(...values, normal[0] - 2)
+  const x = (i: number) => PAD + (i / Math.max(1, values.length - 1)) * (W - PAD * 2)
+  const y = (v: number) => H - PAD - ((v - minV) / Math.max(1, maxV - minV)) * (H - PAD * 2)
+  const pts = values.map((v, i) => `${x(i)},${y(v)}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      {/* نوار طبیعی */}
+      <rect x={PAD} y={y(normal[1])} width={W - PAD * 2} height={Math.max(2, y(normal[0]) - y(normal[1]))} rx={6} fill="rgba(124,203,128,.18)" />
+      {[normal[0], normal[1]].map((n) => (
+        <g key={n}>
+          <line x1={PAD} x2={W - PAD} y1={y(n)} y2={y(n)} stroke="rgba(124,203,128,.5)" strokeDasharray="4 4" strokeWidth="1" />
+          <text x={W - PAD} y={y(n) - 3} textAnchor="end" fontSize="8" fill="var(--os-muted)">{digits(n)}</text>
+        </g>
+      ))}
+      {/* خط روند */}
+      {values.length > 1 && (
+        <motion.polyline
+          points={pts}
+          fill="none"
+          stroke="var(--os-accent)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+        />
+      )}
+      {values.map((v, i) => {
+        const inRange = !normal || (v >= normal[0] && v <= normal[1])
+        return (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(v)} r="4" fill={inRange ? 'var(--os-accent)' : '#e0478d'} stroke="#fff" strokeWidth="1.5" />
+            <text x={x(i)} y={y(v) - 8} textAnchor="middle" fontSize="9" fontWeight="700" fill={inRange ? 'var(--os-text)' : '#e0478d'}>{digits(v)}</text>
+            <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="8" fill="var(--os-muted)">{labels[i]}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+/** نمودار میله‌ای ساده */
+function Bars({ values, labels, color = 'var(--os-accent)', warn }: { values: number[]; labels: string[]; color?: string; warn?: (v: number) => boolean }) {
+  const max = Math.max(1, ...values)
+  return (
+    <div className="flex h-28 items-end gap-1.5">
+      {values.map((v, i) => (
+        <div key={i} className="flex flex-1 flex-col items-center gap-1" title={String(v)}>
+          <span className="text-[9px] font-bold">{v > 0 ? digits(v) : ''}</span>
+          <motion.div
+            className="w-full rounded-t-lg"
+            style={{ background: warn && warn(v) ? '#e0478d' : color, opacity: v ? 0.9 : 0.2 }}
+            initial={{ height: 4 }}
+            animate={{ height: `${Math.max(6, (v / max) * 80)}px` }}
+            transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 24 }}
+          />
+          <span className="text-[8px] os-muted">{labels[i]}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** نمودار دونات پایبندی */
+function Donut({ value, size = 120, label }: { value: number; size?: number; label: string }) {
+  const R = size / 2 - 10
+  const C = 2 * Math.PI * R
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke="var(--os-border)" strokeWidth="12" />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={R}
+          fill="none"
+          stroke="url(#loveos-donut)"
+          strokeWidth="12"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          initial={{ strokeDashoffset: C }}
+          animate={{ strokeDashoffset: C - (C * value) / 100 }}
+          transition={{ duration: 1.4, ease: 'easeOut' }}
+        />
+        <defs>
+          <linearGradient id="loveos-donut" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ff8cc0" />
+            <stop offset="100%" stopColor="#bba0fb" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(value)}٪</span>
+        <span className="text-[9px] os-muted">{label}</span>
+      </div>
+    </div>
+  )
+}
+
+/** میله‌ی افقی برای علائم */
+function HBar({ label, value, max = 5, color = 'var(--os-accent)' }: { label: string; value: number; max?: number; color?: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[11px]">
+        <span>{label}</span>
+        <span className="font-bold">{digits(value)}/{digits(max)}</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'var(--os-border)' }}>
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color }}
+          initial={{ width: 0 }}
+          animate={{ width: `${(value / max) * 100}%` }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+        />
+      </div>
+    </div>
+  )
+}
+
 /* ----------------------------------------------------------- گزارش‌ها -- */
 function ReportsTab({ ov }: { ov: Overview }) {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ taken: number; skipped: number; total: number; adherence: number; by_day: { day: string; taken: number; skipped: number }[] }>('/meds/report')
-  if (loading) return <Loading />
+  const { data: meds, loading: medsLoading } = useApi<{ taken: number; skipped: number; total: number; adherence: number; by_day: { day: string; taken: number; skipped: number }[] }>('/meds/report')
+  const { data: symptoms, loading: symLoading } = useApi<{ items: SymptomDay[] }>('/cycle/symptoms?days=90')
+  const [range, setRange] = useState<'30' | '90'>('90')
 
-  const maxGap = Math.max(...(ov.stats.gaps.length ? ov.stats.gaps : [28]))
+  const gaps = ov.stats.gaps
+  const entries = ov.entries.slice().reverse() // قدیمی → جدید
+  const lengths = entries.map((e) => e.length || 0)
+
+  const symItems = symptoms?.items || []
+  const symWindow = symItems.slice(-Math.min(60, Number(range)))
+  const symAvg = useMemo(() => {
+    const src = symItems.length ? symItems : []
+    const out: Record<string, number> = {}
+    for (const f of ['headache', 'backache', 'stomachache', 'nausea', 'sleep', 'appetite'] as const) {
+      out[f] = src.length ? Math.round((src.reduce((a, s) => a + (s[f] || 0), 0) / src.length) * 10) / 10 : 0
+    }
+    return out
+  }, [symItems])
+
+  // چرخه‌هایی که ثبت شده‌اند: برچسب «نفره» بر اساس شروع
+  const gapLabels = gaps.map((_, i) => digits(i + 1))
+  const lengthLabels = entries.map((_e, i) => digits(i + 1))
+
+  // روزهای پایبندی دارو (۳۰ روز)
+  const dayBars = (meds?.by_day || []).slice(-14)
+
+  const insights: { icon: string; text: string; warn?: boolean }[] = []
+  if (gaps.length >= 3) {
+    const last3 = gaps.slice(-3)
+    if (max3(last3) - min3(last3) <= 3) insights.push({ icon: '🌸', text: t('cycle.insightRegular') })
+    else insights.push({ icon: '', text: t('cycle.insightIrregular') })
+    const last = gaps[gaps.length - 1]
+    if (last < 21 || last > 35) insights.push({ icon: '⚠️', text: t('cycle.insightOutlier', { n: digits(last) }), warn: true })
+  }
+  if (meds && meds.total > 0) {
+    if (meds.adherence >= 85) insights.push({ icon: '💊', text: t('cycle.insightMedsGood', { n: digits(meds.adherence) }) })
+    else if (meds.adherence < 60) insights.push({ icon: '💊', text: t('cycle.insightMedsLow', { n: digits(meds.adherence) }), warn: true })
+  }
+  const topSym = (Object.entries(symAvg).sort((a, b) => b[1] - a[1])[0] || null) as [string, number] | null
+  if (topSym && topSym[1] >= 2) {
+    insights.push({ icon: '🌡️', text: t('cycle.insightTopSymptom', { name: t(`cycle.symptomFields.${topSym[0]}`), n: digits(topSym[1]) }) })
+  }
+  if (ov.stats.next_start) {
+    insights.push({ icon: '📅', text: t('cycle.insightNext', { date: formatDate(ov.stats.next_start) }) })
+  }
 
   return (
     <div className="space-y-3">
-      <div className="os-card p-3">
-        <p className="text-[11px] os-muted">{t('cycle.adherence')}</p>
-        <p className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(data?.adherence || 0)}٪</p>
-        <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: 'var(--os-border)' }}>
-          <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg,#ff9ecb,#bba0fb)' }} initial={{ width: 0 }} animate={{ width: `${data?.adherence || 0}%` }} />
-        </div>
-        <p className="mt-1.5 text-[11px] os-muted">✅ {digits(data?.taken || 0)} • ⚠️ {digits(data?.skipped || 0)}</p>
+      {/* ---------------------------------------------------- نمای کلی */}
+      <div className="grid grid-cols-2 gap-2">
+        <SummaryCard icon="🔄" label={t('cycle.avgCycle')} value={`${digits(ov.stats.avg_cycle)} ${t('cycle.day')}`} />
+        <SummaryCard icon="🩸" label={t('cycle.avgPeriod')} value={`${digits(ov.stats.avg_period)} ${t('cycle.day')}`} />
+        <SummaryCard icon="📆" label={t('cycle.lastPeriod')} value={ov.stats.last_start ? formatDate(ov.stats.last_start) : '—'} small />
+        <SummaryCard icon="🔮" label={t('cycle.nextPredicted')} value={ov.stats.next_start ? formatDate(ov.stats.next_start) : '—'} small />
       </div>
 
-      <div className="os-card p-3">
-        <p className="mb-2 text-[11px] os-muted">{t('cycle.avgCycle')}</p>
-        <div className="flex h-24 items-end gap-1.5">
-          {(ov.stats.gaps.length ? ov.stats.gaps : [28]).map((g, i) => (
+      {/* ------------------------------------------------- روند طول چرخه */}
+      {gaps.length > 0 && (
+        <div className="os-card p-3">
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-[11px] os-muted">{t('cycle.trendTitle')}</p>
+            <span className="os-chip !text-[9px]">{t('cycle.trendRange')}</span>
+          </div>
+          <TrendLine values={gaps.slice(-8)} labels={gapLabels.slice(-8)} />
+        </div>
+      )}
+
+      {/* ------------------------------------------------- طول دوره‌ها */}
+      {lengths.length > 0 && (
+        <div className="os-card p-3">
+          <p className="mb-2 text-[11px] os-muted">{t('cycle.lengthTitle')}</p>
+          <Bars values={lengths.slice(-8)} labels={lengthLabels.slice(-8)} warn={(v) => v < 3 || v > 8} />
+        </div>
+      )}
+
+      {/* ------------------------------------------------- پایبندی دارو */}
+      {medsLoading ? (
+        <Loading />
+      ) : (
+        meds && meds.total > 0 && (
+          <div className="os-card space-y-3 p-3">
+            <div className="flex items-center gap-4">
+              <Donut value={meds.adherence} label={t('cycle.adherence')} />
+              <div className="flex-1 space-y-1.5 text-[11px]">
+                <p className="flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-full" style={{ background: '#34d399' }} />
+                  {t('cycle.taken')}: <b>{digits(meds.taken)}</b>
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-full" style={{ background: '#f87171' }} />
+                  {t('cycle.skipped')}: <b>{digits(meds.skipped)}</b>
+                </p>
+                <p className="flex items-center gap-1.5 os-muted">
+                  {t('cycle.totalDoses')}: <b>{digits(meds.total)}</b>
+                </p>
+              </div>
+            </div>
+            {dayBars.length > 0 && (
+              <div>
+                <p className="mb-1 text-[10px] os-muted">{t('cycle.lastTwoWeeks')}</p>
+                <div className="flex items-end gap-1">
+                  {dayBars.map((d) => {
+                    const total = d.taken + d.skipped
+                    return (
+                      <div key={d.day} className="flex flex-1 flex-col items-center gap-0.5" title={d.day}>
+                        <div className="flex h-10 w-full flex-col-reverse overflow-hidden rounded" style={{ background: 'var(--os-border)' }}>
+                          <motion.div
+                            className="w-full"
+                            style={{ background: '#34d399' }}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${(d.taken / Math.max(1, total)) * 100}%` }}
+                          />
+                          <motion.div
+                            className="w-full"
+                            style={{ background: '#f87171' }}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${(d.skipped / Math.max(1, total)) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[7px] os-muted">{digits(Number(d.day.slice(8, 10)))}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      )}
+
+      {/* ------------------------------------------------- علائم */}
+      {!symLoading && symItems.length > 0 && (
+        <div className="os-card space-y-3 p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] os-muted">{t('cycle.symptomReport')}</p>
+            <Chips
+              items={[{ key: '30' as const, label: t('cycle.days30') }, { key: '90' as const, label: t('cycle.days90') }]}
+              value={range}
+              onChange={setRange}
+            />
+          </div>
+          {/* روند شدت */}
+          <TrendLine values={symWindow.map((s) => s.severity)} labels={symWindow.map((s) => digits(s.day.slice(8, 10)))} normal={[0, 3]} />
+          <p className="-mt-1 text-[9px] os-muted">{t('cycle.severityTrend')}</p>
+          <div className="space-y-2">
+            {(['headache', 'backache', 'stomachache', 'nausea'] as const).map((f) => (
+              <HBar key={f} label={t(`cycle.symptomFields.${f}`)} value={symAvg[f] || 0} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------- بینش‌ها */}
+      {insights.length > 0 && (
+        <div className="space-y-2">
+          <SectionTitle>{t('cycle.insights')}</SectionTitle>
+          {insights.map((ins, i) => (
             <motion.div
               key={i}
-              className="flex-1 rounded-t-lg"
-              style={{ background: g < 21 || g > 35 ? '#e0478d' : 'var(--os-accent)' }}
-              initial={{ height: 0 }}
-              animate={{ height: `${(g / maxGap) * 100}%` }}
-              transition={{ delay: i * 0.04 }}
-              title={`${g}`}
-            />
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="os-card flex items-center gap-2 p-3 text-sm"
+              style={ins.warn ? { borderColor: 'rgba(224,71,141,.5)', color: '#e0478d' } : undefined}
+            >
+              <span className="text-base">{ins.icon}</span>
+              {ins.text}
+            </motion.div>
           ))}
         </div>
-      </div>
+      )}
+    </div>
+  )
+}
+
+const max3 = (a: number[]) => Math.max(...a)
+const min3 = (a: number[]) => Math.min(...a)
+
+function SummaryCard({ icon, label, value, small = false }: { icon: string; label: string; value: string; small?: boolean }) {
+  return (
+    <div className="os-card p-3">
+      <p className="text-[10px] os-muted">{icon} {label}</p>
+      <p className={`os-title mt-0.5 ${small ? 'text-sm leading-5' : 'text-xl'}`}>{value}</p>
     </div>
   )
 }
@@ -375,14 +733,7 @@ function CareTab() {
             <p className="text-sm">{c.text}</p>
             <p className="text-[11px] os-muted">{digits(String(c.hour).padStart(2, '0'))}:{digits(String(c.minute).padStart(2, '0'))}</p>
           </div>
-          <button
-            onClick={() => void toggle(c)}
-            className="h-7 w-12 rounded-full p-0.5 transition"
-            style={{ background: c.enabled ? 'var(--os-accent)' : 'var(--os-border)' }}
-            aria-label="toggle"
-          >
-            <motion.span className="block h-6 w-6 rounded-full bg-white" animate={{ x: c.enabled ? 20 : 0 }} />
-          </button>
+          <Toggle on={c.enabled} onChange={() => void toggle(c)} />
         </div>
       ))}
     </div>

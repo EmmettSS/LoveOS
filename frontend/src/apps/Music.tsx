@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { del, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
+import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { AudioPlayer, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
@@ -41,7 +42,10 @@ export default function Music() {
   const [showLyrics, setShowLyrics] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({ title: '', artist: '' })
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const coverRef = useRef<HTMLInputElement | null>(null)
   const timerRef = useRef<number | null>(null)
 
   // تایمر خواب: بعد از N دقیقه همه‌ی صداها متوقف می‌شوند
@@ -76,10 +80,14 @@ export default function Music() {
       fd.append('audio', file)
       fd.append('title', form.title || file.name)
       fd.append('artist', form.artist)
+      if (coverFile) fd.append('cover', coverFile)
       await upload('/songs/upload', fd)
       showToast(t('music.uploadDone'), 'love')
       setForm({ title: '', artist: '' })
+      setCoverFile(null)
+      setCoverPreview(null)
       if (fileRef.current) fileRef.current.value = ''
+      if (coverRef.current) coverRef.current.value = ''
       await reload()
     } catch {
       showToast(t('os.error'))
@@ -203,6 +211,48 @@ export default function Music() {
             onChange={(e) => setForm({ ...form, artist: e.target.value })}
           />
           <input ref={fileRef} type="file" accept="audio/*" className="os-input !py-2 text-xs" />
+          {/* کاور آهنگ */}
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
+              style={{ background: coverPreview ? undefined : 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
+            >
+              {coverPreview ? <img src={coverPreview} alt="" className="h-full w-full object-cover" /> : <Icon name="music" size={24} />}
+            </span>
+            <div className="flex-1">
+              <button type="button" className="os-chip" onClick={() => coverRef.current?.click()}>
+                {t('music.cover')} 🖼
+              </button>
+              {coverPreview && (
+                <button
+                  type="button"
+                  className="os-chip ms-2 !text-[10px]"
+                  onClick={() => {
+                    setCoverFile(null)
+                    setCoverPreview(null)
+                    if (coverRef.current) coverRef.current.value = ''
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <input
+              ref={coverRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0]
+                if (f) {
+                  const { blob, preview } = await resizeImage(f, 640, 0.82)
+                  setCoverFile(blobToUploadFile(blob, f.name))
+                  setCoverPreview(preview)
+                }
+                if (coverRef.current) coverRef.current.value = ''
+              }}
+            />
+          </div>
           <button className="os-btn-primary w-full" onClick={() => void doUpload()} disabled={uploading}>
             <span className="inline-flex items-center justify-center gap-2">
               <Icon name="upload" size={16} /> {uploading ? t('os.uploading') : t('music.upload')}

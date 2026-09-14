@@ -269,6 +269,14 @@ def garden(request):
 
 @api_view(["POST"])
 @require_session
+def garden_reset(request):
+    """با هر ورود تازه‌ی دخترم به پروژه، گل‌ها به مرحله‌ی اول برمی‌گردند."""
+    updated = Flower.objects.filter(is_active=True).update(water_count=0)
+    return Response({"ok": True, "reset": updated})
+
+
+@api_view(["POST"])
+@require_session
 def garden_water(request, pk: int):
     flower = Flower.objects.filter(pk=pk, is_active=True).first()
     if not flower:
@@ -317,10 +325,11 @@ def cinema_json(c: CinemaItem) -> dict:
 
 
 @api_view(["GET", "POST"])
+@parser_classes([MultiPartParser, FormParser])
 @require_session
 def cinema(request):
     if request.method == "POST":
-        item = CinemaItem.objects.create(
+        item = CinemaItem(
             title=request.data.get("title", "بدون اسم"),
             kind=request.data.get("kind", "film"),
             link=request.data.get("link", ""),
@@ -329,12 +338,17 @@ def cinema(request):
             note=request.data.get("note", ""),
             added_by="daughter",
         )
+        poster = request.FILES.get("poster")
+        if poster:
+            item.poster = poster
+        item.save()
         notify_daddy("cinema_add", f"دخترت «{item.title}» رو به لیست تماشا اضافه کرد 🎬")
         return Response({"ok": True, "item": cinema_json(item)})
     return Response({"items": [cinema_json(c) for c in CinemaItem.objects.all()]})
 
 
-@api_view(["PATCH", "DELETE"])
+@api_view(["PATCH", "POST", "DELETE"])
+@parser_classes([MultiPartParser, FormParser])
 @require_session
 def cinema_item(request, pk: int):
     item = CinemaItem.objects.filter(pk=pk).first()
@@ -345,9 +359,13 @@ def cinema_item(request, pk: int):
             return Response({"ok": False, "message": "این رو بابا اضافه کرده"}, status=403)
         item.delete()
         return Response({"ok": True})
-    for field in ("status", "rating", "note"):
+    for field in ("status", "rating", "note", "title", "link"):
         if field in request.data:
             setattr(item, field, request.data[field])
+    # پوستر: هم با POST (فرم) و هم با PATCH (فرم) قابل آپلود است
+    poster = request.FILES.get("poster")
+    if poster:
+        item.poster = poster
     item.save()
     return Response({"ok": True, "item": cinema_json(item)})
 
