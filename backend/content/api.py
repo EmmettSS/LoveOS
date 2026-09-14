@@ -177,11 +177,59 @@ def memory_json(m: Memory) -> dict:
     }
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
+@parser_classes([MultiPartParser, FormParser])
 @require_session
 def memories(request):
+    if request.method == "POST":
+        title = str(request.data.get("title") or "خاطره‌ی من").strip()[:160]
+        text = str(request.data.get("text") or "").strip()
+        place = str(request.data.get("place") or "").strip()[:140]
+        is_future = str(request.data.get("is_future") or "").lower() in ("1", "true", "yes", "on")
+        happened_on = request.data.get("happened_on")
+        # تاریخ اختیاری
+        from datetime import date as date_cls
+        parsed_date = None
+        if happened_on:
+            try:
+                parsed_date = date_cls.fromisoformat(str(happened_on)[:10])
+            except Exception:
+                parsed_date = None
+        photo = request.FILES.get("photo")
+        voice_file = request.FILES.get("voice")
+        m = Memory.objects.create(
+            title=title,
+            text=text,
+            place=place,
+            is_future=is_future,
+            happened_on=parsed_date,
+            photo=photo,
+        )
+        # اگر ویس هم فرستاده شده باشد، یک Voice بسازیم و وصل کنیم
+        if voice_file:
+            v = Voice.objects.create(
+                title=f"{title} - ویس",
+                category="random",
+                audio=voice_file,
+            )
+            m.voice = v
+            m.save(update_fields=["voice"])
+        log_activity("ثبت خاطره", "memories", f"{'آینده' if is_future else 'گذشته'}: {title}")
+        notify_daddy("memory_add", f"دخترت یه خاطره‌ی {'آینده' if is_future else 'گذشته'} اضافه کرد ✨ «{title}»")
+        return Response({"ok": True, "item": memory_json(m)})
     qs = Memory.objects.filter(is_active=True)
     return Response({"items": [memory_json(m) for m in qs]})
+
+
+@api_view(["DELETE"])
+@require_session
+def memory_item(request, pk: int):
+    m = Memory.objects.filter(pk=pk).first()
+    if not m:
+        return Response({"ok": False}, status=404)
+    m.delete()
+    log_activity("حذف خاطره", "memories", m.title)
+    return Response({"ok": True})
 
 
 # ----------------------------------------------------------------- نامه ----
@@ -231,9 +279,40 @@ def letter_random(request):
 
 
 # --------------------------------------------------------- شمارش معکوس ----
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @require_session
 def countdowns(request):
+    if request.method == "POST":
+        title = str(request.data.get("title") or "یادآور").strip()[:160]
+        target = request.data.get("target")
+        icon = str(request.data.get("icon") or "heart")[:40]
+        done_message = str(request.data.get("done_message") or "رسیدیم! 🎉")[:255]
+        from django.utils.dateparse import parse_datetime
+        from datetime import timedelta
+        dt = None
+        if target:
+            try:
+                dt = parse_datetime(str(target))
+                if dt is None:
+                    # تلاش با تاریخ ساده
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(str(target).replace("Z", "+00:00"))
+            except Exception:
+                dt = None
+        if dt is None:
+            return Response({"ok": False, "message": "تاریخ نامعتبر است"}, status=400)
+        # اگر timezone نداشت، از تنظیمات سرور استفاده کن
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt)
+        c = Countdown.objects.create(
+            title=title,
+            target=dt,
+            icon=icon,
+            done_message=done_message,
+        )
+        log_activity("افزودن شمارش معکوس", "countdown", title)
+        notify_daddy("countdown_add", f"دخترت یه شمارش جدید اضافه کرد ⏳ «{title}»")
+        return Response({"ok": True, "id": c.id})
     items = []
     for c in Countdown.objects.filter(is_active=True):
         diff = c.target - timezone.now()
@@ -251,6 +330,18 @@ def countdowns(request):
             }
         )
     return Response({"items": items})
+
+
+@api_view(["DELETE"])
+@require_session
+def countdown_item(request, pk: int):
+    c = Countdown.objects.filter(pk=pk).first()
+    if not c:
+        return Response({"ok": False}, status=404)
+    title = c.title
+    c.delete()
+    log_activity("حذف شمارش", "countdown", title)
+    return Response({"ok": True})
 
 
 # ---------------------------------------------------------------- باغچه ----

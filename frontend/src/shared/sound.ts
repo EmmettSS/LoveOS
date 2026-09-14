@@ -1,12 +1,46 @@
 /**
  * sound.ts — صداهای سیستم با WebAudio (بدون فایل، بدون کپی‌رایت)
  * ملودی بوت، کلیک، ضربان قلب، شکوفه، نوت‌های نرم.
+ * نسخه‌ی بهبودیافته: همیشه بعد از اولین تعامل کاربر AudioContext را بیدار می‌کند
+ * و حتی اگر مرورگر حالت suspended داشت، صدا را با تاخیر امن پخش می‌کند.
  */
 let ctx: AudioContext | null = null
 let enabled = true
+let unlocked = false
+
+function ensureUnlocked() {
+  if (unlocked) return
+  const resume = () => {
+    if (ctx && ctx.state === 'suspended') void ctx.resume()
+    if (!ctx) {
+      try {
+        const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext
+        if (Ctor) {
+          ctx = new Ctor()
+          unlocked = true
+        }
+      } catch {}
+    } else {
+      unlocked = true
+    }
+  }
+  // اولین کلیک/تاچ/کیبرد در هر جای صفحه، قفل صدا را باز می‌کند
+  const events: (keyof WindowEventMap)[] = ['click', 'touchstart', 'keydown', 'pointerdown']
+  const handler = () => {
+    resume()
+    events.forEach((ev) => window.removeEventListener(ev, handler))
+  }
+  events.forEach((ev) => window.addEventListener(ev, handler, { once: true, passive: true } as any))
+}
+
+ensureUnlocked()
 
 export function setSoundEnabled(v: boolean) {
   enabled = v
+  if (v) {
+    ensureUnlocked()
+    if (ctx && ctx.state === 'suspended') void ctx.resume()
+  }
 }
 export function isSoundEnabled() {
   return enabled
@@ -15,11 +49,17 @@ export function isSoundEnabled() {
 function audio(): AudioContext | null {
   if (!enabled) return null
   if (!ctx) {
-    const Ctor = window.AudioContext || (window as any).webkitAudioContext
+    const Ctor = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined
     if (!Ctor) return null
-    ctx = new Ctor()
+    try {
+      ctx = new Ctor()
+    } catch {
+      return null
+    }
   }
-  if (ctx.state === 'suspended') void ctx.resume()
+  if (ctx.state === 'suspended') {
+    void ctx.resume()
+  }
   return ctx
 }
 
@@ -35,18 +75,40 @@ interface ToneOptions {
 export function tone({ freq, duration = 0.3, type = 'sine', gain = 0.12, delay = 0, glideTo }: ToneOptions) {
   const ac = audio()
   if (!ac) return
-  const start = ac.currentTime + delay
-  const osc = ac.createOscillator()
-  const g = ac.createGain()
-  osc.type = type
-  osc.frequency.setValueAtTime(freq, start)
-  if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, start + duration)
-  g.gain.setValueAtTime(0.0001, start)
-  g.gain.exponentialRampToValueAtTime(gain, start + 0.04)
-  g.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-  osc.connect(g).connect(ac.destination)
-  osc.start(start)
-  osc.stop(start + duration + 0.05)
+  try {
+    const start = ac.currentTime + delay + (ac.state === 'suspended' ? 0.12 : 0)
+    const osc = ac.createOscillator()
+    const g = ac.createGain()
+    osc.type = type
+    osc.frequency.setValueAtTime(freq, start)
+    if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, start + duration)
+    g.gain.setValueAtTime(0.0001, start)
+    g.gain.exponentialRampToValueAtTime(gain, start + 0.04)
+    g.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+    osc.connect(g).connect(ac.destination)
+    osc.start(start)
+    osc.stop(start + duration + 0.08)
+    // اگر هنوز suspended بود، بعد از resume دوباره تلاش کن
+    if (ac.state === 'suspended') {
+      void ac.resume().then(() => {
+        try {
+          const osc2 = ac.createOscillator()
+          const g2 = ac.createGain()
+          osc2.type = type
+          osc2.frequency.setValueAtTime(freq, ac.currentTime + 0.02)
+          if (glideTo) osc2.frequency.exponentialRampToValueAtTime(glideTo, ac.currentTime + 0.02 + duration)
+          g2.gain.setValueAtTime(0.0001, ac.currentTime + 0.02)
+          g2.gain.exponentialRampToValueAtTime(gain, ac.currentTime + 0.06)
+          g2.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.02 + duration)
+          osc2.connect(g2).connect(ac.destination)
+          osc2.start(ac.currentTime + 0.02)
+          osc2.stop(ac.currentTime + 0.02 + duration + 0.08)
+        } catch {}
+      })
+    }
+  } catch {
+    /* مرورگر اجازه‌ی صدا نداد — بی‌صدا رد می‌شویم */
+  }
 }
 
 /** ملودی نرم بوت — پنج نت صعودی پنتاتونیک */

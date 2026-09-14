@@ -484,7 +484,7 @@ function PlanTab({ appointments, reload }: { appointments: Appointment[]; reload
 
   return (
     <div className="space-y-3">
-      <form onSubmit={propose} className="os-card space-y-2 p-3">
+      <form onSubmit={propose} className="os-card relative space-y-2 p-3 !overflow-visible" style={{ overflow: 'visible', zIndex: 20 }}>
         <p className="text-sm font-semibold">{t('calls.proposeTitle')}</p>
         <Chips
           items={[
@@ -494,7 +494,7 @@ function PlanTab({ appointments, reload }: { appointments: Appointment[]; reload
           value={proposer}
           onChange={setProposer}
         />
-        <div className="flex gap-2">
+        <div className="relative flex gap-2" style={{ zIndex: 30, overflow: 'visible' }}>
           <div className="flex-1">
             <DateField value={date} onChange={setDate} />
           </div>
@@ -598,8 +598,8 @@ function RescheduleForm({ appointment, onSubmit }: { appointment: Appointment; o
   const [date, setDate] = useState(appointment.date)
   const [time, setTime] = useState(appointment.time)
   return (
-    <div className="space-y-2 rounded-xl p-2" style={{ background: 'var(--os-border)' }}>
-      <div className="flex gap-2">
+    <div className="relative space-y-2 rounded-xl p-2 !overflow-visible" style={{ background: 'var(--os-border)', overflow: 'visible', zIndex: 30 }}>
+      <div className="relative flex gap-2" style={{ zIndex: 40, overflow: 'visible' }}>
         <div className="flex-1">
           <DateField value={date} onChange={setDate} />
         </div>

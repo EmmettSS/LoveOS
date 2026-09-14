@@ -97,7 +97,7 @@ function JalaliDateButton({
   const isSel = (jd: number) => jSel !== null && jSel.jy === view.jy && jSel.jm === view.jm && jSel.jd === jd
 
   return (
-    <div ref={box} className={`relative ${className}`}>
+    <div ref={box} className={`relative ${className}`} style={{ zIndex: open ? 80 : undefined }}>
       <button
         type="button"
         className="os-input flex items-center justify-between gap-2 text-start"
@@ -114,8 +114,8 @@ function JalaliDateButton({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="os-card absolute z-30 mt-1 w-[290px] max-w-[86vw] p-3"
-            style={{ insetInlineStart: 0 }}
+            className="os-card absolute z-[80] mt-1 w-[290px] max-w-[86vw] p-3 shadow-2xl"
+            style={{ insetInlineStart: 0, maxHeight: 'min(420px, 70vh)', overflowY: 'auto' }}
           >
             {/* نوار ماه و سال */}
             <div className="mb-2 flex items-center justify-between gap-1">

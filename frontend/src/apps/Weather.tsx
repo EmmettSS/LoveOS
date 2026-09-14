@@ -3,6 +3,7 @@
  * آسمان زنده و انیمیشنی (خورشید، ابر، باران، برف، رعد، مه، شب)،
  * جزئیات کامل (حس دما، رطوبت، باد، فشار، UV، پوشش ابر)، طلوع/غروب
  * و پیش‌بینی ۵ روزه — به‌همراه پیام عاشقانه‌ی مقایسه.
+ * نسخه‌ی اصلاح‌شده: رنگ متن‌ها همیشه با تم هماهنگ و خوانا است.
  */
 import { motion, animate } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -79,7 +80,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: bg }} aria-hidden>
-      {/* ستاره‌های شب */}
       {!isDay &&
         Array.from({ length: 12 }).map((_, i) => (
           <span
@@ -95,7 +95,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
           />
         ))}
 
-      {/* آفتاب با پرتوهای چرخان */}
       {icon === 'sun' && isDay && (
         <div className="absolute" style={{ top: '12%', insetInlineEnd: '10%' }}>
           <div style={{ position: 'relative', width: 92, height: 92 }}>
@@ -124,7 +123,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
         </div>
       )}
 
-      {/* ماه شب */}
       {!isDay && (
         <div
           className="animate-float absolute"
@@ -140,7 +138,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
         />
       )}
 
-      {/* ابرهای در حال گذر */}
       {(icon === 'cloud' || icon === 'rain' || icon === 'snow' || icon === 'storm') &&
         clouds.map((c) => (
           <div
@@ -158,7 +155,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
           />
         ))}
 
-      {/* مه */}
       {icon === 'fog' &&
         [18, 34, 50].map((top, i) => (
           <div
@@ -176,7 +172,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
           />
         ))}
 
-      {/* رعد */}
       {icon === 'storm' && (
         <div
           className="absolute inset-0"
@@ -184,7 +179,6 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
         />
       )}
 
-      {/* باران / برف */}
       {(icon === 'rain' || icon === 'snow') &&
         drops.map((d) => (
           <span
@@ -206,7 +200,7 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
   )
 }
 
-/* ------------------------------------------------------ دمای شمرنده ---- */
+/* ------------------------------------------------------ دمای شمارنده ---- */
 function CountUp({ to }: { to: number | null }) {
   const [val, setVal] = useState(0)
   useEffect(() => {
@@ -230,13 +224,13 @@ function HumidityRing({ value }: { value: number | null }) {
   return (
     <div className="relative flex h-14 w-14 items-center justify-center">
       <svg width="56" height="56" viewBox="0 0 56 56" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="28" cy="28" r={R} fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="5" />
+        <circle cx="28" cy="28" r={R} fill="none" stroke="var(--os-border)" strokeWidth="5" />
         <motion.circle
           cx="28"
           cy="28"
           r={R}
           fill="none"
-          stroke="#fff"
+          stroke="var(--os-accent)"
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={C}
@@ -245,7 +239,7 @@ function HumidityRing({ value }: { value: number | null }) {
           transition={{ duration: 1.2, ease: 'easeOut' }}
         />
       </svg>
-      <span className="absolute text-[10px] font-bold text-white">{value != null ? `${digits(value)}٪` : '—'}</span>
+      <span className="absolute text-[10px] font-bold" style={{ color: 'var(--os-text)' }}>{value != null ? `${digits(value)}٪` : '—'}</span>
     </div>
   )
 }
@@ -257,13 +251,13 @@ function Card({ side, label }: { side: Side; label: string }) {
   const uvTone = side.uv == null ? '' : side.uv < 3 ? '#7dd3fc' : side.uv < 6 ? '#fbbf24' : side.uv < 8 ? '#fb923c' : '#f87171'
 
   return (
-    <div className="relative overflow-hidden rounded-3xl shadow-soft" style={{ color: '#243447' }}>
+    <div className="relative overflow-hidden rounded-3xl shadow-soft os-card" style={{ padding: 0 }}>
       <div className="relative h-40">
         <SkyScene icon={side.icon} isDay={isDay} />
-        <div className="absolute inset-0 flex flex-col justify-between p-4" style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(15,23,42,.34))' }}>
+        <div className="absolute inset-0 flex flex-col justify-between p-4" style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(15,23,42,.42))' }}>
           <div className="flex items-center justify-between">
-            <p className="os-title rounded-full bg-white/55 px-3 py-1 text-sm backdrop-blur">{label}</p>
-            <span className="rounded-full bg-white/55 px-2.5 py-1 text-[11px] backdrop-blur">
+            <p className="os-title rounded-full bg-white/70 px-3 py-1 text-sm backdrop-blur text-[#4a2c40]">{label}</p>
+            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] backdrop-blur text-[#4a2c40]">
               {side.is_day ? '☀️' : '🌙'} {side.label}
             </span>
           </div>
@@ -281,7 +275,7 @@ function Card({ side, label }: { side: Side; label: string }) {
               <p className="mt-1 text-sm font-semibold text-white/90">{side.city}</p>
             </div>
             {side.feels_like != null && (
-              <p className="rounded-full bg-white/50 px-2.5 py-1 text-[11px] backdrop-blur">
+              <p className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] backdrop-blur text-[#4a2c40]">
                 {t('weather.feelsLike')}: {digits(Math.round(side.feels_like))}°
               </p>
             )}
@@ -289,20 +283,19 @@ function Card({ side, label }: { side: Side; label: string }) {
         </div>
       </div>
 
-      <div className="space-y-3 p-4" style={{ background: 'var(--os-card)' }}>
-        {/* ردیف شاخص‌ها */}
+      <div className="space-y-3 p-4">
+        {/* ردیف شاخص‌ها — رنگ‌ها با تم هماهنگ و خوانا */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <HumidityRing value={side.humidity != null ? Math.round(side.humidity) : null} />
             <div>
               <p className="text-[10px] os-muted">{t('weather.humidity')}</p>
-              <p className="text-xs font-bold">{side.humidity != null ? `${digits(Math.round(side.humidity))}٪` : '—'}</p>
+              <p className="text-xs font-bold" style={{ color: 'var(--os-text)' }}>{side.humidity != null ? `${digits(Math.round(side.humidity))}٪` : '—'}</p>
             </div>
           </div>
 
           <div className="flex flex-col items-center">
             <div className="relative h-10 w-10">
-              {/* جهت باد */}
               <span
                 className="absolute inset-0 flex items-center justify-center text-xl"
                 style={{
@@ -314,7 +307,7 @@ function Card({ side, label }: { side: Side; label: string }) {
               </span>
             </div>
             <p className="text-[10px] os-muted">{t('weather.wind')}</p>
-            <p className="text-xs font-bold">
+            <p className="text-xs font-bold" style={{ color: 'var(--os-text)' }}>
               {side.wind != null ? `${digits(Math.round(side.wind))}` : '—'}
               {side.wind_dir ? ` ${side.wind_dir}` : ''}
             </p>
@@ -323,13 +316,13 @@ function Card({ side, label }: { side: Side; label: string }) {
           <div className="flex flex-col items-center">
             <span className="text-xl">🧭</span>
             <p className="text-[10px] os-muted">{t('weather.pressure')}</p>
-            <p className="text-xs font-bold">{side.pressure != null ? digits(Math.round(side.pressure)) : '—'}</p>
+            <p className="text-xs font-bold" style={{ color: 'var(--os-text)' }}>{side.pressure != null ? digits(Math.round(side.pressure)) : '—'}</p>
           </div>
 
           <div className="flex flex-col items-center">
             <span
               className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ background: uvTone || 'var(--os-border)' }}
+              style={{ background: uvTone || 'var(--os-accent)' }}
             >
               {side.uv != null ? digits(Math.round(side.uv)) : '—'}
             </span>
@@ -337,24 +330,24 @@ function Card({ side, label }: { side: Side; label: string }) {
           </div>
         </div>
 
-        {/* طلوع و غروب + پوشش ابر */}
-        <div className="flex items-center justify-between rounded-2xl px-3 py-2 text-[11px]" style={{ background: 'var(--os-accent-soft)' }}>
-          <span className="flex items-center gap-1.5">
+        {/* طلوع و غروب + پوشش ابر — پس‌زمینه روشن با متن تیره‌ی خوانا */}
+        <div className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-[11px] os-card" style={{ background: 'var(--os-accent-soft)' }}>
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--os-text)' }}>
             <Icon name="sun" size={14} /> {t('weather.sunrise')}:{' '}
             <b>{side.sunrise ? digits(side.sunrise.slice(11, 16)) : '—'}</b>
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--os-text)' }}>
             <Icon name="moon" size={14} /> {t('weather.sunset')}:{' '}
             <b>{side.sunset ? digits(side.sunset.slice(11, 16)) : '—'}</b>
           </span>
           {side.cloud_cover != null && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1" style={{ color: 'var(--os-text)' }}>
               <Icon name="cloud" size={14} /> {t('weather.cloudCover')} <b>{digits(Math.round(side.cloud_cover))}٪</b>
             </span>
           )}
         </div>
 
-        {/* پیش‌بینی ۵ روزه */}
+        {/* پیش‌بینی ۵ روزه — کارت‌های روشن با متن خوانا */}
         {side.forecast && side.forecast.length > 0 && (
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
             {side.forecast.map((d, i) => (
@@ -363,14 +356,14 @@ function Card({ side, label }: { side: Side; label: string }) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className="flex min-w-[58px] flex-1 flex-col items-center gap-1 rounded-2xl p-2"
+                className="flex min-w-[60px] flex-1 flex-col items-center gap-1 rounded-2xl p-2.5 os-card"
                 style={{ background: 'var(--os-accent-soft)' }}
               >
-                <span className="text-[9px] os-muted">{forecastDayName(d.date, i, t)}</span>
-                <Icon name={ICON[d.icon] || 'cloud'} size={20} />
-                <span className="text-[10px] font-bold">
+                <span className="text-[9px]" style={{ color: 'var(--os-muted)' }}>{forecastDayName(d.date, i, t)}</span>
+                <Icon name={ICON[d.icon] || 'cloud'} size={20} style={{ color: 'var(--os-accent)' }} />
+                <span className="text-[10px] font-bold" style={{ color: 'var(--os-text)' }}>
                   {d.t_max != null ? `${digits(Math.round(d.t_max))}°` : '—'}
-                  <span className="os-muted font-normal"> / {d.t_min != null ? `${digits(Math.round(d.t_min))}°` : '—'}</span>
+                  <span className="font-normal" style={{ color: 'var(--os-muted)' }}> / {d.t_min != null ? `${digits(Math.round(d.t_min))}°` : '—'}</span>
                 </span>
                 {d.precip_prob != null && d.precip_prob > 0 && (
                   <span className="text-[9px]" style={{ color: '#3b82f6' }}>
@@ -412,7 +405,6 @@ export default function Weather() {
       <Card side={data.daddy} label={t('weather.daddyCity')} />
       <Card side={data.daughter} label={t('weather.daughterCity')} />
 
-      {/* مقایسه‌ی عاشقانه */}
       {(data.message || diff != null) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}

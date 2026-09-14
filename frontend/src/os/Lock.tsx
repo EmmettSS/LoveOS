@@ -95,7 +95,7 @@ export function Lock() {
     <motion.div
       className="relative flex h-full w-full flex-col items-center justify-center px-6"
       style={{
-        backgroundImage: `linear-gradient(170deg, rgba(255,245,249,.82), rgba(243,236,255,.88)), url(${
+        backgroundImage: `linear-gradient(170deg, rgba(255,245,249,.42), rgba(243,236,255,.48)), url(${
           config?.lock_background || '/backgrounds/lock.jpg'
         })`,
         backgroundSize: 'cover',
