@@ -40,35 +40,50 @@
   "boot": {
     "version": "LoveOS v1.0",
     "forYou": "Only for my daughter ❤",
-    "copyright": "© {{daddy}} ❤ {{daughter}} — made with love",
+    "tagline": "For the one who became my heart and whole world …",
+    "terminalTitle": "love-os@heart: ~/boot",
+    "loadingPhrase": "Waking LoveOS",
+    "skipHint": "Tap anywhere to skip",
+    "complete": "All systems in love",
+    "welcome": "Welcome home, my love",
+    "copyright": "Copyright © {{daddy}} ❤ {{daughter}} — made with all my heart",
     "lines": [
       {
-        "label": "LoveOS kernel — only for my daughter",
-        "status": "OK"
+        "label": "BIOS check",
+        "status": "OK",
+        "tone": "ok"
       },
       {
-        "label": "Mounting heart device",
-        "status": "OK"
+        "label": "Heart module",
+        "status": "OK",
+        "tone": "ok"
       },
       {
-        "label": "Distance module (3500 km)",
-        "status": "resolved"
+        "label": "Distance handler",
+        "status": "RESOLVED",
+        "tone": "cyan"
       },
       {
-        "label": "Memory of our moments",
-        "status": "ready"
+        "label": "Love kernel",
+        "status": "LOADING",
+        "tone": "amber",
+        "ellipsis": true
       },
       {
-        "label": "Voice & hug boxes",
-        "status": "active"
+        "label": "Memory vault",
+        "status": "ENCRYPTED",
+        "tone": "violet"
       },
       {
-        "label": "Calibrating next call countdown",
-        "status": "done"
+        "label": "Voice core",
+        "status": "READY",
+        "tone": "pink"
       },
       {
-        "label": "Waking the desktop",
-        "status": "❤"
+        "label": "Initializing desktop",
+        "status": "...",
+        "tone": "heart",
+        "final": true
       }
     ]
   },

@@ -7,6 +7,11 @@
  *   ۳) تغییر زبان و تم واقعاً اعمال و روی سرور ذخیره می‌شود
  */
 import { JSDOM } from 'jsdom'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const publicDir = join(dirname(dirname(fileURLToPath(import.meta.url))), '..', 'public')
 
 const dom = new JSDOM('<!doctype html><html lang="fa" dir="rtl"><body><div id="root"></div></body></html>', {
   pretendToBeVisual: true,
@@ -47,6 +52,10 @@ const json = (d: unknown) => ({ ok: true, status: 200, json: async () => d, text
 g.fetch = async (url: string, opts: any = {}) => {
   const p = String(url)
   const method = (opts.method || 'GET').toUpperCase()
+  if (p.includes('/locales/')) {
+    const lang = p.includes('/en/') ? 'en' : 'fa'
+    return json(JSON.parse(readFileSync(join(publicDir, 'locales', lang, 'translation.json'), 'utf8')))
+  }
   if (p.includes('/api/boot')) return json({ config: serverConfig, unlocked: false })
   if (p.includes('/api/location')) return json({ ok: true, location: null })
   if (p.includes('/api/settings')) {
@@ -65,7 +74,8 @@ async function main() {
   const { act } = React as any
   const { createRoot } = await import('react-dom/client')
   const { useOS } = await import('../src/shared/store')
-  const { default: i18n } = await import('../src/shared/i18n')
+  const { default: i18n, i18nReady } = await import('../src/shared/i18n')
+  await i18nReady
   const { Desktop } = await import('../src/os/Desktop')
   const { APPS } = await import('../src/os/appRegistry')
 

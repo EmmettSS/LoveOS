@@ -135,7 +135,11 @@ export default function App() {
   }
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div
+      className="h-full w-full overflow-hidden"
+      // موقع خروج انیمیشن بوت، پس‌زمینه هم تیره بماند تا فلش سفید پیدا نشود
+      style={phase === 'boot' ? { background: '#0a0410' } : undefined}
+    >
       <AnimatePresence mode="wait">
         {phase === 'boot' && <Boot key="boot" />}
         {phase === 'lock' && <Lock key="lock" />}

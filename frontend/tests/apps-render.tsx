@@ -61,6 +61,16 @@ g.fetch = async (url: string, opts: any = {}) => {
   const path = raw.replace(/^https?:\/\/[^/]+/, '')
   requested.push(`${method} ${path}`)
 
+  // فایل‌های ترجمه مثل حالت واقعی از public/locales سرو می‌شوند
+  if (path.startsWith('/locales/')) {
+    const lang = path.split('/')[2]
+    try {
+      return json(JSON.parse(readFileSync(join(fixturesDir, '..', 'public', 'locales', lang, 'translation.json'), 'utf8')))
+    } catch {
+      return { ok: false, status: 404, json: async () => ({}), text: async () => '' }
+    }
+  }
+
   // ثبت/ویرایش در این آزمون فقط «موفق» گزارش می‌شود
   if (method !== 'GET') {
     const base = path.split('?')[0]
@@ -108,7 +118,9 @@ const { act } = await import('react')
 const { createRoot } = await import('react-dom/client')
 const { createElement: h } = await import('react')
 
-const i18n = (await import('../src/shared/i18n')).default
+const i18nModule = await import('../src/shared/i18n')
+const i18n = i18nModule.default
+await i18nModule.i18nReady
 globalThis.__loveosHarness = true
 
 /** یک اپ را در یک ظرف تازه بالا می‌آورد و HTML نهایی را برمی‌گرداند */
