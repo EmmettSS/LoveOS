@@ -6,9 +6,11 @@
   • تغییرات موقعیت باید خودکار روی مقدار پنل بابا هم بنشیند.
   • جستجوی سراسری باید در همه‌ی اپ‌ها، با غلط‌گیری حرف‌های عربی/فارسی، کار کند.
 """
+import threading
+import time
 from datetime import timedelta
 
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
 from accounts.models import DeviceSession, LiveLocation, UserConfig
@@ -312,3 +314,73 @@ class AdminPanelTests(TestCase):
         # ثبت با رشته هم نباید در پنل بشکند (ایمپورت داده/فرم دستی)
         loose = CallFreeSlot(owner="daughter", weekday=0, start_time="09:30", end_time="10:00")
         self.assertIn("09:30", str(loose))
+
+
+class NotifyAsyncTests(TransactionTestCase):
+  """
+  اعلان‌های سروش نباید درخواست API را معطل کنند.
+
+  این دقیقاً همان چیزی است که باعث شد دختر بگوید «پازل برد را تشخیص
+  نمی‌دهد»: `/api/puzzles/<pk>/complete` موقع ثبت نتیجه، `notify_daddy`
+  را صدا می‌زد و آن هم **همگام** به سروش درخواست می‌داد. وقتی سروش در
+  دسترس نبود، پاسخ تا تایم‌اوت نمی‌آمد و جشنِ پایانِ پازل هرگز نشان داده
+  نمی‌شد. حالا ارسال در نخِ پس‌زمینه انجام می‌شود.
+  """
+
+  def _slow_provider(self, delay: float = 0.6):
+    from unittest import mock
+
+    provider = mock.Mock()
+
+    def send_message(chat_id, text, **kwargs):
+      time.sleep(delay)
+      return {"ok": True, "result": {"message_id": 1}}
+
+    provider.send_message.side_effect = send_message
+    return provider
+
+  @staticmethod
+  def _join_flush_threads(timeout: float = 10) -> None:
+    for th in threading.enumerate():
+      if th.name.startswith("soroush-flush-"):
+        th.join(timeout)
+
+  def test_notify_daddy_returns_without_waiting_for_network(self):
+    from unittest import mock
+
+    from core import soroush
+    from core.models import SoroushOutbox
+
+    provider = self._slow_provider()
+    with mock.patch.object(soroush, "get_provider", return_value=provider):
+      started = time.monotonic()
+      msg = soroush.notify_daddy("puzzle", "دخترت پازل رو حل کرد")
+      elapsed = time.monotonic() - started
+
+      self.assertLess(elapsed, 0.3, f"notify_daddy {elapsed:.2f}s منتظر شبکه ماند")
+      self.assertEqual(msg.status, "pending")
+      self.assertEqual(SoroushOutbox.objects.get(pk=msg.pk).status, "pending")
+
+      self._join_flush_threads()
+
+    self.assertEqual(provider.send_message.call_count, 1)
+    self.assertEqual(SoroushOutbox.objects.get(pk=msg.pk).status, "sent")
+
+  def test_notify_daddy_can_be_forced_synchronous(self):
+    from unittest import mock
+
+    from django.conf import settings
+    from django.test import override_settings
+
+    from core import soroush
+    from core.models import SoroushOutbox
+
+    provider = self._slow_provider(delay=0.0)
+    with override_settings(LOVEOS={**settings.LOVEOS, "NOTIFY_ASYNC": False}):
+      with mock.patch.object(soroush, "get_provider", return_value=provider):
+        msg = soroush.notify_daddy("puzzle", "حالت همگام")
+        self.assertEqual(msg.status, "sent")
+
+    self._join_flush_threads()
+    self.assertEqual(provider.send_message.call_count, 1)
+    self.assertEqual(SoroushOutbox.objects.get(pk=msg.pk).status, "sent")

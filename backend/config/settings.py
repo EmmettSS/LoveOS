@@ -183,4 +183,8 @@ LOVEOS = {
     # console = فقط لاگ (حالت توسعه) | soroush = ارسال واقعی
     "NOTIFY_PROVIDER": env("NOTIFY_PROVIDER", "console"),
     "OUTBOX_MAX_RETRY": int(env("OUTBOX_MAX_RETRY", "5")),
+    # ارسال اعلان در نخ پس‌زمینه تا هیچ درخواست API منتظر سروش نماند
+    "NOTIFY_ASYNC": env_bool("NOTIFY_ASYNC", True),
+    # تایم‌اوت هر درخواست سروش (ثانیه)
+    "SOROUSH_TIMEOUT": int(env("SOROUSH_TIMEOUT", "8")),
 }

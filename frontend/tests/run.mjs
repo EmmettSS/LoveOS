@@ -23,6 +23,9 @@ const ALL = {
   'boot-sequence': join(here, 'boot-sequence.tsx'),
   'window-manager-settings': join(here, 'window-manager-settings.tsx'),
   'apps-render': join(here, 'apps-render.tsx'),
+  'puzzle-win': join(here, 'puzzle-win.tsx'),
+  'pdf-book': join(here, 'pdf-book.tsx'),
+  'desktop-drag': join(here, 'desktop-drag.tsx'),
 }
 
 const only = process.argv.slice(2)

@@ -1,9 +1,15 @@
 /**
- * printBook.ts — چاپ حرفه‌ای کتاب به PDF (مقاس A4، مناسب چاپ و صحافی)
+ * printBook.ts — چاپ حرفه‌ای کتاب به PDF (A4، مناسب چاپ و صحافی)
  *
- * چرا html2canvas + jsPDF؟ چون متن فارسی را خودِ مرورگر (با فونت و شکل‌های
- * صحیح حروف) رندر می‌کند و ما هر صفحه را با کیفیت بالا عکس‌برداری و در PDF
- * می‌گذاریم؛ بنابراین هیچ مشکل «شکسته شدن حروف» یا «فونت غلط» پیش نمی‌آید.
+ * ✦ بدون هیچ وابستگی بیرونی ✦
+ * قبلاً این فایل به `jspdf` و `html2canvas` بند بود؛ اگر آن پکیج‌ها نصب
+ * نبودند، خودِ Vite موقع resolve کردنِ import خطا می‌داد و کل اپ دفتر
+ * نویسندگی بالا نمی‌آمد. حالا:
+ *   ۱) متن و تصویر هر صفحه با Canvas خودِ مرورگر رندر می‌شود (فارسی با شکل
+ *      درست حروف، چون همان موتور متنِ مرورگر استفاده می‌شود).
+ *   ۲) عکس هر صفحه با canvas.toBlob به JPEG تبدیل می‌شود.
+ *   ۳) JPEGها با miniPdf (نویسنده‌ی PDF داخلی خودمان) در یک فایل A4 بسته‌بندی
+ *      می‌شوند و دانلود می‌گیرند.
  *
  * خروجی:
  *   • صفحه‌ی ۱: جلد کتاب (عکس جلدِ ثبت‌شده یا جلد طراحی‌شده)
@@ -14,10 +20,9 @@
  *
  * استفاده: await exportBookPdf(book, (cur, total) => setProgress(...))
  */
-import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
-
-import { digits, formatDate } from './format'
+import { digits, formatDate, isFa } from './format'
+import { blobToBytes, buildPdf, downloadPdf } from './miniPdf'
+import type { PdfImagePage } from './miniPdf'
 
 /* --------------------------------------------------------- تایپ‌های ورودی -- */
 export interface PrintNote { author: string; text: string; color: string }
@@ -35,7 +40,7 @@ const FOOTER_H = 54
 const CONTENT_W = PAGE_W - MARGIN_X * 2
 const CONTENT_TOP = HEADER_H + 16
 const CONTENT_H = PAGE_H - CONTENT_TOP - FOOTER_H - 14
-const SAFETY = 14 // حاشیه‌ی امن برای اختلاف رندر canvas و DOM
+const SAFETY = 14 // حاشیه‌ی امن برای اختلاف اندازه‌گیری و رندر
 
 const INK = '#433527'
 const MUTED = '#9b8265'
@@ -45,15 +50,37 @@ const PAPER = '#fffdf9'
 
 const BODY_FONT = 16.5
 const BODY_LH = 2.15
+const NOTE_FONT = 13.5
+const NOTE_LH = 1.9
 
-/* --------------------------------------------------------- مدل صفحات ---- */
+/** کیفیت/بزرگ‌نمایی رندر: ۲ یعنی حدود ۱۵۰dpi برای چاپ */
+const RENDER_SCALE = 2
+const JPEG_QUALITY = 0.92
+
+const FONT_STACK = '"Vazirmatn", "Segoe UI", Tahoma, system-ui, sans-serif'
+const font = (size: number, weight = 400) => `${weight} ${size}px ${FONT_STACK}`
+
+/**
+ * hex (مثل ff88bb) + شفافیت ۰..۱ → rgba(...)
+ * بعضی موتورهای canvas هگز ۸ رقمی (ff88bb1c) را نمی‌فهمند؛ rgba امن‌تر است.
+ */
+function withAlpha(hex: string, alpha: number): string {
+  const h = hex.replace('#', '')
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
+  const r = parseInt(full.slice(0, 2), 16) || 0
+  const g = parseInt(full.slice(2, 4), 16) || 0
+  const b = parseInt(full.slice(4, 6), 16) || 0
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/* ------------------------------------------------------------- مدل صفحات -- */
 type Block =
-  | { kind: 'chapterHead'; num: number; title: string }
-  | { kind: 'text'; text: string }
-  | { kind: 'notes'; notes: PrintNote[] }
-  | { kind: 'image'; src: string }
-  | { kind: 'empty'; text: string }
-  | { kind: 'endMark' }
+  | { kind: 'chapterHead'; num: number; title: string; height: number }
+  | { kind: 'text'; lines: string[]; height: number }
+  | { kind: 'notes'; notes: PrintNote[]; lines: string[][]; height: number }
+  | { kind: 'image'; src: string; height: number }
+  | { kind: 'empty'; text: string; height: number }
+  | { kind: 'endMark'; height: number }
   | { kind: 'tocRow'; title: string; page: number }
 
 interface BuiltPage {
@@ -61,87 +88,70 @@ interface BuiltPage {
   chapterTitle: string
   pageNum: number
   blocks: Block[]
-  el?: HTMLElement
 }
 
-/* ------------------------------------------------------------- اندازه‌گیری -- */
-let measurer: HTMLDivElement | null = null
+export interface ImageSize { w: number; h: number }
+/** تابع اندازه‌گیری متن — در آزمون‌ها با یک نسخه‌ی ساختگی جایگزین می‌شود */
+export type MeasureFn = (text: string, fontSpec: string) => number
 
-function getMeasurer(): HTMLDivElement {
-  if (measurer && document.body.contains(measurer)) return measurer
-  const el = document.createElement('div')
-  el.style.cssText = `
-    position: fixed; top: 0; left: -12000px; width: ${CONTENT_W}px;
-    visibility: hidden; pointer-events: none; box-sizing: border-box;
-    font-family: inherit; background: transparent;
-  `
-  document.body.appendChild(el)
-  measurer = el
-  return el
-}
+/* ------------------------------------------------------------- شکستن متن -- */
+/**
+ * متن را خط‌به‌خط می‌شکند (کلمه‌به‌کلمه؛ کلمه‌ی خیلی بلند حرف‌به‌حرف).
+ * `measure` عرضِ یک رشته را با فونتِ داده‌شده برمی‌گرداند.
+ */
+export function wrapLines(text: string, maxWidth: number, measure: MeasureFn, fontSpec: string): string[] {
+  const out: string[] = []
 
-/** ارتفاع یک HTML با فونت/فاصله‌ی مشخص را می‌سنجد */
-function measureHtml(html: string, fontSize = BODY_FONT, lineHeight = BODY_LH): number {
-  const el = getMeasurer()
-  el.innerHTML = html
-  el.style.fontSize = `${fontSize}px`
-  el.style.lineHeight = `${lineHeight}`
-  return Math.ceil(el.offsetHeight || 0)
-}
-
-/** ارتفاع یک متن با سبک بدنه */
-function measureText(text: string): number {
-  return measureHtml(escapeHtml(text))
-}
-
-/** متن را به تکه‌هایی می‌شکند که هر کدام در یک صفحه (maxH) جا می‌گیرند */
-function splitTextToPieces(text: string, maxH: number): string[] {
-  if (measureText(text) <= maxH) return [text]
-  const pieces: string[] = []
-  let rest = text
-  let guard = 0
-  while (rest.length > 0 && guard < 50) {
-    guard += 1
-    if (measureText(rest) <= maxH) {
-      pieces.push(rest)
-      break
+  /** کلمه‌ای که به‌تنهایی از عرض صفحه بلندتر است — حرف‌به‌حرف می‌شکنیم */
+  const breakLongWord = (word: string): string => {
+    let piece = ''
+    for (const ch of word) {
+      if (piece.length > 0 && measure(piece + ch, fontSpec) > maxWidth) {
+        out.push(piece)
+        piece = ch
+      } else {
+        piece += ch
+      }
     }
-    // بزرگ‌ترین پیشوندی که در maxH جا می‌شود (جست‌وجوی دودویی)
-    let lo = 1
-    let hi = rest.length
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2)
-      if (measureText(rest.slice(0, mid)) <= maxH) lo = mid
-      else hi = mid - 1
-    }
-    // به آخر کلمه‌ی کامل عقب می‌رویم تا وسط کلمه نبنزند
-    const space = rest.lastIndexOf(' ', lo)
-    const cut = space >= lo * 0.35 ? space + 1 : lo
-    pieces.push(rest.slice(0, cut))
-    rest = rest.slice(cut).replace(/^\s+/, '')
+    return piece
   }
-  if (rest.length > 0) pieces.push(rest)
-  return pieces
+
+  for (const hard of text.split('\n')) {
+    const words = hard.split(/\s+/).filter((x) => x.length > 0)
+    if (words.length === 0) {
+      out.push('')
+      continue
+    }
+    let line = ''
+    for (const word of words) {
+      // خطِ جاری دیگر جا ندارد؟ اول ببندیمش
+      if (line.length > 0 && measure(`${line} ${word}`, fontSpec) > maxWidth) {
+        out.push(line)
+        line = ''
+      }
+      if (measure(word, fontSpec) > maxWidth) {
+        line = breakLongWord(word)
+      } else {
+        line = line.length === 0 ? word : `${line} ${word}`
+      }
+    }
+    if (line.length > 0) out.push(line)
+  }
+  return out.length > 0 ? out : ['']
 }
 
-/* ------------------------------------------------------------- تصاویر ----- */
-function loadImageEl(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`تصویر بارگذاری نشد: ${src}`))
-    img.src = src
-  })
+/* ----------------------------------------------------------- ساخت صفحات -- */
+function chapterHeadHeight(title: string, measure: MeasureFn): number {
+  const lines = wrapLines(title, CONTENT_W - 40, measure, font(30, 800))
+  return 26 + 20 + lines.length * 46 + 16 + 26
 }
 
-function imageHeightFor(natW: number, natH: number): number {
-  if (!natW || !natH) return 220
-  const h = (CONTENT_W * natH) / natW
+function imageSizeFor(size: ImageSize | null): number {
+  if (!size || !size.w || !size.h) return 220
+  const h = (CONTENT_W * size.h) / size.w
   return Math.max(60, Math.min(h, Math.floor(CONTENT_H * 0.62)))
 }
 
-/* --------------------------------------------------------- ساخت صفحات ---- */
 interface FlowCtx {
   pages: BuiltPage[]
   current: BuiltPage
@@ -157,15 +167,25 @@ function startPage(ctx: FlowCtx, chapterTitle: string): void {
   ctx.used = 0
 }
 
-function placeBlock(ctx: FlowCtx, block: Block, h: number, gap: number): void {
-  const need = h + (ctx.used > 0 ? gap : 0)
+/** بلوک‌هایی که داخل صفحه‌ی محتوا جا می‌گیرند (tocRow فقط در صفحه‌ی فهرست است) */
+type ContentBlock = Exclude<Block, { kind: 'tocRow' }>
+
+function placeBlock(ctx: FlowCtx, block: ContentBlock, gap: number): void {
+  const need = block.height + (ctx.used > 0 ? gap : 0)
   if (ctx.used > 0 && need > CONTENT_H - SAFETY) startPage(ctx, ctx.current.chapterTitle)
   ctx.current.blocks.push(block)
-  ctx.used += h + (ctx.current.blocks.length > 1 ? gap : 0)
+  ctx.used += block.height + (ctx.current.blocks.length > 1 ? gap : 0)
 }
 
-/** همه‌ی صفحات کتاب را می‌سازد (جلد + فهرست + صفحات محتوا با جریان درست) */
-async function buildPages(book: PrintBook): Promise<BuiltPage[]> {
+/**
+ * همه‌ی صفحات کتاب را می‌سازد (جلد + فهرست + صفحات محتوا با جریان درست).
+ * `images` اندازه‌ی طبیعی عکس‌ها را دارد تا ارتفاعشان درست حساب شود.
+ */
+export function buildPages(
+  book: PrintBook,
+  measure: MeasureFn,
+  images: Map<string, ImageSize> = new Map(),
+): { pages: BuiltPage[]; chapterStart: number[] } {
   const hasContent = book.chapters.some((c) =>
     c.pages.some((p) => p.image || p.paragraphs.some((x) => x.text.trim() || x.notes.length)),
   )
@@ -178,315 +198,444 @@ async function buildPages(book: PrintBook): Promise<BuiltPage[]> {
   }
 
   if (!hasContent) {
-    placeBlock(ctx, { kind: 'empty', text: 'هنوز فصلی نوشته نشده است' }, 40, 0)
+    placeBlock(ctx, { kind: 'empty', text: 'هنوز فصلی نوشته نشده است', height: 40 }, 0)
   }
 
-  const chapterStartPage: number[] = []
+  const chapterStart: number[] = []
   let chapterIdx = 0
   for (const ch of book.chapters) {
     chapterIdx += 1
     startPage(ctx, ch.title)
-    chapterStartPage.push(ctx.current.pageNum)
-    placeBlock(ctx, { kind: 'chapterHead', num: chapterIdx, title: ch.title }, 150, 0)
+    chapterStart.push(ctx.current.pageNum)
+    placeBlock(ctx, { kind: 'chapterHead', num: chapterIdx, title: ch.title, height: chapterHeadHeight(ch.title, measure) }, 0)
 
     for (const pg of ch.pages) {
       if (pg.image) {
-        try {
-          const img = await loadImageEl(pg.image)
-          placeBlock(ctx, { kind: 'image', src: pg.image }, imageHeightFor(img.naturalWidth, img.naturalHeight) + 10, 20)
-        } catch {
-          /* تصویر دست‌نیافتنی — از چاپ حذف می‌شود */
-        }
+        const size = images.get(pg.image)
+        // عکسی که اندازه‌اش معلوم نیست یعنی بارگذاری نشده → چاپش نمی‌کنیم
+        if (size) placeBlock(ctx, { kind: 'image', src: pg.image, height: imageSizeFor(size) + 10 }, 20)
       }
       for (const par of pg.paragraphs) {
         const text = par.text.trim()
         if (text) {
-          const pieces = splitTextToPieces(text, CONTENT_H - SAFETY)
-          for (const piece of pieces) {
-            placeBlock(ctx, { kind: 'text', text: piece }, measureText(piece) + 8, 20)
+          const bodyFont = font(BODY_FONT, 400)
+          const lineH = BODY_FONT * BODY_LH
+          // هر تکه باید در یک صفحه جا شود؛ اگر بلندتر بود، خط‌به‌خط تقسیم می‌شود
+          let lines = wrapLines(text, CONTENT_W, measure, bodyFont)
+          const maxLinesPerPage = Math.max(1, Math.floor((CONTENT_H - SAFETY) / lineH))
+          while (lines.length > 0) {
+            const piece = lines.slice(0, maxLinesPerPage)
+            lines = lines.slice(maxLinesPerPage)
+            placeBlock(ctx, { kind: 'text', lines: piece, height: piece.length * lineH + 8 }, 20)
           }
         }
-        if (par.notes.length > 0) {
-          const notesHtml = par.notes
-            .map((n) => `<div style="margin-top:10px;padding:9px 14px">${escapeHtml(n.text)}</div>`)
-            .join('')
-          placeBlock(ctx, { kind: 'notes', notes: par.notes }, measureHtml(notesHtml, 13.5, 1.9) + 26, 20)
+        for (const n of par.notes) {
+          const noteLines = wrapLines(n.text, CONTENT_W - 46, measure, font(NOTE_FONT, 400))
+          placeBlock(
+            ctx,
+            { kind: 'notes', notes: [n], lines: [noteLines], height: noteLines.length * NOTE_FONT * NOTE_LH + 26 },
+            12,
+          )
         }
       }
     }
   }
 
-  // نشان پایانِ کتاب
-  placeBlock(ctx, { kind: 'endMark' }, 60, 30)
+  placeBlock(ctx, { kind: 'endMark', height: 60 }, 30)
   ctx.pages.push(ctx.current)
   if (ctx.nextNum === 0) ctx.current.pageNum = 1 // کتاب خالی: همان یک صفحه
 
-  // صفحه‌ی جلد و فهرست
   const cover: BuiltPage = { kind: 'cover', chapterTitle: '', pageNum: 0, blocks: [] }
-  const result: BuiltPage[] = [cover]
+  const pages: BuiltPage[] = [cover]
   if (book.chapters.length > 0) {
-    result.push({
+    pages.push({
       kind: 'toc',
       chapterTitle: '',
       pageNum: 0,
-      blocks: book.chapters.map((c, i) => ({ kind: 'tocRow', title: c.title, page: chapterStartPage[i] })),
+      blocks: book.chapters.map((c, i) => ({ kind: 'tocRow', title: c.title, page: chapterStart[i] })),
     })
   }
-  result.push(...ctx.pages)
-  return result
+  pages.push(...ctx.pages)
+  return { pages, chapterStart }
 }
 
-/* --------------------------------------------------------- رندر DOM ---- */
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+/* ------------------------------------------------------------- رندر صفحه -- */
+type Ctx = CanvasRenderingContext2D
+
+function paintPaper(ctx: Ctx): void {
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.fillStyle = PAPER
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.restore()
 }
 
-function renderBlock(el: HTMLElement, b: Block, isFa: boolean): void {
-  const div = document.createElement('div')
-  switch (b.kind) {
-    case 'chapterHead': {
-      div.style.cssText = 'margin-bottom:26px'
-      const num = document.createElement('p')
-      num.textContent = isFa ? `فصل ${digits(b.num)}` : `Chapter ${b.num}`
-      num.style.cssText = `margin:0 0 6px;font-size:14px;letter-spacing:1px;color:${ACCENT};font-weight:700`
-      const title = document.createElement('h2')
-      title.textContent = b.title
-      title.style.cssText = `margin:0;font-size:30px;font-weight:800;color:${INK};line-height:1.5`
-      const line = document.createElement('div')
-      line.style.cssText = `margin-top:16px;display:flex;align-items:center;gap:10px;color:${ACCENT}`
-      line.innerHTML = `<span style="flex:1;height:1.5px;background:${HAIRLINE};border-radius:2px"></span><span style="font-size:15px">❤</span><span style="flex:1;height:1.5px;background:${HAIRLINE};border-radius:2px"></span>`
-      div.append(num, title, line)
-      break
-    }
-    case 'text': {
-      const p = document.createElement('p')
-      p.textContent = b.text
-      p.style.cssText = `margin:0;font-size:${BODY_FONT}px;line-height:${BODY_LH};color:${INK};white-space:pre-line;text-align:right`
-      div.appendChild(p)
-      break
-    }
-    case 'notes': {
-      div.style.cssText = 'margin-top:2px'
-      b.notes.forEach((n, i) => {
-        const nd = document.createElement('div')
-        nd.textContent = n.text
-        nd.style.cssText = `margin-top:${i === 0 ? 0 : 8}px;padding:9px 14px;font-size:13.5px;line-height:1.9;color:#6b5872;background:${n.color}1c;border-right:3px solid ${n.color};border-radius:10px;white-space:pre-line`
-        div.appendChild(nd)
-      })
-      break
-    }
-    case 'image': {
-      const img = document.createElement('img')
-      img.src = b.src
-      img.alt = ''
-      img.style.cssText = 'width:100%;height:auto;border-radius:12px;display:block'
-      div.appendChild(img)
-      break
-    }
-    case 'empty': {
-      const p = document.createElement('p')
-      p.textContent = b.text
-      p.style.cssText = `margin:0 auto;text-align:center;color:${MUTED};font-size:16px;line-height:2`
-      div.appendChild(p)
-      break
-    }
-    case 'endMark': {
-      const p = document.createElement('p')
-      p.textContent = '— ❤ —'
-      p.style.cssText = `margin:0;text-align:center;color:${ACCENT};font-size:15px;letter-spacing:2px`
-      div.appendChild(p)
-      break
-    }
-    case 'tocRow':
-      // در صفحه‌ی فهرست با renderToc رندر می‌شود، نه اینجا
-      return
-  }
-  el.appendChild(div)
-}
-
-function renderHeader(page: BuiltPage, book: PrintBook): void {
-  const header = document.createElement('div')
-  header.style.cssText = `position:absolute;top:34px;left:${MARGIN_X}px;right:${MARGIN_X}px;display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:${MUTED}`
-  const bookName = document.createElement('span')
-  bookName.textContent = book.title
-  const chapter = document.createElement('span')
-  chapter.textContent = page.chapterTitle
-  header.append(bookName, chapter)
-  const line = document.createElement('div')
-  line.style.cssText = `position:absolute;top:${HEADER_H - 14}px;left:${MARGIN_X}px;right:${MARGIN_X}px;height:1px;background:${HAIRLINE}`
-  page.el!.append(header, line)
-}
-
-function renderFooter(page: BuiltPage, isFa: boolean): void {
-  const f = document.createElement('div')
-  f.style.cssText = 'position:absolute;bottom:26px;left:0;right:0;text-align:center;font-size:11.5px;color:#9b8265'
-  f.textContent = isFa ? digits(page.pageNum) : String(page.pageNum)
-  page.el!.appendChild(f)
-}
-
-function renderToc(page: BuiltPage, book: PrintBook, isFa: boolean): void {
-  void book
-  const content = document.createElement('div')
-  content.style.cssText = `position:absolute;top:${CONTENT_TOP + 10}px;left:${MARGIN_X}px;right:${MARGIN_X}px;bottom:${FOOTER_H}px`
-  const h = document.createElement('h2')
-  h.textContent = 'فهرست'
-  h.style.cssText = `margin:0 0 34px;font-size:26px;font-weight:800;color:${INK}`
-  content.appendChild(h)
-  const rows = page.blocks.filter((b) => b.kind === 'tocRow') as { kind: 'tocRow'; title: string; page: number }[]
-  rows.forEach((row, i) => {
-    const r = document.createElement('div')
-    r.style.cssText = `display:flex;align-items:baseline;gap:8px;margin-bottom:${i === rows.length - 1 ? 0 : 22}px`
-    const t = document.createElement('span')
-    t.textContent = row.title
-    t.style.cssText = 'font-size:16px;color:#433527;font-weight:600'
-    const dots = document.createElement('span')
-    dots.style.cssText = `flex:1;border-bottom:2px dotted ${HAIRLINE};transform:translateY(-4px)`
-    const n = document.createElement('span')
-    n.textContent = isFa ? digits(row.page) : String(row.page)
-    n.style.cssText = 'font-size:14px;color:#9b8265;font-weight:700'
-    r.append(t, dots, n)
-    content.appendChild(r)
+function drawLinesRight(ctx: Ctx, lines: string[], rightX: number, top: number, lineH: number, fontSpec: string): number {
+  ctx.font = fontSpec
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  lines.forEach((line, i) => {
+    if (line.length > 0) ctx.fillText(line, rightX, top + lineH * i + lineH / 2)
   })
-  page.el!.appendChild(content)
+  return top + lineH * lines.length
 }
 
-function renderCover(page: BuiltPage, book: PrintBook, dateLabel: string): void {
-  const root = document.createElement('div')
-  // پس‌زمینه‌ی امن: اگر عکس جلد بارگذاری نشود، جلد خالی نمی‌ماند
-  root.style.cssText = 'position:absolute;inset:0;background:linear-gradient(158deg,#ffe3ef 0%,#efe3ff 48%,#fff4e4 100%)'
-
-  const makeTitle = (color: string, size: number): HTMLElement => {
-    const h = document.createElement('h1')
-    h.textContent = book.title
-    h.style.cssText = `margin:0;font-size:${size}px;font-weight:800;line-height:1.45;color:${color};text-shadow:0 2px 20px rgba(0,0,0,.28)`
-    return h
-  }
-  const makeSub = (color: string): HTMLElement => {
-    const p = document.createElement('p')
-    p.textContent = book.subtitle
-    p.style.cssText = `margin:0;font-size:18px;line-height:1.8;color:${color};opacity:.92`
-    return p
-  }
-  const makeLine = (bg: string): HTMLElement => {
-    const d = document.createElement('div')
-    d.style.cssText = `width:126px;height:2px;background:${bg};border-radius:2px`
-    return d
-  }
-  const makeFoot = (color: string): HTMLElement => {
-    const p = document.createElement('p')
-    p.textContent = `${dateLabel}  •  LoveOS`
-    p.style.cssText = `margin:8px 0 0;font-size:13.5px;color:${color}`
-    return p
-  }
-
-  if (book.cover) {
-    const img = document.createElement('img')
-    img.src = book.cover
-    img.alt = ''
-    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'
-    const overlay = document.createElement('div')
-    overlay.style.cssText = 'position:absolute;inset:0;background:linear-gradient(180deg,rgba(45,20,40,.16) 0%,rgba(45,20,40,.34) 55%,rgba(45,20,40,.66) 100%)'
-    const center = document.createElement('div')
-    center.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:70px;text-align:center'
-    const heart = document.createElement('div')
-    heart.textContent = '❤'
-    heart.style.cssText = 'font-size:26px;color:#ffd3e4'
-    center.append(heart, makeTitle('#ffffff', 44), makeSub('#ffe9f2'), makeLine('rgba(255,255,255,.65)'), makeFoot('#ffe9f2'))
-    root.append(img, overlay, center)
-  } else {
-    const deco = document.createElement('div')
-    deco.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:300px;opacity:.09;color:#d96a9e'
-    deco.textContent = '❤'
-    const center = document.createElement('div')
-    center.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:80px;text-align:center'
-    const heart = document.createElement('div')
-    heart.textContent = '❤'
-    heart.style.cssText = 'font-size:30px;color:#d96a9e'
-    center.append(heart, makeTitle('#5b3a52', 46), makeSub('#7d5a72'), makeLine('rgba(217,106,158,.6)'), makeFoot('#8a6a82'))
-    root.append(deco, center)
-  }
-  page.el!.appendChild(root)
+function hairline(ctx: Ctx, y: number, x1 = MARGIN_X, x2 = PAGE_W - MARGIN_X, color = HAIRLINE, width = 1.4): void {
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = width
+  ctx.beginPath()
+  ctx.moveTo(x1, y)
+  ctx.lineTo(x2, y)
+  ctx.stroke()
+  ctx.restore()
 }
 
-function buildPageElement(p: BuiltPage, book: PrintBook, isFa: boolean, dateLabel: string): HTMLElement {
-  const el = document.createElement('div')
-  el.style.cssText = `position:relative;width:${PAGE_W}px;height:${PAGE_H}px;overflow:hidden;background:${PAPER};font-family:inherit;direction:rtl`
-  p.el = el
-  if (p.kind === 'cover') {
-    renderCover(p, book, dateLabel)
-  } else if (p.kind === 'toc') {
-    renderToc(p, book, isFa)
-  } else {
-    renderHeader(p, book)
-    const content = document.createElement('div')
-    content.style.cssText = `position:absolute;top:${CONTENT_TOP}px;left:${MARGIN_X}px;right:${MARGIN_X}px;height:${CONTENT_H}px`
-    p.blocks.forEach((b) => renderBlock(content, b, isFa))
-    el.appendChild(content)
-    renderFooter(p, isFa)
+function drawRoundedImage(ctx: Ctx, img: CanvasImageSource, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.save()
+  ctx.beginPath()
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r)
+  else ctx.rect(x, y, w, h)
+  ctx.clip()
+  ctx.drawImage(img, x, y, w, h)
+  ctx.restore()
+}
+
+function drawHeader(ctx: Ctx, book: PrintBook, page: BuiltPage): void {
+  ctx.font = font(11.5, 500)
+  ctx.fillStyle = MUTED
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'right'
+  ctx.fillText(book.title, PAGE_W - MARGIN_X, 56)
+  ctx.textAlign = 'left'
+  ctx.fillText(page.chapterTitle, MARGIN_X, 56)
+  hairline(ctx, HEADER_H - 14)
+}
+
+function drawFooter(ctx: Ctx, page: BuiltPage, isFa: boolean): void {
+  ctx.font = font(11.5, 500)
+  ctx.fillStyle = MUTED
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(isFa ? digits(page.pageNum) : String(page.pageNum), PAGE_W / 2, PAGE_H - 30)
+}
+
+function drawCover(ctx: Ctx, book: PrintBook, dateLabel: string, coverImg: HTMLImageElement | null): void {
+  // پس‌زمینه
+  const grad = ctx.createLinearGradient(0, 0, PAGE_W * 0.4, PAGE_H)
+  grad.addColorStop(0, '#ffe3ef')
+  grad.addColorStop(0.48, '#efe3ff')
+  grad.addColorStop(1, '#fff4e4')
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.restore()
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const cx = PAGE_W / 2
+  const centerY = PAGE_H / 2
+
+  if (coverImg) {
+    // عکس جلد: کل صفحه را پر می‌کند (object-fit: cover)
+    const scale = Math.max(PAGE_W / coverImg.width, PAGE_H / coverImg.height)
+    const dw = coverImg.width * scale
+    const dh = coverImg.height * scale
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.drawImage(coverImg, (ctx.canvas.width - dw * RENDER_SCALE) / 2, (ctx.canvas.height - dh * RENDER_SCALE) / 2, dw * RENDER_SCALE, dh * RENDER_SCALE)
+    const overlay = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height)
+    overlay.addColorStop(0, 'rgba(45,20,40,.16)')
+    overlay.addColorStop(0.55, 'rgba(45,20,40,.34)')
+    overlay.addColorStop(1, 'rgba(45,20,40,.66)')
+    ctx.fillStyle = overlay
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+    ctx.restore()
+
+    ctx.fillStyle = '#ffd3e4'
+    ctx.font = font(26)
+    ctx.fillText('❤', cx, centerY - 120)
+    ctx.fillStyle = '#ffffff'
+    ctx.font = font(44, 800)
+    wrapLines(book.title, PAGE_W - 160, (s) => ctx.measureText(s).width || s.length * 20, font(44, 800)).forEach((l, i) =>
+      ctx.fillText(l, cx, centerY - 56 + i * 62),
+    )
+    ctx.fillStyle = '#ffe9f2'
+    ctx.font = font(18)
+    ctx.fillText(book.subtitle, cx, centerY + 40)
+    hairline(ctx, centerY + 78, cx - 63, cx + 63, 'rgba(255,255,255,.65)', 2)
+    ctx.font = font(13.5)
+    ctx.fillText(`${dateLabel}  •  LoveOS`, cx, centerY + 108)
+    return
   }
-  return el
+
+  // جلد بدون عکس
+  ctx.save()
+  ctx.globalAlpha = 0.09
+  ctx.fillStyle = ACCENT
+  ctx.font = font(300)
+  ctx.fillText('❤', cx, centerY)
+  ctx.restore()
+
+  ctx.fillStyle = ACCENT
+  ctx.font = font(30)
+  ctx.fillText('❤', cx, centerY - 150)
+  ctx.fillStyle = '#5b3a52'
+  ctx.font = font(46, 800)
+  wrapLines(book.title, PAGE_W - 170, (s) => ctx.measureText(s).width || s.length * 20, font(46, 800)).forEach((l, i) =>
+    ctx.fillText(l, cx, centerY - 80 + i * 66),
+  )
+  ctx.fillStyle = '#7d5a72'
+  ctx.font = font(18)
+  ctx.fillText(book.subtitle, cx, centerY + 40)
+  hairline(ctx, centerY + 78, cx - 63, cx + 63, 'rgba(217,106,158,.6)', 2)
+  ctx.fillStyle = '#8a6a82'
+  ctx.font = font(13.5)
+  ctx.fillText(`${dateLabel}  •  LoveOS`, cx, centerY + 108)
+}
+
+function drawToc(ctx: Ctx, page: BuiltPage, isFa: boolean): void {
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = INK
+  ctx.font = font(26, 800)
+  ctx.fillText('فهرست', PAGE_W - MARGIN_X, CONTENT_TOP + 34)
+
+  const rows = page.blocks.filter((b) => b.kind === 'tocRow') as { kind: 'tocRow'; title: string; page: number }[]
+  let y = CONTENT_TOP + 96
+  rows.forEach((row, i) => {
+    const title = row.title.length > 46 ? `${row.title.slice(0, 45)}…` : row.title
+    ctx.font = font(16, 600)
+    ctx.fillStyle = INK
+    ctx.textAlign = 'right'
+    const titleW = ctx.measureText(title).width
+    ctx.fillText(title, PAGE_W - MARGIN_X, y)
+    const numLabel = isFa ? digits(row.page) : String(row.page)
+    ctx.font = font(14, 700)
+    ctx.fillStyle = MUTED
+    ctx.textAlign = 'left'
+    const numW = ctx.measureText(numLabel).width
+    ctx.fillText(numLabel, MARGIN_X, y)
+    hairline(ctx, y - 5, MARGIN_X + numW + 12, PAGE_W - MARGIN_X - titleW - 12, HAIRLINE, 1.2)
+    if (i < rows.length - 1) y += 40
+  })
+}
+
+function drawContent(ctx: Ctx, page: BuiltPage, isFa: boolean, loaded: Map<string, HTMLImageElement>): void {
+  let y = CONTENT_TOP
+  const rightX = PAGE_W - MARGIN_X
+
+  for (const b of page.blocks) {
+    switch (b.kind) {
+      case 'chapterHead': {
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillStyle = ACCENT
+        ctx.font = font(14, 700)
+        ctx.fillText(isFa ? `فصل ${digits(b.num)}` : `Chapter ${b.num}`, rightX, y + 16)
+        ctx.fillStyle = INK
+        ctx.font = font(30, 800)
+        const titleLines = wrapLines(b.title, CONTENT_W - 40, (s) => ctx.measureText(s).width || s.length * 16, font(30, 800))
+        titleLines.forEach((line, i) => ctx.fillText(line, rightX, y + 62 + i * 46))
+        const lineY = y + 62 + (titleLines.length - 1) * 46 + 24
+        hairline(ctx, lineY, MARGIN_X + 30, PAGE_W / 2 - 18)
+        hairline(ctx, lineY, PAGE_W / 2 + 18, rightX - 30)
+        ctx.fillStyle = ACCENT
+        ctx.font = font(15)
+        ctx.textAlign = 'center'
+        ctx.fillText('❤', PAGE_W / 2, lineY + 5)
+        y += b.height
+        break
+      }
+      case 'text': {
+        ctx.fillStyle = INK
+        y = drawLinesRight(ctx, b.lines, rightX, y, BODY_FONT * BODY_LH, font(BODY_FONT, 400))
+        y += 8
+        break
+      }
+      case 'notes': {
+        b.notes.forEach((n, idx) => {
+          const lines = b.lines[idx] || []
+          const boxH = lines.length * NOTE_FONT * NOTE_LH + 18
+          ctx.save()
+          ctx.fillStyle = withAlpha(n.color, 0.11)
+          if (typeof ctx.roundRect === 'function') {
+            ctx.beginPath()
+            ctx.roundRect(MARGIN_X, y, CONTENT_W, boxH, 10)
+            ctx.fill()
+          } else {
+            ctx.fillRect(MARGIN_X, y, CONTENT_W, boxH)
+          }
+          ctx.fillStyle = n.color
+          ctx.fillRect(rightX - 3, y, 3, boxH)
+          ctx.restore()
+          ctx.fillStyle = '#6b5872'
+          drawLinesRight(ctx, lines, rightX - 14, y + 9, NOTE_FONT * NOTE_LH, font(NOTE_FONT, 400))
+          y += boxH + 8
+        })
+        break
+      }
+      case 'image': {
+        const img = loaded.get(b.src)
+        if (img) {
+          const h = b.height - 10
+          drawRoundedImage(ctx, img, MARGIN_X, y, CONTENT_W, h, 12)
+        }
+        y += b.height
+        break
+      }
+      case 'empty': {
+        ctx.fillStyle = MUTED
+        ctx.font = font(16)
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(b.text, PAGE_W / 2, y + 24)
+        y += b.height
+        break
+      }
+      case 'endMark': {
+        ctx.fillStyle = ACCENT
+        ctx.font = font(15)
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('— ❤ —', PAGE_W / 2, y + 30)
+        y += b.height
+        break
+      }
+      case 'tocRow':
+        break
+    }
+  }
+}
+
+function drawPage(
+  ctx: Ctx,
+  page: BuiltPage,
+  book: PrintBook,
+  isFa: boolean,
+  dateLabel: string,
+  loaded: Map<string, HTMLImageElement>,
+): void {
+  paintPaper(ctx)
+  ctx.save()
+  ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0)
+  if ('direction' in ctx) ctx.direction = 'rtl'
+  ctx.textBaseline = 'alphabetic'
+
+  if (page.kind === 'cover') {
+    drawCover(ctx, book, dateLabel, book.cover ? loaded.get(book.cover) || null : null)
+  } else if (page.kind === 'toc') {
+    drawToc(ctx, page, isFa)
+  } else {
+    drawHeader(ctx, book, page)
+    drawContent(ctx, page, isFa, loaded)
+    drawFooter(ctx, page, isFa)
+  }
+  ctx.restore()
+}
+
+/* ---------------------------------------------------------------- ابزارها -- */
+function loadImageEl(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`تصویر بارگذاری نشد: ${src}`))
+    img.src = src
+  })
+}
+
+async function ensureFonts(): Promise<void> {
+  const fonts = (document as unknown as { fonts?: FontFaceSet }).fonts
+  if (!fonts) return
+  try {
+    await Promise.all([
+      fonts.load(font(BODY_FONT, 400)),
+      fonts.load(font(30, 800)),
+      fonts.load(font(14, 700)),
+      fonts.ready,
+    ])
+  } catch {
+    /* اگر فونت وب نبود، با فونت سیستمی ادامه می‌دهیم */
+  }
+}
+
+function makeCanvas(): { canvas: HTMLCanvasElement; ctx: Ctx } {
+  const canvas = document.createElement('canvas')
+  canvas.width = PAGE_W * RENDER_SCALE
+  canvas.height = PAGE_H * RENDER_SCALE
+  const ctx = canvas.getContext('2d') as Ctx | null
+  if (!ctx) throw new Error('canvas-2d-unavailable')
+  return { canvas, ctx }
+}
+
+function canvasJpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('toBlob-failed'))
+          return
+        }
+        void blobToBytes(blob).then(resolve, reject)
+      },
+      'image/jpeg',
+      JPEG_QUALITY,
+    )
+  })
 }
 
 /* --------------------------------------------------------------- خروجی ---- */
 /**
- * ساخت و دانلود PDF کامل کتاب.
+ * ساخت و دانلود PDF کامل کتاب — بدون نیاز به هیچ پکیج بیرونی.
  * onProgress(cur, total) بعد از رندر هر صفحه صدا می‌شود.
  */
 export async function exportBookPdf(
   book: PrintBook,
   onProgress?: (cur: number, total: number) => void,
 ): Promise<void> {
-  const isFa = document.documentElement.dir === 'rtl'
+  // هم‌راستا با بقیه‌ی اپ: ارقام/تاریخ از format.ts و زبان از i18n می‌آید
+  const fa = isFa()
   const dateLabel = formatDate(new Date())
 
-  // ۱) ساخت صفحات (اندازه‌گیری و جریان محتوا)
-  const pages = await buildPages(book)
+  await ensureFonts()
 
-  // ۲) ظرف پنهان برای رندر
-  const host = document.createElement('div')
-  host.style.cssText = 'position:fixed;top:0;left:-12000px;z-index:-1;pointer-events:none'
-  document.body.appendChild(host)
+  // ۱) بارگذاری عکس‌ها (جلد + عکس فصل‌ها)؛ هرکدام که نشد، بی‌صدا حذف می‌شود
+  const srcs = new Set<string>()
+  if (book.cover) srcs.add(book.cover)
+  for (const ch of book.chapters) for (const pg of ch.pages) if (pg.image) srcs.add(pg.image)
+  const loaded = new Map<string, HTMLImageElement>()
+  await Promise.all(
+    Array.from(srcs).map(async (src) => {
+      try {
+        loaded.set(src, await loadImageEl(src))
+      } catch {
+        /* عکس دست‌نیافتنی — بدون آن چاپ می‌کنیم */
+      }
+    }),
+  )
+  const sizes = new Map<string, ImageSize>()
+  for (const [src, img] of loaded) sizes.set(src, { w: img.naturalWidth || img.width, h: img.naturalHeight || img.height })
 
-  try {
-    // ۳) رندر DOM هر صفحه
-    pages.forEach((p) => {
-      host.appendChild(buildPageElement(p, book, isFa, dateLabel))
-    })
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
-    try {
-      await (document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts?.ready
-    } catch {
-      /* بعضی محیط‌ها fonts ندارند */
-    }
-
-    // ۴) عکس‌برداری از هر صفحه و جمع‌آوری در PDF
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
-
-    for (let i = 0; i < pages.length; i += 1) {
-      const el = host.children[i] as HTMLElement
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: PAPER,
-        logging: false,
-        imageTimeout: 20000,
-      })
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
-      if (i > 0) pdf.addPage()
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 297)
-      onProgress?.(i + 1, pages.length)
-      canvas.width = 0
-      canvas.height = 0
-    }
-
-    const safeName = (book.title || 'book').replace(/[\\/:*?"<>|]/g, '_').trim() || 'book'
-    pdf.save(`${safeName}.pdf`)
-  } finally {
-    host.remove()
-    if (measurer) measurer.innerHTML = ''
+  // ۲) صفحه‌بندی با اندازه‌گیری واقعی متن روی canvas
+  const { canvas, ctx } = makeCanvas()
+  const measure: MeasureFn = (text, fontSpec) => {
+    ctx.font = fontSpec
+    return ctx.measureText(text).width
   }
+  const { pages } = buildPages(book, measure, sizes)
+
+  // ۳) رندر هر صفحه و تبدیل به JPEG
+  const pdfPages: PdfImagePage[] = []
+  for (let i = 0; i < pages.length; i += 1) {
+    drawPage(ctx, pages[i], book, fa, dateLabel, loaded)
+    pdfPages.push({ jpeg: await canvasJpeg(canvas), width: canvas.width, height: canvas.height })
+    onProgress?.(i + 1, pages.length)
+  }
+
+  // ۴) ساخت فایل و دانلود
+  const bytes = buildPdf(pdfPages, { title: book.title || 'LoveOS', author: 'LoveOS' })
+  const safeName = (book.title || 'book').replace(/[\\/:*?"<>|]/g, '_').trim() || 'book'
+  downloadPdf(bytes, `${safeName}.pdf`)
 }

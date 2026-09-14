@@ -3,7 +3,15 @@
  * ویجت‌ها (ساعت، دیدار بعدی، آب‌وهوای دو شهر، پیام امروز) + شبکه‌ی آیکن‌ها + داک
  * راز ⑥: بین ۰۰:۰۰ تا ۰۵:۰۰ آسمان پر از قلب و ستاره می‌شود.
  * راز ⑦/⑧: تولد و سالگرد → آیکن مخفی کیک/قلب.
- * اصلاح: درگ‌اند‌دراپ هم با موس و هم با لمس (pointer events + touch-action:none)
+ *
+ * درگ‌اند‌دراپ آیکن‌ها (موس + لمس):
+ *   • موس: با ۵ پیکسل جابه‌جایی، درگ شروع می‌شود.
+ *   • لمس: انگشت را ~۳۲۰ms روی آیکن نگه دارید تا درگ «آماده» شود (مثل گوشی)،
+ *     بعد بکشید و روی آیکن مقصد رها کنید. تا قبل از آماده‌شدن، کشیدنِ عمودی
+ *     صفحه را اسکرول می‌کند (touch-action: pan-y) تا اسکرول دسکتاپ از کار نیفتد.
+ *   • hit-test با getBoundingClientRect خودِ آیکن‌ها انجام می‌شود (نه
+ *     elementFromPoint) و رویدادهای move/up روی window گوش داده می‌شوند، پس
+ *     بیرون‌رفتن انگشت از روی آیکن هم درگ را خراب نمی‌کند.
  */
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -12,7 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
 import { digits, formatDate, formatTime, weekdayName } from '../shared/format'
-import { playOpen } from '../shared/sound'
+import { playClick, playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { APPS, effectiveAppOrder } from './appRegistry'
 import { Dock } from './Dock'
@@ -45,6 +53,11 @@ const WEATHER_ICON: Record<string, 'sun' | 'cloud' | 'rain' | 'snow'> = {
   sun: 'sun', cloud: 'cloud', rain: 'rain', snow: 'snow', fog: 'cloud', storm: 'rain',
 }
 
+/* ---------------------------------------------------- تنظیم درگ‌اند‌دراپ -- */
+const ARM_DELAY_MS = 320 // لمس: این‌قدر نگه دار تا درگ «آماده» شود
+const MOUSE_SLOP = 5 // موس: با این‌قدر جابه‌جایی، درگ شروع می‌شود
+const TOUCH_SLOP = 10 // لمس: کمتر از این یعنی «ضربه»، بیشتر یعنی اسکرول/swipe
+
 export function Desktop() {
   const { t } = useTranslation()
   const config = useOS((s) => s.config)
@@ -61,9 +74,24 @@ export function Desktop() {
   // درگ‌اند‌دراپ
   const [dragKey, setDragKey] = useState<string | null>(null)
   const [overKey, setOverKey] = useState<string | null>(null)
-  const dragMovedRef = useRef(false)
-  const startPosRef = useRef<{ x: number; y: number } | null>(null)
+  const [ghost, setGhost] = useState<{ x: number; y: number; key: string } | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
+  /** وضعیت حرکتِ جاری انگشت/موس — ref است تا بین رندرها گم نشود */
+  const gesture = useRef<{
+    key: string
+    id: number
+    x0: number
+    y0: number
+    armed: boolean
+    touch: boolean
+    timer: number | null
+  } | null>(null)
+  const suppressClickRef = useRef(false)
+  const touchBlockRef = useRef<((e: TouchEvent) => void) | null>(null)
+  const appOrderRef = useRef(appOrder)
+  useEffect(() => {
+    appOrderRef.current = appOrder
+  })
 
   const desktopApps = useMemo(() => {
     const byKey = new Map(APPS.map((a) => [a.key, a]))
@@ -72,10 +100,10 @@ export function Desktop() {
       .map((k) => byKey.get(k)!)
   }, [appOrder])
 
-  const dropOn = (targetKey: string) => {
-    if (!dragKey || dragKey === targetKey) return
-    const keys = effectiveAppOrder(appOrder)
-    const from = keys.indexOf(dragKey)
+  const dropOn = (sourceKey: string, targetKey: string) => {
+    if (!sourceKey || sourceKey === targetKey) return
+    const keys = effectiveAppOrder(appOrderRef.current)
+    const from = keys.indexOf(sourceKey)
     const to = keys.indexOf(targetKey)
     if (from < 0 || to < 0) return
     keys.splice(to, 0, keys.splice(from, 1)[0])
@@ -124,55 +152,115 @@ export function Desktop() {
     if (r.found) showEgg({ title: r.title, message: r.message, attachment: r.attachment })
   }
 
-  // ---------- pointer handlers for mobile drag ----------
-  const handlePointerDown = (e: React.PointerEvent, appKey: string) => {
-    // فقط اشاره‌گر اصلی
+  /* --------------------------------------------------- درگ‌اند‌دراپ آیکن‌ها -- */
+  const stopTouchBlock = () => {
+    if (touchBlockRef.current) {
+      window.removeEventListener('touchmove', touchBlockRef.current)
+      touchBlockRef.current = null
+    }
+  }
+
+  const endGesture = () => {
+    const g = gesture.current
+    if (g?.timer) window.clearTimeout(g.timer)
+    gesture.current = null
+    stopTouchBlock()
+    setDragKey(null)
+    setOverKey(null)
+    setGhost(null)
+  }
+
+  const armDrag = (x: number, y: number) => {
+    const g = gesture.current
+    if (!g || g.armed) return
+    g.armed = true
+    suppressClickRef.current = true
+    setDragKey(g.key)
+    setGhost({ x, y, key: g.key })
+    playClick()
+    if (g.touch) {
+      // بعد از آماده‌شدن باید اسکرولِ صفحه را ببندیم، وگرنه درگ از دست می‌رود
+      const block = (ev: TouchEvent) => ev.preventDefault()
+      touchBlockRef.current = block
+      window.addEventListener('touchmove', block, { passive: false })
+      try {
+        navigator.vibrate?.(14)
+      } catch {
+        /* دستگاه ویبره ندارد */
+      }
+    }
+  }
+
+  /** کدام آیکن زیر این نقطه است؟ با rect واقعی، پس با اسکرول هم درست می‌ماند */
+  const hitTest = (x: number, y: number): string | null => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-app-key]'))
+    for (const node of nodes) {
+      const r = node.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) continue
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return node.dataset.appKey || null
+    }
+    return null
+  }
+
+  const onIconPointerDown = (e: React.PointerEvent, appKey: string) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    startPosRef.current = { x: e.clientX, y: e.clientY }
-    dragMovedRef.current = false
-    setDragKey(appKey)
-    // capture تا move/up بیرون از المنت هم بیاید
-    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-  }
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragKey || !startPosRef.current) return
-    const dx = e.clientX - startPosRef.current.x
-    const dy = e.clientY - startPosRef.current.y
-    if (Math.hypot(dx, dy) > 8) dragMovedRef.current = true
-    if (!dragMovedRef.current) return
-    // المان زیر انگشت را پیدا کن
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
-    const target = el?.closest?.('[data-app-key]') as HTMLElement | null
-    const key = target?.dataset.appKey
-    if (key && key !== dragKey) setOverKey(key)
-    else if (!key) {
-      // اگر روی فضای خالی بود، over را پاک کن ولی drag را نگه دار
+    suppressClickRef.current = false
+    const touch = e.pointerType !== 'mouse'
+    gesture.current = { key: appKey, id: e.pointerId, x0: e.clientX, y0: e.clientY, armed: false, touch, timer: null }
+    if (touch) {
+      const g = gesture.current
+      g.timer = window.setTimeout(() => {
+        const cur = gesture.current
+        if (cur) armDrag(cur.x0, cur.y0)
+      }, ARM_DELAY_MS)
     }
   }
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!dragKey) return
-    const moved = dragMovedRef.current
-    const targetKey = overKey
-    // تمیزکاری
-    setDragKey(null)
-    setOverKey(null)
-    startPosRef.current = null
-    // اگر واقعاً جابجا شده، drop کن
-    if (moved && targetKey && targetKey !== dragKey) {
-      dropOn(targetKey)
+  // رویدادهای move/up روی window: بیرون‌رفتن انگشت از روی آیکن درگ را خراب نمی‌کند
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const g = gesture.current
+      if (!g || e.pointerId !== g.id) return
+      const dx = e.clientX - g.x0
+      const dy = e.clientY - g.y0
+      if (!g.armed) {
+        if (g.touch) {
+          // جابه‌جاییِ زودهنگام یعنی کاربر می‌خواهد اسکرول کند → درگ را ول کن
+          if (Math.hypot(dx, dy) > TOUCH_SLOP) endGesture()
+          return
+        }
+        if (Math.hypot(dx, dy) > MOUSE_SLOP) armDrag(e.clientX, e.clientY)
+        else return
+      }
+      setGhost({ x: e.clientX, y: e.clientY, key: g.key })
+      const hit = hitTest(e.clientX, e.clientY)
+      setOverKey(hit && hit !== g.key ? hit : null)
     }
-    // اگر جابجا نشده، کلیک طبیعی بعداً openApp را صدا می‌زند؛ اینجا کاری نکن
-    // pointer capture خودکار آزاد می‌شود
-  }
-
-  const handlePointerCancel = () => {
-    setDragKey(null)
-    setOverKey(null)
-    startPosRef.current = null
-    dragMovedRef.current = false
-  }
+    const onUp = (e: PointerEvent) => {
+      const g = gesture.current
+      if (!g || e.pointerId !== g.id) return
+      if (g.armed) {
+        suppressClickRef.current = true
+        const hit = hitTest(e.clientX, e.clientY)
+        if (hit && hit !== g.key) dropOn(g.key, hit)
+      } else if (Math.hypot(e.clientX - g.x0, e.clientY - g.y0) > TOUCH_SLOP) {
+        // swipe بوده نه ضربه → اپ باز نشود
+        suppressClickRef.current = true
+      }
+      endGesture()
+    }
+    const onCancel = () => endGesture()
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      endGesture()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setAppOrder])
 
   return (
     <div
@@ -296,77 +384,48 @@ export function Desktop() {
           </AnimatePresence>
         </div>
 
-        {/* شبکه‌ی اپ‌ها — pointer events + touch-action:none */}
-        <div
-          ref={gridRef}
-          className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"
-          style={{ touchAction: 'none' } as any}
-        >
+        {/* شبکه‌ی اپ‌ها — با موس و با لمس جابه‌جا می‌شوند */}
+        <div ref={gridRef} className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
           {desktopApps.map((app, i) => {
             const isDragging = dragKey === app.key
-            const isOver = overKey === app.key && dragKey && dragKey !== app.key
+            const isOver = !!overKey && overKey === app.key && dragKey !== app.key
             return (
               <motion.button
                 key={app.key}
                 data-app-key={app.key}
                 initial={{ opacity: 0, y: 14, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                animate={{ opacity: isDragging ? 0.4 : 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.02 * i, type: 'spring', stiffness: 260, damping: 20 }}
-                whileHover={{ y: isDragging ? 0 : -6, scale: isDragging ? 1.1 : 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                onPointerDown={(e) => handlePointerDown(e, app.key)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerCancel}
+                whileHover={isDragging ? undefined : { y: -6, scale: 1.06 }}
+                onPointerDown={(e) => onIconPointerDown(e, app.key)}
                 onClick={() => {
-                  // اگر در حال درگ بودیم، کلیک را نادیده بگیر
-                  if (dragMovedRef.current) {
-                    dragMovedRef.current = false
+                  // بعد از درگ (یا swipe) کلیک را نادیده می‌گیریم
+                  if (suppressClickRef.current) {
+                    suppressClickRef.current = false
                     return
                   }
-                  if (dragKey) return
                   playOpen()
                   openApp(app.key)
                 }}
-                onDragOver={(e) => {
-                  if (!dragKey) return
-                  e.preventDefault()
-                  setOverKey(app.key)
-                }}
-                onDragLeave={() => setOverKey((k) => (k === app.key ? null : k))}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  dropOn(app.key)
-                  setDragKey(null)
-                  setOverKey(null)
-                }}
-                className="flex select-none flex-col items-center gap-1.5"
+                className="flex flex-col items-center gap-1.5"
                 style={{
-                  opacity: isDragging ? 0.45 : 1,
                   outline: isOver ? '2px dashed var(--os-accent)' : 'none',
                   outlineOffset: 4,
                   borderRadius: 18,
-                  touchAction: 'none',
-                  transform: isDragging ? 'scale(1.08)' : undefined,
+                  cursor: 'pointer',
+                  // لمس: تا وقتی درگ «آماده» نشده، اسکرول عمودی صفحه کار کند
+                  touchAction: 'pan-y',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
                 }}
                 title={t(app.titleKey)}
               >
                 <span
-                  draggable
-                  onDragStart={(e) => {
-                    setDragKey(app.key)
-                    e.dataTransfer.setData('text/plain', app.key)
-                    e.dataTransfer.effectAllowed = 'move'
-                  }}
-                  onDragEnd={() => {
-                    setDragKey(null)
-                    setOverKey(null)
-                  }}
                   className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
                   style={{
                     background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`,
                     color: app.color,
-                    touchAction: 'none',
                   }}
                 >
                   <Icon name={app.icon} size={26} />
@@ -378,7 +437,37 @@ export function Desktop() {
             )
           })}
         </div>
+        <p className="mt-3 text-center text-[11px] os-muted md:hidden">{t('desktop.dragHint')}</p>
       </div>
+
+      {/* شبحِ آیکنِ در حال کشیدن — دنبال انگشت/نشانگر می‌آید */}
+      <AnimatePresence>
+        {ghost &&
+          (() => {
+            const gApp = APPS.find((a) => a.key === ghost.key)
+            if (!gApp) return null
+            return (
+              <motion.div
+                key={`ghost-${ghost.key}`}
+                data-drag-ghost={ghost.key}
+                className="pointer-events-none fixed z-[95] flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft"
+                style={{
+                  left: ghost.x,
+                  top: ghost.y,
+                  x: '-50%',
+                  y: '-50%',
+                  background: `linear-gradient(145deg, ${gApp.color}66, ${gApp.color}33)`,
+                  color: gApp.color,
+                }}
+                initial={{ scale: 0.85, opacity: 0.7 }}
+                animate={{ scale: 1.12, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+              >
+                <Icon name={gApp.icon} size={26} />
+              </motion.div>
+            )
+          })()}
+      </AnimatePresence>
 
       <AnimatePresence>
         {windows.map((w) => (
