@@ -41,11 +41,11 @@ interface MapData {
 
 /**
  * مرز تقریبی کشور ایران — دید اولیه‌ی نقشه روی ایران باشد نه کل دنیا.
- * [west, south, east, north]
+ * کمی گسترده‌تر تا کل کشور با حاشیه دیده شود.
  */
 const IRAN_BOUNDS: [[number, number], [number, number]] = [
-  [44.3, 25.2],
-  [63.3, 39.5],
+  [44.0, 24.5],
+  [63.8, 40.2],
 ]
 
 /** خط منحنی (کمان) بین دو نقطه برای حس «پرواز» */
@@ -67,13 +67,16 @@ function arc(a: [number, number], b: [number, number], steps = 64): [number, num
 
 function heartMarker(color: string, label: string, live = false, pulse = false) {
   const el = document.createElement('div')
-  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform:translateY(-6px)'
+  el.style.cssText =
+    'display:flex;flex-direction:column;align-items:center;transform:translateY(-6px);pointer-events:auto;z-index:10'
   el.innerHTML = `
-    <svg width="34" height="34" viewBox="0 0 24 24" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))">
-      <path d="M12 21s-8-5.2-8-10.6A4.7 4.7 0 0 1 12 8a4.7 4.7 0 0 1 8 2.4C20 15.8 12 21 12 21Z" fill="${color}"/>
-    </svg>
-    ${pulse ? `<span style="position:absolute;width:34px;height:34px;border-radius:50%;background:${color};opacity:.35;animation:loveos-ping 1.8s ease-out infinite"></span>` : ''}
-    <span style="background:rgba(255,255,255,.9);color:#4a2c40;border-radius:999px;padding:1px 8px;font-size:11px;margin-top:-4px;white-space:nowrap">
+    <div style="position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center">
+      <svg width="34" height="34" viewBox="0 0 24 24" style="filter:drop-shadow(0 4px 10px rgba(0,0,0,.32));display:block">
+        <path d="M12 21s-8-5.2-8-10.6A4.7 4.7 0 0 1 12 8a4.7 4.7 0 0 1 8 2.4C20 15.8 12 21 12 21Z" fill="${color}"/>
+      </svg>
+      ${pulse ? `<span style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:.35;animation:loveos-ping 1.8s ease-out infinite"></span>` : ''}
+    </div>
+    <span style="background:rgba(255,255,255,.95);color:#4a2c40;border-radius:999px;padding:2px 9px;font-size:11px;margin-top:-2px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15);font-weight:600">
       ${label}${live ? ' • زنده' : ''}
     </span>`
   return el
@@ -110,7 +113,6 @@ export default function MapOfUs() {
 
     const m = new maplibregl.Map({
       container: container.current,
-      // استایل رستری از OpenStreetMap — بدون کلید API
       style: {
         version: 8,
         sources: {
@@ -123,14 +125,33 @@ export default function MapOfUs() {
         },
         layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
       },
-      // دید اولیه: کشور ایران (نه کل دنیا)
       center: [(IRAN_BOUNDS[0][0] + IRAN_BOUNDS[1][0]) / 2, (IRAN_BOUNDS[0][1] + IRAN_BOUNDS[1][1]) / 2],
-      zoom: 5.2,
+      zoom: 4.1,
       attributionControl: { compact: true },
     })
     map.current = m
 
+    const ensureMarkers = () => {
+      if (markers.current.length === 0) {
+        markers.current = [
+          new maplibregl.Marker({ element: heartMarker('#f767a8', t('map.daddyHome')) }).setLngLat(daddy).addTo(m),
+          new maplibregl.Marker({
+            element: heartMarker('#bba0fb', t('map.daughterHome'), !!data.daughter.is_live, !!data.daughter.is_live),
+          })
+            .setLngLat(daughter)
+            .addTo(m),
+        ]
+      }
+    }
+
     m.on('load', () => {
+      setTimeout(() => {
+        try { m.resize() } catch {}
+      }, 80)
+      setTimeout(() => {
+        try { m.resize() } catch {}
+      }, 500)
+
       m.addSource('route', {
         type: 'geojson',
         data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: arc(daddy, daughter) } },
@@ -149,8 +170,9 @@ export default function MapOfUs() {
           .setLngLat(daughter)
           .addTo(m),
       ]
-      // روی ایران بنشینیم نه روی کل دنیا؛ دکمه‌ی «پرواز» بعد مسیر را نشان می‌دهد
-      m.fitBounds(IRAN_BOUNDS, { padding: 30, duration: 1400 })
+      // نمای اولیه: کل ایران
+      m.fitBounds(IRAN_BOUNDS, { padding: 50, duration: 0 })
+      setTimeout(() => m.fitBounds(IRAN_BOUNDS, { padding: 50, duration: 800 }), 150)
     })
 
     // راز ⑨ — زوم کامل روی شهر بابا
@@ -165,13 +187,17 @@ export default function MapOfUs() {
         .catch(() => undefined)
     })
 
+    const fallback = window.setTimeout(ensureMarkers, 1200)
+
     return () => {
+      window.clearTimeout(fallback)
       m.remove()
       map.current = null
+      markers.current = []
     }
   }, [data, showEgg, t])
 
-  /** وقتی موقعیت تازه ثبت شد، نقطه‌ی دخترم بی‌درنگ جابجا می‌شود (بدون ساخت دوباره‌ی نقشه) */
+  /** وقتی موقعیت تازه ثبت شد، نقطه‌ی دخترم بی‌درنگ جابجا می‌شود */
   useEffect(() => {
     if (!map.current || markers.current.length < 2 || !data?.daughter) return
     const daughter: [number, number] = [data.daughter.lng, data.daughter.lat]
@@ -191,9 +217,13 @@ export default function MapOfUs() {
     m.flyTo({ center: [data.daddy.lng, data.daddy.lat], zoom: 9, duration: 2600 })
     setTimeout(() => m.flyTo({ center: [data.daughter.lng, data.daughter.lat], zoom: 9, duration: 3200 }), 3000)
     setTimeout(
-      () => m.fitBounds([[data.daddy.lng, data.daddy.lat], [data.daughter.lng, data.daughter.lat]], { padding: 70, duration: 1800 }),
+      () => m.fitBounds([[data.daddy.lng, data.daddy.lat], [data.daughter.lng, data.daughter.lat]], { padding: 80, duration: 1800 }),
       6600,
     )
+    // بعد از نمایش مسیر، دوباره به نمای کل ایران برگرد (نه جهان)
+    setTimeout(() => {
+      m.fitBounds(IRAN_BOUNDS, { padding: 50, duration: 1500 })
+    }, 9000)
   }
 
   const askLocation = async () => {
@@ -233,7 +263,7 @@ export default function MapOfUs() {
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
-        <div ref={container} className="h-[320px] w-full" />
+        <div ref={container} className="h-[360px] w-full" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -282,7 +312,6 @@ export default function MapOfUs() {
         </div>
       </div>
 
-      {/* ------------------------------------------- موقعیت واقعی دخترم --- */}
       <div className="os-card space-y-2 p-3">
         <p className="text-xs leading-6 os-muted">{data.daughter.is_live ? t('map.liveHintOn') : t('map.liveHintOff')}</p>
         <div className="flex flex-wrap gap-2">

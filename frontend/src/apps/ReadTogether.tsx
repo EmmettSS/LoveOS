@@ -1,11 +1,9 @@
 /**
- * ReadTogether — کتاب‌خوانی مشترک 📚
+ * ReadTogether — کتابخونه مشترک ما 📚
  *
- * قفسه‌ای مشترک با اپ «کتابخونه»: کتاب‌های داستانِ ما (اپ کتابخانه) هم اینجا
- * دیده می‌شوند تا یک قفسه داشته باشیم، نه دو قفسه‌ی جدا.
- *
- * داخل هر کتاب: فصل‌ها، یادداشت با امتیاز، نقل‌قول‌های ماندگار و گفتگوی
- * زیر هر فصل (نظر بابا و دخترم رفت‌وبرگشت می‌شود).
+ * قفسه‌ی مشترک برای بابا و دخترم — هر دو می‌توانند کتاب اضافه کنند،
+ * فصل بنویسند، یادداشت و نقل‌قول بگذارند و درباره‌ی فصل‌ها گفتگو کنند.
+ * (بخش اتصال به اپ کتابخونه‌ی سابق حذف شد تا منطق ساده و درست بماند.)
  */
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
@@ -42,8 +40,6 @@ interface Book {
   progress: { daddy: number; daughter: number }
   notes_count: number
   quotes_count: number
-  /** فقط برای کتاب‌های اپ کتابخونه: روی قفسه‌ی مشترک هست؟ */
-  in_reading?: boolean
 }
 
 interface Chapter {
@@ -96,7 +92,7 @@ interface Quote {
 interface Overview {
   shelf: Record<Status, Book[]>
   counts: Record<Status, number>
-  library: Book[]
+  library?: Book[]
   recent_quotes: Quote[]
   stats: {
     books_total: number
@@ -142,29 +138,6 @@ export default function ReadTogether() {
 
             <SectionTitle>{t('reading.shelf.reading')}</SectionTitle>
             <ShelfRow books={data.shelf.reading || []} onOpen={setOpenBook} />
-
-            <SectionTitle>{t('reading.shelf.library')}</SectionTitle>
-            {data.library.length === 0 ? (
-              <Empty text={t('reading.libraryEmpty')} />
-            ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {data.library.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => setOpenBook(b)}
-                    className="os-card w-32 shrink-0 space-y-1.5 p-2.5 text-center transition active:scale-95"
-                  >
-                    <span className="flex h-20 items-center justify-center rounded-xl text-3xl" style={{ background: 'var(--os-accent-soft)' }}>
-                      📖
-                    </span>
-                    <p className="truncate text-xs font-semibold">{b.title}</p>
-                    <p className="text-[10px] os-muted">
-                      {b.in_reading ? t('reading.linked') : t('reading.tapToAdd')}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
 
             {(data.shelf.want || []).length > 0 && (
               <>
@@ -362,23 +335,9 @@ function BookView({ book, onBack, onChanged }: { book: Book; onBack: () => void;
   const [owner, setOwner] = useState<Owner>('daughter')
   const [openChapter, setOpenChapter] = useState<number | null>(null)
   const [newChapter, setNewChapter] = useState('')
-  const isLibrary = book.source === 'library'
-  const detail = useApi<{ item: Book & { chapters: Chapter[] } }>(isLibrary ? null : `/reading/books/${book.id}`)
-  const chapters = detail.data?.item.chapters || []
+  const detail = useApi<{ item: Book & { chapters: Chapter[] } }>(`/reading/books/${book.id}`)
 
-  /** کتاب اپ کتابخانه را به قفسه‌ی مشترک وصل می‌کند تا بشود فصل/یادداشت اضافه کرد */
-  const linkLibraryBook = async () => {
-    await post('/reading/books', {
-      title: book.title,
-      author: book.author,
-      added_by: 'daughter',
-      status: 'reading',
-      library_book: book.library_book,
-      total_chapters: book.chapters_count,
-    })
-    playSuccess()
-    onChanged()
-  }
+  const chapters = detail.data?.item.chapters || []
 
   const addChapter = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -386,21 +345,6 @@ function BookView({ book, onBack, onChanged }: { book: Book; onBack: () => void;
     await post(`/reading/books/${book.id}/chapters`, { title: newChapter.trim() })
     setNewChapter('')
     await detail.reload()
-  }
-
-  if (isLibrary && !book.in_reading) {
-    return (
-      <div className="space-y-3">
-        <BackButton onBack={onBack} title={book.title} />
-        <div className="os-card space-y-3 p-4 text-center">
-          <p className="text-3xl">🔗</p>
-          <p className="text-sm leading-7">{t('reading.linkExplain')}</p>
-          <button className="os-btn-primary mx-auto !px-4 !py-2 text-xs" onClick={() => void linkLibraryBook()}>
-            {t('reading.linkNow')}
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -653,4 +597,3 @@ function ChapterBody({
     </div>
   )
 }
-

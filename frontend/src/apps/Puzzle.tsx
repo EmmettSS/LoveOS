@@ -6,6 +6,7 @@
  * ۲) تشخیص تکمیل: بعد از هر جابه‌جایی، صفحه‌ی فعلی با «ترتیب درست»
  *    مقایسه می‌شود؛ اگر یکی‌یکی باشند، همان لحظه جشن می‌آید — حتی اگر
  *    سرور پاسخ ندهد، بازی برای دختر تمام می‌شود (پایان محلی + تلاش برای ثبت).
+ *    برای اطمینان، یک useEffect هم مرتب‌بودن را زیر نظر دارد.
  */
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -38,7 +39,6 @@ function shuffled(n: number): number[] {
     const j = Math.floor(Math.random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
-  // اطمینان از این‌که از اول حل‌شده نباشد
   if (arr.every((v, i) => v === i)) return shuffled(n)
   return arr
 }
@@ -68,7 +68,6 @@ function WinOverlay({ result, onReplay }: { result: { message: string; voice: st
       className="fixed inset-0 z-[80] flex items-center justify-center p-4"
       style={{ background: 'rgba(10,10,25,.6)', backdropFilter: 'blur(4px)' }}
     >
-      {/* بارش جشن */}
       {parts.map((p) => (
         <motion.span
           key={p.id}
@@ -206,9 +205,14 @@ export default function Puzzle() {
   const [showHint, setShowHint] = useState(false)
   const [result, setResult] = useState<null | { message: string; voice: string | null; best_time: number; new_record: boolean; seconds: number; moves: number }>(null)
   const finishedRef = useRef(false)
+  const secondsRef = useRef(0)
+  const movesRef = useRef(0)
 
   const size = active?.level || 3
   const solved = useMemo(() => isSolved(tiles), [tiles])
+
+  useEffect(() => { secondsRef.current = seconds }, [seconds])
+  useEffect(() => { movesRef.current = moves }, [moves])
 
   useEffect(() => {
     if (!active || solved || result) return
@@ -216,7 +220,16 @@ export default function Puzzle() {
     return () => clearInterval(id)
   }, [active, solved, result])
 
-  /** پایان بازی: همواره محلی جشن می‌آید؛ ثبت رکورد روی سرور تلاش می‌شود */
+  // نگهبان دوم: اگر به هر دلیلی solved شد ولی finish صدا زده نشد، اینجا جشن را می‌آورد
+  useEffect(() => {
+    if (!active || !solved || result || finishedRef.current) return
+    // تاخیر کوتاه تا UI فرصت به‌روزرسانی داشته باشد
+    const id = window.setTimeout(() => {
+      if (!finishedRef.current) finish(secondsRef.current, movesRef.current)
+    }, 150)
+    return () => window.clearTimeout(id)
+  }, [solved, active, result])
+
   const finish = (finalSeconds: number, finalMoves: number) => {
     if (finishedRef.current || !active) return
     finishedRef.current = true
@@ -229,8 +242,7 @@ export default function Puzzle() {
         void reload()
       })
       .catch(() => {
-        // حتی اگر سرور نبود، بازی برای دختر «تمام» می‌شود
-        setResult({ message: '', voice: null, best_time: finalSeconds, new_record: false, seconds: finalSeconds, moves: finalMoves })
+        setResult({ message: 'آفرین دخترم! 🎉', voice: null, best_time: finalSeconds, new_record: false, seconds: finalSeconds, moves: finalMoves })
       })
   }
 
@@ -238,17 +250,22 @@ export default function Puzzle() {
     playClick()
     finishedRef.current = false
     setActive(p)
-    setTiles(shuffled(p.level * p.level))
+    const n = p.level * p.level
+    const s = shuffled(n)
+    // اطمینان مضاعف: اگر شانسی مرتب شد، دوباره بریز
+    setTiles(isSolved(s) ? shuffled(n) : s)
     setSelected(null)
     setSeconds(0)
+    secondsRef.current = 0
     setMoves(0)
+    movesRef.current = 0
     setHints(0)
     setResult(null)
     await post(`/puzzles/${p.id}/start`).catch(() => undefined)
   }
 
   const tap = (i: number) => {
-    if (solved || result) return
+    if (solved || result || !active) return
     playClick()
     if (selected === null) {
       setSelected(i)
@@ -260,12 +277,14 @@ export default function Puzzle() {
     }
     const next = [...tiles]
     ;[next[selected], next[i]] = [next[i], next[selected]]
+    const nextMoves = movesRef.current + 1
     setTiles(next)
-    const m = moves + 1
-    setMoves(m)
+    setMoves(nextMoves)
+    movesRef.current = nextMoves
     setSelected(null)
-    // تشخیص فوری و قطعی: همین‌جا چک می‌کنیم، نه در یک افکت دیرکرد
-    if (isSolved(next)) finish(seconds, m)
+    if (isSolved(next)) {
+      finish(secondsRef.current, nextMoves)
+    }
   }
 
   const useHint = () => {
@@ -344,6 +363,9 @@ export default function Puzzle() {
           const row = Math.floor(tile / size)
           const col = tile % size
           const correct = tile === i
+          // برای size=1 تقسیم بر صفر پیش نیاید
+          const posX = size > 1 ? (col / (size - 1)) * 100 : 0
+          const posY = size > 1 ? (row / (size - 1)) * 100 : 0
           return (
             <motion.button
               key={i}
@@ -352,7 +374,7 @@ export default function Puzzle() {
               style={{
                 backgroundImage: active.image ? `url(${active.image})` : 'linear-gradient(135deg,#ff9ecb,#bba0fb)',
                 backgroundSize: `${size * 100}% ${size * 100}%`,
-                backgroundPosition: `${(col / (size - 1)) * 100}% ${(row / (size - 1)) * 100}%`,
+                backgroundPosition: `${posX}% ${posY}%`,
                 outline: selected === i ? '3px solid var(--os-accent)' : correct ? '2px solid rgba(52,211,153,.9)' : 'none',
                 outlineOffset: -2,
               }}
@@ -361,7 +383,6 @@ export default function Puzzle() {
             />
           )
         })}
-        {/* پیش‌نمایش کمک */}
         <AnimatePresence>
           {showHint && active.image && (
             <motion.img
@@ -380,6 +401,7 @@ export default function Puzzle() {
 
       <div className="flex gap-2">
         <button className="os-btn flex-1" onClick={() => void start(active)}>{t('puzzle.reset')}</button>
+        <button className="os-btn flex-1" onClick={() => setTiles(shuffled(size * size))}>{t('puzzle.shuffle')}</button>
       </div>
 
       <AnimatePresence>

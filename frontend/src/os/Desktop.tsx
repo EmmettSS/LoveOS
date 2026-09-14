@@ -3,9 +3,10 @@
  * ویجت‌ها (ساعت، دیدار بعدی، آب‌وهوای دو شهر، پیام امروز) + شبکه‌ی آیکن‌ها + داک
  * راز ⑥: بین ۰۰:۰۰ تا ۰۵:۰۰ آسمان پر از قلب و ستاره می‌شود.
  * راز ⑦/⑧: تولد و سالگرد → آیکن مخفی کیک/قلب.
+ * اصلاح: درگ‌اند‌دراپ هم با موس و هم با لمس (pointer events + touch-action:none)
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
@@ -57,9 +58,12 @@ export function Desktop() {
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)
   const [nextCall, setNextCall] = useState<NextCallPayload['item']>(null)
-  // ------------------------------------------------- درگ‌اند‌دراپ آیکن‌ها
+  // درگ‌اند‌دراپ
   const [dragKey, setDragKey] = useState<string | null>(null)
   const [overKey, setOverKey] = useState<string | null>(null)
+  const dragMovedRef = useRef(false)
+  const startPosRef = useRef<{ x: number; y: number } | null>(null)
+  const gridRef = useRef<HTMLDivElement | null>(null)
 
   const desktopApps = useMemo(() => {
     const byKey = new Map(APPS.map((a) => [a.key, a]))
@@ -83,7 +87,6 @@ export function Desktop() {
     return () => clearInterval(id)
   }, [])
 
-  // تماس بعدی: ویجت شمارش معکوس روی دسکتاپ
   useEffect(() => {
     const load = () =>
       get<NextCallPayload>('/calls/next')
@@ -100,7 +103,6 @@ export function Desktop() {
     return () => clearInterval(id)
   }, [])
 
-  // راز ⑥ — آسمان نیمه‌شب
   const midnight = now.getHours() < 5
   useEffect(() => {
     if (!midnight) return
@@ -122,12 +124,63 @@ export function Desktop() {
     if (r.found) showEgg({ title: r.title, message: r.message, attachment: r.attachment })
   }
 
+  // ---------- pointer handlers for mobile drag ----------
+  const handlePointerDown = (e: React.PointerEvent, appKey: string) => {
+    // فقط اشاره‌گر اصلی
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    startPosRef.current = { x: e.clientX, y: e.clientY }
+    dragMovedRef.current = false
+    setDragKey(appKey)
+    // capture تا move/up بیرون از المنت هم بیاید
+    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragKey || !startPosRef.current) return
+    const dx = e.clientX - startPosRef.current.x
+    const dy = e.clientY - startPosRef.current.y
+    if (Math.hypot(dx, dy) > 8) dragMovedRef.current = true
+    if (!dragMovedRef.current) return
+    // المان زیر انگشت را پیدا کن
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    const target = el?.closest?.('[data-app-key]') as HTMLElement | null
+    const key = target?.dataset.appKey
+    if (key && key !== dragKey) setOverKey(key)
+    else if (!key) {
+      // اگر روی فضای خالی بود، over را پاک کن ولی drag را نگه دار
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragKey) return
+    const moved = dragMovedRef.current
+    const targetKey = overKey
+    // تمیزکاری
+    setDragKey(null)
+    setOverKey(null)
+    startPosRef.current = null
+    // اگر واقعاً جابجا شده، drop کن
+    if (moved && targetKey && targetKey !== dragKey) {
+      dropOn(targetKey)
+    }
+    // اگر جابجا نشده، کلیک طبیعی بعداً openApp را صدا می‌زند؛ اینجا کاری نکن
+    // pointer capture خودکار آزاد می‌شود
+  }
+
+  const handlePointerCancel = () => {
+    setDragKey(null)
+    setOverKey(null)
+    startPosRef.current = null
+    dragMovedRef.current = false
+  }
+
   return (
     <div
       className="relative h-full w-full overflow-hidden"
       style={{
+        // overlay کم‌رنگ‌تر شد تا والپیپر دیده شود — یک‌سومِ قبل (درخواست کاربر)
         backgroundImage: `linear-gradient(${
-          isNight ? 'rgba(11,16,38,.72), rgba(20,26,58,.85)' : 'rgba(255,250,247,.45), rgba(247,236,255,.55)'
+          isNight ? 'rgba(11,16,38,.24), rgba(20,26,58,.28)' : 'rgba(255,250,247,.14), rgba(247,236,255,.18)'
         }), url(${bg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -136,7 +189,6 @@ export function Desktop() {
       {midnight && <MidnightSky />}
 
       <div className="h-full overflow-y-auto px-4 pb-32 pt-5 no-scrollbar md:px-8">
-        {/* ------------------------------------------------------- ویجت‌ها */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card p-4">
             <p className="os-title text-3xl">{formatTime(now)}</p>
@@ -219,7 +271,6 @@ export function Desktop() {
           </motion.div>
         </div>
 
-        {/* --------------------------------------------- آیکن‌های مخفی روز */}
         <div className="mt-3 flex gap-2">
           <AnimatePresence>
             {config?.is_birthday && (
@@ -245,61 +296,87 @@ export function Desktop() {
           </AnimatePresence>
         </div>
 
-        {/* ------------------------------------------------ شبکه‌ی اپ‌ها */}
-        {/* روی دسکتاپ با درگ‌اند‌دراپ می‌توان ترتیب را عوض کرد (ذخیره می‌شود) */}
-        <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-          {desktopApps.map((app, i) => (
-            <motion.button
-              key={app.key}
-              initial={{ opacity: 0, y: 14, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.02 * i, type: 'spring', stiffness: 260, damping: 20 }}
-              whileHover={{ y: -6, scale: 1.06 }}
-              whileTap={{ scale: 0.94 }}
-              onClick={() => { playOpen(); openApp(app.key) }}
-              onDragOver={(e) => {
-                if (!dragKey) return
-                e.preventDefault()
-                setOverKey(app.key)
-              }}
-              onDragLeave={() => setOverKey((k) => (k === app.key ? null : k))}
-              onDrop={(e) => {
-                e.preventDefault()
-                dropOn(app.key)
-                setDragKey(null)
-                setOverKey(null)
-              }}
-              className="flex flex-col items-center gap-1.5"
-              style={{
-                opacity: dragKey === app.key ? 0.4 : 1,
-                outline: overKey === app.key && dragKey && dragKey !== app.key ? '2px dashed var(--os-accent)' : 'none',
-                outlineOffset: 4,
-                borderRadius: 18,
-              }}
-              title={t(app.titleKey)}
-            >
-              {/* دستگیره‌ی درگ‌اند‌دراپ (فقط دسکتاپ) */}
-              <span
-                draggable
-                onDragStart={(e) => {
-                  setDragKey(app.key)
-                  e.dataTransfer.setData('text/plain', app.key)
-                  e.dataTransfer.effectAllowed = 'move'
+        {/* شبکه‌ی اپ‌ها — pointer events + touch-action:none */}
+        <div
+          ref={gridRef}
+          className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"
+          style={{ touchAction: 'none' } as any}
+        >
+          {desktopApps.map((app, i) => {
+            const isDragging = dragKey === app.key
+            const isOver = overKey === app.key && dragKey && dragKey !== app.key
+            return (
+              <motion.button
+                key={app.key}
+                data-app-key={app.key}
+                initial={{ opacity: 0, y: 14, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.02 * i, type: 'spring', stiffness: 260, damping: 20 }}
+                whileHover={{ y: isDragging ? 0 : -6, scale: isDragging ? 1.1 : 1.06 }}
+                whileTap={{ scale: 0.94 }}
+                onPointerDown={(e) => handlePointerDown(e, app.key)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+                onClick={() => {
+                  // اگر در حال درگ بودیم، کلیک را نادیده بگیر
+                  if (dragMovedRef.current) {
+                    dragMovedRef.current = false
+                    return
+                  }
+                  if (dragKey) return
+                  playOpen()
+                  openApp(app.key)
                 }}
-                onDragEnd={() => {
+                onDragOver={(e) => {
+                  if (!dragKey) return
+                  e.preventDefault()
+                  setOverKey(app.key)
+                }}
+                onDragLeave={() => setOverKey((k) => (k === app.key ? null : k))}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  dropOn(app.key)
                   setDragKey(null)
                   setOverKey(null)
                 }}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
-                style={{ background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`, color: app.color }}
+                className="flex select-none flex-col items-center gap-1.5"
+                style={{
+                  opacity: isDragging ? 0.45 : 1,
+                  outline: isOver ? '2px dashed var(--os-accent)' : 'none',
+                  outlineOffset: 4,
+                  borderRadius: 18,
+                  touchAction: 'none',
+                  transform: isDragging ? 'scale(1.08)' : undefined,
+                }}
+                title={t(app.titleKey)}
               >
-                <Icon name={app.icon} size={26} />
-              </span>
-              <span className="max-w-[86px] text-center text-[11px] leading-4 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
-                {t(app.titleKey)}
-              </span>
-            </motion.button>
-          ))}
+                <span
+                  draggable
+                  onDragStart={(e) => {
+                    setDragKey(app.key)
+                    e.dataTransfer.setData('text/plain', app.key)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragEnd={() => {
+                    setDragKey(null)
+                    setOverKey(null)
+                  }}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
+                  style={{
+                    background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`,
+                    color: app.color,
+                    touchAction: 'none',
+                  }}
+                >
+                  <Icon name={app.icon} size={26} />
+                </span>
+                <span className="max-w-[86px] text-center text-[11px] leading-4 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                  {t(app.titleKey)}
+                </span>
+              </motion.button>
+            )
+          })}
         </div>
       </div>
 
@@ -317,7 +394,6 @@ export function Desktop() {
   )
 }
 
-/** «۲ روز و ۳ ساعت» از ثانیه — برای ویجت تماس بعدی */
 function countdownText(total: number, hoursWord: string, minutesWord: string) {
   if (total <= 0) return '❤'
   const days = Math.floor(total / 86_400)
@@ -328,7 +404,6 @@ function countdownText(total: number, hoursWord: string, minutesWord: string) {
   return `${digits(Math.max(1, minutes))} ${minutesWord}`
 }
 
-/** راز ⑥ — آسمان نیمه‌شب پر از قلب و ستاره */
 function MidnightSky() {
   const items = useMemo(
     () =>

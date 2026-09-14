@@ -14,6 +14,9 @@
  *
  * استفاده: await exportBookPdf(book, (cur, total) => setProgress(...))
  */
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
+
 import { digits, formatDate } from './format'
 
 /* --------------------------------------------------------- تایپ‌های ورودی -- */
@@ -461,8 +464,6 @@ export async function exportBookPdf(
     }
 
     // ۴) عکس‌برداری از هر صفحه و جمع‌آوری در PDF
-    const { jsPDF } = await import('jspdf')
-    const html2canvas = (await import('html2canvas')).default
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
 
     for (let i = 0; i < pages.length; i += 1) {

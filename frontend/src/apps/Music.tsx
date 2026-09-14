@@ -192,12 +192,18 @@ export default function Music() {
         </div>
       )}
 
-      {/* آپلود آهنگ توسط دخترم */}
+      {/* آپلود آهنگ توسط دخترم — استایل هماهنگ با پروژه */}
       <SectionTitle>{t('music.upload')}</SectionTitle>
       {!canUpload ? (
         <p className="os-empty">{t('music.uploadDisabled')}</p>
       ) : (
-        <div className="os-card space-y-2 p-3">
+        <div className="os-card space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
+              <Icon name="music" size={18} />
+            </span>
+            <p className="os-title text-sm">{t('music.upload')}</p>
+          </div>
           <input
             className="os-input"
             placeholder={t('music.uploadTitle')}
@@ -210,32 +216,46 @@ export default function Music() {
             value={form.artist}
             onChange={(e) => setForm({ ...form, artist: e.target.value })}
           />
-          <input ref={fileRef} type="file" accept="audio/*" className="os-input !py-2 text-xs" />
+          {/* انتخاب فایل آهنگ با دکمه‌ی خوش‌استایل */}
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl p-2.5" style={{ background: 'var(--os-accent-soft)' }}>
+            <button type="button" className="os-chip os-chip-active" onClick={() => fileRef.current?.click()}>
+              <span className="inline-flex items-center gap-1.5"><Icon name="upload" size={14} /> {t('music.uploadFile')}</span>
+            </button>
+            <span className="text-xs os-muted truncate">
+              {fileRef.current?.files?.[0]?.name || t('music.uploadFileHint')}
+            </span>
+          </div>
+          <input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={() => { /* برای نمایش نام فایل */ setForm({ ...form }) }} />
+
           {/* کاور آهنگ */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 rounded-2xl p-2.5" style={{ background: 'var(--os-border)' }}>
             <span
-              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl shadow-sm"
               style={{ background: coverPreview ? undefined : 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
             >
               {coverPreview ? <img src={coverPreview} alt="" className="h-full w-full object-cover" /> : <Icon name="music" size={24} />}
             </span>
             <div className="flex-1">
-              <button type="button" className="os-chip" onClick={() => coverRef.current?.click()}>
-                {t('music.cover')} 🖼
-              </button>
-              {coverPreview && (
-                <button
-                  type="button"
-                  className="os-chip ms-2 !text-[10px]"
-                  onClick={() => {
-                    setCoverFile(null)
-                    setCoverPreview(null)
-                    if (coverRef.current) coverRef.current.value = ''
-                  }}
-                >
-                  ✕
+              <p className="text-xs font-semibold">{t('music.cover')}</p>
+              <p className="text-[11px] os-muted">{t('music.coverHint')}</p>
+              <div className="mt-1.5 flex gap-2">
+                <button type="button" className="os-chip" onClick={() => coverRef.current?.click()}>
+                  {t('music.chooseCover')}
                 </button>
-              )}
+                {coverPreview && (
+                  <button
+                    type="button"
+                    className="os-chip"
+                    onClick={() => {
+                      setCoverFile(null)
+                      setCoverPreview(null)
+                      if (coverRef.current) coverRef.current.value = ''
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
             <input
               ref={coverRef}
@@ -253,9 +273,10 @@ export default function Music() {
               }}
             />
           </div>
+
           <button className="os-btn-primary w-full" onClick={() => void doUpload()} disabled={uploading}>
             <span className="inline-flex items-center justify-center gap-2">
-              <Icon name="upload" size={16} /> {uploading ? t('os.uploading') : t('music.upload')}
+              <Icon name="upload" size={16} /> {uploading ? t('os.uploading') : t('music.uploadAction')}
             </span>
           </button>
         </div>

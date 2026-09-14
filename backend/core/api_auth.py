@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from accounts.models import DeviceSession, LiveLocation, UnlockAttempt, UserConfig
@@ -57,7 +57,6 @@ def public_config(cfg: UserConfig) -> dict:
         "is_birthday": bool(cfg.daughter_birthday and (cfg.daughter_birthday.month, cfg.daughter_birthday.day) == (today.month, today.day)),
         "is_anniversary": bool(cfg.anniversary and (cfg.anniversary.month, cfg.anniversary.day) == (today.month, today.day)),
         "has_passcode": bool(cfg.passcode_hash),
-        # موقعیت واقعی و مؤثر (نه فقط شهر ثبت‌شده) — حتی پشت قفل هم شهر جاری لازم است
         "daughter_city": effective["city"],
         "live_location": live_payload,
     }
@@ -183,13 +182,13 @@ BACKGROUND_FIELDS = ("lock_background", "desktop_background_day", "desktop_backg
 
 
 @api_view(["GET", "POST", "PATCH", "PUT"])
-@parser_classes([MultiPartParser, FormParser])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 @require_session
 def update_settings(request):
     """
     تنظیمات سمت دخترم: زبان، تم، صدا، اندازه فونت و تصاویر پس‌زمینه.
 
-    • زبان/تم/صدا/فونت: JSON معمولی
+    • زبان/تم/صدا/فونت: JSON معمولی (PATCH با application/json)
     • تصاویر (پس‌زمینه‌ی قفل و دسکتاپ): multipart با فیلد عکس؛ مقدار خالی = حذف
       هر دو طرف (بابا و دخترم) می‌توانند این تصاویر را عوض کنند.
     """
@@ -197,9 +196,8 @@ def update_settings(request):
     if request.method == "GET":
         return Response({"ok": True, "config": public_config(cfg)})
 
-    # multipart یک QueryDict برمی‌گرداند؛ JSON یک dict — هر دو را یک‌دست می‌کنیم
     raw = request.data
-    data = dict(raw.items()) if not isinstance(raw, dict) else raw
+    data = dict(raw.items()) if hasattr(raw, 'items') and not isinstance(raw, dict) else (raw if isinstance(raw, dict) else {})
 
     validators = {
         "language": ("fa", "en"),
@@ -209,14 +207,20 @@ def update_settings(request):
         if field in data and str(data[field]) in validators[field]:
             setattr(cfg, field, str(data[field]))
     if "sound_enabled" in data:
-        cfg.sound_enabled = bool(data["sound_enabled"])
+        val = data["sound_enabled"]
+        # DRF JSON true/false, or string "true"/"false", or 0/1
+        if isinstance(val, bool):
+            cfg.sound_enabled = val
+        elif isinstance(val, str):
+            cfg.sound_enabled = val.lower() in ("true", "1", "yes", "on")
+        else:
+            cfg.sound_enabled = bool(val)
     if "font_scale" in data:
         try:
             cfg.font_scale = min(1.6, max(0.7, float(data["font_scale"])))
         except (TypeError, ValueError):
             pass
 
-    # تصاویر پس‌زمینه: فایل = جایگزینی، رشته‌ی خالی = بازنشانی
     changed_bg = []
     for field in BACKGROUND_FIELDS:
         upload = request.FILES.get(field)
@@ -269,14 +273,6 @@ def _location_json(cfg: UserConfig) -> dict:
 @api_view(["GET", "POST"])
 @require_session
 def location(request):
-    """
-    موقعیت جغرافیایی دخترم.
-
-    • POST: دستگاهش مختصات تازه را می‌فرستد؛ اینجا شهر/منطقه‌ی زمانی تشخیص داده
-      می‌شود و اگر جابجایی معناداری رخ داده باشد، خانه‌ی ثبت‌شده در پنل بابا هم
-      خودکار هم‌آهنگ می‌شود (تا همه‌ی اپ‌ها یک حقیقت واحد ببینند).
-    • GET: آخرین موقعیت مؤثر را برمی‌گرداند (زنده یا مقدار پنل بابا).
-    """
     cfg = UserConfig.get_solo()
 
     if request.method == "GET":
@@ -302,7 +298,6 @@ def location(request):
     previous = LiveLocation.current()
     live = LiveLocation.store(lat=lat, lng=lng, accuracy=accuracy, city=city, timezone_name=tz_name)
 
-    # آیا آن‌قدر جابجا شده که «خانه»ی ثبت‌شده هم عوض شود؟
     moved_km = _distance_km(cfg.daughter_lat, cfg.daughter_lng, lat, lng)
     city_changed = bool(city) and city != cfg.daughter_city
     tz_changed = bool(tz_name) and tz_name != cfg.daughter_timezone
@@ -331,7 +326,6 @@ def location(request):
 
 
 def _distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """فاصله‌ی دو نقطه روی زمین (هاورساین) — برای تشخیص جابجایی معنادار."""
     import math
 
     r = 6371.0
@@ -346,17 +340,6 @@ def _distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 @api_view(["GET"])
 @require_session
 def search(request):
-    """
-    جستجوی سراسری در همه‌ی اپ‌ها.
-
-    پارامترها:
-      q      عبارت جستجو (فازی؛ «بابا» همان «بابایی» را هم می‌گیرد)
-      app    فیلتر روی یک اپ/منبع (مثلاً gifts یا reading)
-      kind   فیلتر نوع (مثلاً reading_notes)
-      from   از تاریخ (YYYY-MM-DD)
-      to     تا تاریخ
-      suggest=1 → به‌جای نتایج، پیشنهادهای حالت خالی را بده
-    """
     from core.search import log_query, run_search, smart_suggestions
     from core.services import cached
 
@@ -383,8 +366,6 @@ def search(request):
     only = request.GET.get("app") or request.GET.get("kind") or ""
     disabled = cfg.search_disabled_sources or []
 
-    # نتیجه‌ی جستجو برای چند ثانیه کش می‌شود تا تایپ‌کردن سریع و روان باشد؛
-    # کلید کش شامل همه‌ی ورودی‌هاست، پس فیلترها هیچ‌وقت قاطی نمی‌شوند.
     cache_key = (
         f"search:{today}:{query}:{only}:{date_from}:{date_to}:{','.join(sorted(str(x) for x in disabled))}"
     )

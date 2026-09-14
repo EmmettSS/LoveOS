@@ -64,5 +64,6 @@ export default defineConfig({
       '/healthz': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
+  optimizeDeps: { include: ['jspdf', 'html2canvas'] },
   build: { outDir: 'dist', chunkSizeWarningLimit: 1600 },
 })
