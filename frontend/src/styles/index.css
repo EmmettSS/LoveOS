@@ -1,0 +1,116 @@
+@import './fonts.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------- پایه --- */
+:root {
+  --os-bg: linear-gradient(160deg, #fff5f9 0%, #f7ecff 45%, #fffaf3 100%);
+  --os-text: #4a2c40;
+  --os-muted: #9a7d92;
+  --os-card: rgba(255, 255, 255, 0.78);
+  --os-border: rgba(255, 182, 216, 0.55);
+  --os-accent: #f767a8;
+  --os-shadow: 0 18px 45px -20px rgba(216, 112, 170, 0.45);
+  --os-accent-soft: rgba(247, 103, 168, 0.12);
+  --font-scale: 1;
+}
+html[data-theme='night'] {
+  --os-bg: radial-gradient(120% 90% at 50% 0%, #1e2450 0%, #0b1026 70%);
+  --os-text: #eae4ff;
+  --os-muted: #a9a3d6;
+  --os-card: rgba(30, 36, 80, 0.72);
+  --os-border: rgba(140, 130, 230, 0.32);
+  --os-accent: #bba0fb;
+  --os-accent-soft: rgba(187, 160, 251, 0.16);
+  --os-shadow: 0 18px 45px -20px rgba(10, 14, 45, 0.9);
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  font-size: calc(16px * var(--font-scale));
+  color: var(--os-text);
+  background: var(--os-bg);
+  background-attachment: fixed;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* اسکرول‌بار نرم */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--os-border); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ------------------------------------------------------------ کامپوننت -- */
+@layer components {
+  .os-card {
+    background: var(--os-card);
+    border: 1px solid var(--os-border);
+    box-shadow: var(--os-shadow);
+    backdrop-filter: blur(14px);
+    @apply rounded-3xl;
+  }
+  .os-btn {
+    @apply rounded-2xl px-4 py-2.5 text-sm font-medium transition-all active:scale-95 select-none;
+    background: var(--os-card);
+    border: 1px solid var(--os-border);
+    color: var(--os-text);
+  }
+  .os-btn-primary {
+    @apply rounded-2xl px-5 py-3 text-sm font-bold text-white transition-all active:scale-95 select-none;
+    background: linear-gradient(135deg, #ff8cc0, #bba0fb);
+    box-shadow: 0 12px 28px -12px rgba(247, 103, 168, 0.8);
+  }
+  .os-input {
+    @apply w-full rounded-2xl px-4 py-3 text-sm outline-none transition;
+    background: var(--os-card);
+    border: 1px solid var(--os-border);
+    color: var(--os-text);
+  }
+  .os-input:focus { border-color: var(--os-accent); }
+  .os-title { font-family: 'Lalezar', 'Baloo Bhaijaan 2', 'Vazirmatn', cursive; letter-spacing: 0; }
+  .os-hand { font-family: 'Noto Nastaliq Urdu', 'Vazirmatn', serif; line-height: 2.4; }
+  .os-muted { color: var(--os-muted); }
+  .os-chip {
+    @apply rounded-full px-3 py-1 text-xs transition active:scale-95;
+    background: var(--os-card);
+    border: 1px solid var(--os-border);
+  }
+  .os-chip-active {
+    background: var(--os-accent);
+    border-color: var(--os-accent);
+    color: #fff;
+  }
+  .os-label { @apply mb-1 block text-xs; color: var(--os-muted); }
+  .os-empty { @apply py-12 text-center text-sm; color: var(--os-muted); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+/* کاغذ کهنه برای نامه و کتاب */
+.paper {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(216, 180, 140, 0.16), transparent 45%),
+    radial-gradient(circle at 82% 88%, rgba(216, 180, 140, 0.14), transparent 45%),
+    linear-gradient(#fffdf6, #fdf5e6);
+  box-shadow: inset 0 0 60px rgba(190, 150, 100, 0.18);
+  color: #4b3a2a;
+}
+
+/* ترمینال */
+.terminal {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  background: #0d1020;
+  color: #b6f4c8;
+  direction: ltr;
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

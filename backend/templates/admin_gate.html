@@ -1,0 +1,48 @@
+{# صفحه‌ی دروازه‌ی پنل بابا — لایه‌ی دوم امنیتی قبل از ورود به ادمین جنگو #}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>LoveOS</title>
+  <style>
+    :root { --rose: #ec4899; --deep: #9d174d; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(160deg, #fdf2f8 0%, #ede9fe 50%, #fff7ed 100%);
+      font-family: system-ui, "Segoe UI", Tahoma, sans-serif; padding: 20px;
+    }
+    form {
+      background: #fff; padding: 34px 28px; border-radius: 26px;
+      box-shadow: 0 22px 64px rgba(190, 120, 170, .22); text-align: center; width: 100%; max-width: 320px;
+    }
+    .logo { font-size: 40px; line-height: 1; margin-bottom: 10px; }
+    h1 { font-size: 18px; color: var(--deep); margin: 0 0 6px; }
+    p { font-size: 13px; color: #a1a1aa; margin: 0 0 18px; }
+    input {
+      width: 100%; padding: 13px; border: 1px solid #f5d0e5; border-radius: 15px;
+      text-align: center; font-size: 16px; outline: none; transition: border-color .2s;
+    }
+    input:focus { border-color: var(--rose); }
+    button {
+      margin-top: 14px; width: 100%; padding: 13px; border: 0; border-radius: 15px;
+      background: linear-gradient(135deg, #ff8cc0, #bba0fb); color: #fff; font-size: 15px;
+      cursor: pointer; font-weight: 600;
+    }
+    button:active { transform: scale(.98); }
+    .err { color: #dc2626; font-size: 12px; margin-top: 12px; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <form method="post">
+    <div class="logo">💗</div>
+    <h1>ورود بابا</h1>
+    <p>رمز پنل رو وارد کن</p>
+    <input type="password" name="gate" autofocus autocomplete="off" inputmode="text">
+    <button type="submit">ورود</button>
+    <div class="err">{{ error }}</div>
+  </form>
+</body>
+</html>

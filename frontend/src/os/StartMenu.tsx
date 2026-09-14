@@ -1,0 +1,76 @@
+/**
+ * StartMenu.tsx — منوی همه‌ی اپ‌ها با جست‌وجو
+ */
+import { AnimatePresence, motion } from 'framer-motion'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+
+import { Icon } from '../shared/Icon'
+import { playOpen } from '../shared/sound'
+import { useOS } from '../shared/store'
+import { APPS } from './appRegistry'
+
+export function StartMenu() {
+  const { t } = useTranslation()
+  const open = useOS((s) => s.startMenuOpen)
+  const toggle = useOS((s) => s.toggleStartMenu)
+  const openApp = useOS((s) => s.openApp)
+  const [q, setQ] = useState('')
+
+  const items = useMemo(() => {
+    const list = APPS.filter((a) => a.desktop || a.key === 'about')
+    if (!q.trim()) return list
+    return list.filter((a) => t(a.titleKey).toLowerCase().includes(q.trim().toLowerCase()))
+  }, [q, t])
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => toggle(false)}
+          />
+          <motion.div
+            initial={{ y: 40, opacity: 0, scale: 0.97 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 30, opacity: 0, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            className="os-card fixed inset-x-3 bottom-24 z-50 max-h-[65vh] overflow-hidden p-4 md:inset-x-auto md:start-1/2 md:w-[620px] md:-translate-x-1/2"
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <Icon name="search" size={18} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t('os.search')}
+                className="os-input !border-0 !bg-transparent !px-1 !py-1"
+                autoFocus
+              />
+            </div>
+            <div className="grid max-h-[46vh] grid-cols-4 gap-3 overflow-y-auto pb-2 no-scrollbar sm:grid-cols-5 md:grid-cols-6">
+              {items.map((app) => (
+                <button
+                  key={app.key}
+                  onClick={() => { playOpen(); openApp(app.key) }}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl p-2 transition hover:bg-black/5 active:scale-95"
+                >
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                    style={{ background: `${app.color}33`, color: app.color }}
+                  >
+                    <Icon name={app.icon} size={22} />
+                  </span>
+                  <span className="max-w-[72px] truncate text-[11px]">{t(app.titleKey)}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
