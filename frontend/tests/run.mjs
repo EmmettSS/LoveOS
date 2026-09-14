@@ -20,6 +20,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const outDir = join(here, '.build')
 
 const ALL = {
+  'boot-sequence': join(here, 'boot-sequence.tsx'),
   'window-manager-settings': join(here, 'window-manager-settings.tsx'),
   'apps-render': join(here, 'apps-render.tsx'),
 }

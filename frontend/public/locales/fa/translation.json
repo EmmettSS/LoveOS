@@ -40,27 +40,39 @@
   "boot": {
     "version": "LoveOS v1.0",
     "forYou": "فقط برای دخترم ❤",
-    "copyright": "© {{daddy}} ❤ {{daughter}} — ساخته‌شده با عشق",
+    "tagline": "برای او که جان و جهان من شد …",
+    "terminalTitle": "LoveOS — راه‌انداز قلب",
+    "loadingPhrase": "در حال روشن کردن قلب",
+    "skipHint": "برای رد شدن، هر جای صفحه ضربه بزن",
+    "complete": "همه‌چیز با عشق آماده است",
+    "welcome": "خوش اومدی، جانِ دلم",
+    "copyright": "© {{daddy}} ❤ {{daughter}} — ساخته‌شده با همه‌ی قلبم",
     "lines": [
       {
-        "label": "سامانه‌ی LoveOS — فقط برای دخترم",
-        "status": "OK"
-      },
-      {
         "label": "بارگذاری قلب",
-        "status": "❤"
+        "status": "موفق",
+        "tone": "ok"
       },
       {
-        "label": "ماژول فاصله‌ی ما",
-        "status": "حل شد"
+        "label": "ماژول فاصله",
+        "status": "حل شد",
+        "tone": "cyan"
       },
       {
-        "label": "حافظه‌ی خاطرات",
-        "status": "آماده"
+        "label": "حافظه‌ی عشق",
+        "status": "آماده",
+        "tone": "violet"
       },
       {
-        "label": "صندوق صدا و بغل",
-        "status": "فعال"
+        "label": "صندوق صدا",
+        "status": "فعال",
+        "tone": "pink"
+      },
+      {
+        "label": "آماده‌سازی دسکتاپ",
+        "status": "…",
+        "tone": "heart",
+        "final": true
       }
     ]
   },

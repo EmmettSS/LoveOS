@@ -35,6 +35,13 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
           {
+            // ترجمه‌ها اول از شبکه خوانده می‌شوند تا ویرایشِ بدون build فوری دیده
+            // شود؛ نسخه‌ی آفلاین هم برای بار بعدی کش می‌شود.
+            urlPattern: /\/locales\/.*/,
+            handler: 'NetworkFirst',
+            options: { cacheName: 'loveos-locales', expiration: { maxEntries: 20 } },
+          },
+          {
             urlPattern: /\/media\/.*/,
             handler: 'CacheFirst',
             options: { cacheName: 'loveos-media', expiration: { maxEntries: 120 } },
