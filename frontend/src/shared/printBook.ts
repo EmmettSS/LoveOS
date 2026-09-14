@@ -60,6 +60,19 @@ const JPEG_QUALITY = 0.92
 const FONT_STACK = '"Vazirmatn", "Segoe UI", Tahoma, system-ui, sans-serif'
 const font = (size: number, weight = 400) => `${weight} ${size}px ${FONT_STACK}`
 
+/**
+ * hex (مثل ff88bb) + شفافیت ۰..۱ → rgba(...)
+ * بعضی موتورهای canvas هگز ۸ رقمی (ff88bb1c) را نمی‌فهمند؛ rgba امن‌تر است.
+ */
+function withAlpha(hex: string, alpha: number): string {
+  const h = hex.replace('#', '')
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
+  const r = parseInt(full.slice(0, 2), 16) || 0
+  const g = parseInt(full.slice(2, 4), 16) || 0
+  const b = parseInt(full.slice(4, 6), 16) || 0
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 /* ------------------------------------------------------------- مدل صفحات -- */
 type Block =
   | { kind: 'chapterHead'; num: number; title: string; height: number }
@@ -446,7 +459,7 @@ function drawContent(ctx: Ctx, page: BuiltPage, isFa: boolean, loaded: Map<strin
           const lines = b.lines[idx] || []
           const boxH = lines.length * NOTE_FONT * NOTE_LH + 18
           ctx.save()
-          ctx.fillStyle = `${n.color}1c`
+          ctx.fillStyle = withAlpha(n.color, 0.11)
           if (typeof ctx.roundRect === 'function') {
             ctx.beginPath()
             ctx.roundRect(MARGIN_X, y, CONTENT_W, boxH, 10)
