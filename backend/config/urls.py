@@ -6,7 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import path
+from django.urls import path, re_path
 
 from content import api as content_api
 from core import api_auth
@@ -113,3 +113,17 @@ urlpatterns = [
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# ---------------------------------------------------------------------------
+# حالت پروداکشن تک‌ورودی (cPanel/Passenger): جنگو خودش فرانت‌اند را سرو می‌کند.
+# این بلوک باید همیشه آخرین چیز در فایل باشد، وگرنه الگوی catch-all پایانی
+# مسیرهای /api/... و پنل ادمین را می‌بلعد.
+# ---------------------------------------------------------------------------
+if settings.SERVE_FRONTEND:
+    from core import spa as spa_views
+
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", spa_views.media_file),
+        re_path(r"^static/(?P<path>.*)$", spa_views.static_file),
+        re_path(r"^(?P<path>.*)$", spa_views.spa),
+    ]
