@@ -101,6 +101,10 @@ async function main() {
   check('os-screen سرریز را می‌بندد', /\.os-screen\s*\{[^}]*overflow:\s*hidden/s.test(css))
   check('html/body قفل اسکرول هستند', /html,\s*body\s*\{[^}]*overflow:\s*hidden/s.test(css))
   check('html, body, #root ارتفاع ۱۰۰٪ دارند', /html,\s*body,\s*#root\s*\{\s*height:\s*100%/.test(css))
+  check(
+    'تورِ ایمنی: هر فرزند مستقیم #root تمام‌قد است',
+    /#root\s*>\s*\*\s*\{[^}]*height:\s*100%/s.test(css),
+  )
 
   console.log('\n=== ۲) بوت: تمام‌قد، بدون اسکرول داخلی ===')
   useOS.setState({ phase: 'boot', config: { ...serverConfig } })
