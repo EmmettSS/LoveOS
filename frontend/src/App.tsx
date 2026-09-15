@@ -136,7 +136,7 @@ export default function App() {
 
   return (
     <div
-      className="h-full w-full overflow-hidden"
+      className="os-screen"
       // موقع خروج انیمیشن بوت، پس‌زمینه هم تیره بماند تا فلش سفید پیدا نشود
       style={phase === 'boot' ? { background: '#0a0410' } : undefined}
     >

@@ -52,7 +52,10 @@ void i18nReady
   .then(() => {
     createRoot(rootEl).render(
       <StrictMode>
-        <ErrorBoundary title="LoveOS">
+        {/* `h-full w-full` حیاتی است: این پوسته وسطِ زنجیره‌ی ارتفاع است و اگر
+            بی‌ارتفاع باشد، کل صفحه‌ی سیستم به‌اندازه‌ی محتوایش جمع می‌شود
+            (بوت و هوم دسکتاپ و موبایل ناقص و اسکرول‌دار می‌شوند). */}
+        <ErrorBoundary title="LoveOS" className="h-full w-full">
           <App />
         </ErrorBoundary>
       </StrictMode>,

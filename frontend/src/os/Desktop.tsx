@@ -264,7 +264,7 @@ export function Desktop() {
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden"
+      className="os-screen relative"
       style={{
         // overlay کم‌رنگ‌تر شد تا والپیپر دیده شود — یک‌سومِ قبل (درخواست کاربر)
         backgroundImage: `linear-gradient(${

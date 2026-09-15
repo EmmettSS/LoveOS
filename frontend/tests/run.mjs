@@ -26,6 +26,7 @@ const ALL = {
   'puzzle-win': join(here, 'puzzle-win.tsx'),
   'pdf-book': join(here, 'pdf-book.tsx'),
   'desktop-drag': join(here, 'desktop-drag.tsx'),
+  'viewport-fit': join(here, 'viewport-fit.tsx'),
 }
 
 const only = process.argv.slice(2)
