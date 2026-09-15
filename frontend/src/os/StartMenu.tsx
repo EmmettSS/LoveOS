@@ -46,13 +46,17 @@ export function StartMenu() {
               Ctrl/⌘ K
             </kbd>
           </motion.button>
+          {/* پوسته‌ی تمام‌عرضِ وسط‌چین: وسط‌چینی با translate روی خودِ motion
+              خراب می‌شد (ترنسفورمِ inline موشن جای کلاس می‌نشیند و در RTL پنل
+              نصفه از صفحه بیرون می‌زد)؛ پس کارت واقعی یک لایه تودرتوست. */}
           <motion.div
             initial={{ y: 40, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 30, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-            className="os-card fixed inset-x-3 bottom-24 z-50 max-h-[65vh] overflow-hidden p-4 md:inset-x-auto md:start-1/2 md:w-[620px] md:-translate-x-1/2"
+            className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center"
           >
+            <div className="os-card pointer-events-auto mx-3 max-h-[65vh] w-full max-w-[620px] overflow-hidden p-4">
             <div className="mb-3 flex items-center gap-2">
               <Icon name="search" size={18} />
               <input
@@ -84,6 +88,7 @@ export function StartMenu() {
               </span>
                 </button>
               ))}
+            </div>
             </div>
           </motion.div>
         </>

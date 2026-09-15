@@ -134,3 +134,17 @@ class ReadTogetherTests(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["item"]["order"], 3)
+
+    def test_book_without_chapters_gets_auto_chapters(self):
+        # فرم اپ فقط «تعداد فصل» می‌دهد؛ فصل‌های خالی خودکار ساخته می‌شوند تا
+        # یادداشت/نقل‌قول/گفتگو از همان اول ممکن باشد.
+        res = self.client.post(
+            "/api/reading/books",
+            {"title": "کتاب بی‌فصل", "added_by": "daughter", "total_chapters": 3},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(res.status_code, 200)
+        book = ReadingBook.objects.get(title="کتاب بی‌فصل")
+        self.assertEqual(book.chapters.count(), 3)
+        self.assertEqual(list(book.chapters.order_by("order").values_list("order", flat=True)), [1, 2, 3])

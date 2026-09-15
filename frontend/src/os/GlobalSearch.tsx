@@ -179,13 +179,16 @@ export function GlobalSearch() {
             exit={{ opacity: 0 }}
             onClick={() => toggle(false)}
           />
+          {/* پوسته‌ی تمام‌عرضِ وسط‌چین: مثل منوی شروع، translate روی خودِ
+              motion در RTL پنل را نصفه از صفحه بیرون می‌برد. */}
           <motion.div
             initial={{ opacity: 0, y: -18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            className="os-card fixed inset-x-3 top-4 z-[70] flex max-h-[82vh] flex-col overflow-hidden p-0 md:inset-x-auto md:start-1/2 md:top-16 md:w-[620px] md:-translate-x-1/2"
+            className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex justify-center md:top-16"
           >
+            <div className="os-card pointer-events-auto mx-3 flex max-h-[82vh] w-full max-w-[620px] flex-col overflow-hidden p-0">
             {/* نوار جستجو */}
             <div className="flex items-center gap-2 border-b p-3" style={{ borderColor: 'var(--os-border)' }}>
               <Icon name="findheart" size={18} />
@@ -298,6 +301,7 @@ export function GlobalSearch() {
             <div className="flex items-center justify-between border-t px-3 py-2 text-[10px] os-muted" style={{ borderColor: 'var(--os-border)' }}>
               <span>{t('search.footer')}</span>
               <span>{total > 0 ? t('search.results', { count: digits(total) }) : ''}</span>
+            </div>
             </div>
           </motion.div>
         </>

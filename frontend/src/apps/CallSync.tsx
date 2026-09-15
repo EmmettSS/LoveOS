@@ -120,7 +120,7 @@ export default function CallSync() {
 
   return (
     <div className="space-y-3">
-      <NextCallHero next={data.next} stats={data.stats} onGo={() => setTab('plan')} />
+      <NextCallHero next={data.next} stats={data.stats} reminderMinutes={data.settings.reminder_minutes} onGo={() => setTab('plan')} />
 
       <Chips
         items={[
@@ -146,7 +146,7 @@ export default function CallSync() {
 }
 
 /* --------------------------------------------------------------- تماس بعدی -- */
-function NextCallHero({ next, stats, onGo }: { next: Appointment | null; stats: Stats; onGo: () => void }) {
+function NextCallHero({ next, stats, reminderMinutes, onGo }: { next: Appointment | null; stats: Stats; reminderMinutes: number; onGo: () => void }) {
   const { t } = useTranslation()
   const [left, setLeft] = useState(next?.seconds_to_start ?? 0)
 
@@ -206,9 +206,9 @@ function NextCallHero({ next, stats, onGo }: { next: Appointment | null; stats: 
       )}
 
       <div className="flex items-center justify-between text-[11px] os-muted">
-        <span>⏰ {t('calls.reminderAt', { minutes: digits(60) })}</span>
+        <span>⏰ {t('calls.reminderAt', { minutes: digits(reminderMinutes) })}</span>
         <span>
-          🎯 {t('calls.record')}: {stats.longest ? `${stats.longest.duration_label} • ${formatDate(stats.longest.happened_on)}` : '—'}
+          🎯 {t('calls.record')}: {stats.longest ? `${digits(stats.longest.duration_label)} • ${formatDate(stats.longest.happened_on)}` : '—'}
         </span>
       </div>
     </div>
@@ -238,7 +238,7 @@ function NextTab({ data, reload }: { data: Overview; reload: () => void }) {
       <div className="grid grid-cols-3 gap-2 text-center">
         {[
           { label: t('calls.monthCalls'), value: digits(stats.month_count) },
-          { label: t('calls.monthTime'), value: stats.month_label },
+          { label: t('calls.monthTime'), value: digits(stats.month_label) },
           { label: t('calls.average'), value: `${digits(stats.average_minutes)} ${t('os.minutes')}` },
         ].map((c) => (
           <div key={c.label} className="os-card p-3">
@@ -800,7 +800,7 @@ function LogsTab({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">{log.topic || log.kind_label}</p>
                   <p className="text-[11px] os-muted">
-                    {formatDate(log.happened_on)} {log.happened_at ? `• ${digits(log.happened_at)}` : ''} • {log.duration_label}
+                    {formatDate(log.happened_on)} {log.happened_at ? `• ${digits(log.happened_at)}` : ''} • {digits(log.duration_label)}
                   </p>
                 </div>
                 <span className="shrink-0 text-[11px] os-muted">{log.recorded_by_label}</span>

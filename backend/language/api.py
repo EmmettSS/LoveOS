@@ -26,7 +26,7 @@ from accounts.models import UserConfig
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
-from core.utils import bounded_int, file_url, validate_upload
+from core.utils import bounded_int, fa_digits, file_url, validate_upload
 from language.models import (
     LANGUAGES,
     OWNER,
@@ -256,14 +256,15 @@ def practice(request):
     if data.get("notify_partner", True):
         push_notification(
             "language",
-            f"{_label(owner)} امروز {len(learned_ids)} کلمه‌ی جدید یاد گرفت 💬",
-            f"streak: {progress.streak} روز",
+            f"{_label(owner)} امروز {fa_digits(len(valid_ids))} کلمه‌ی جدید یاد گرفت 💬",
+            f"🔥 {fa_digits(progress.streak)} روز پشت‌سرهم",
             icon="language",
             action_app="language",
         )
         notify_daddy(
             "language_practice",
-            f"💬 {_label(owner)} تمرین زبان کرد — {correct}/{total} درست، streak: {progress.streak} روز",
+            f"💬 {_label(owner)} تمرین زبان کرد — {fa_digits(correct)}/{fa_digits(total)} درست، "
+            f"{fa_digits(progress.streak)} روز پشت‌سرهم 🔥",
         )
     log_activity("تمرین زبان", "language", f"{mode} {correct}/{total}")
     return Response({"ok": True, "progress": _progress_json(owner)})
@@ -360,7 +361,7 @@ def quiz_submit(request):
     bump("language_quiz")
 
     if total:
-        notify_daddy("language_quiz", f"💬 {_label(owner)} کوییز زبان داد: {correct} از {total}")
+        notify_daddy("language_quiz", f"💬 {_label(owner)} کوییز زبان داد: {fa_digits(correct)} از {fa_digits(total)}")
     return Response(
         {
             "ok": True,

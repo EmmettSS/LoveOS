@@ -105,3 +105,20 @@ class LanguageBridgeTests(TestCase):
         self.assertEqual(stats["words"], 1)
         self.assertEqual(stats["idioms"], 1)
         self.assertEqual(len(stats["progress"]), 2)
+
+    def test_practice_notification_is_fully_persian(self):
+        entry = LanguageEntry.objects.create(text="kelime", kind="word")
+        res = self.client.post(
+            "/api/language/practice",
+            {"owner": "daughter", "mode": "flash", "learned_ids": [entry.id], "correct": 1, "total": 1},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(res.status_code, 200)
+        notif = OSNotification.objects.filter(kind="language").latest("id")
+        self.assertNotIn("streak:", notif.title + (notif.text or ""))
+        self.assertIn("پشت‌سرهم", notif.text or "")
+        self.assertIn("۱", notif.title + (notif.text or ""))
+        outbox = SoroushOutbox.objects.filter(event="language_practice").latest("id")
+        self.assertNotIn("streak:", outbox.text)
+        self.assertIn("۱", outbox.text)

@@ -58,8 +58,13 @@ export default defineConfig({
       '/healthz': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
+  // maplibre-gl ورکرش (maplibre-gl-worker.mjs) را نسبت به آدرس فایل خودش پیدا
+  // می‌کند؛ اگر پیش‌باندل شود، آن فایل کنار خروجیِ پیش‌باندل نیست و خطای
+  // «The file does not exist at .../deps/maplibre-gl-worker.mjs» می‌گیریم.
+  // پس از پیش‌باندل مستثناست (آدرس صریح ورکر هم در MapOfUs ست شده است).
+  optimizeDeps: { exclude: ['maplibre-gl'] },
   // نکته: هیچ پکیج چاپ/PDF بیرونی در کار نیست (خروجی کتاب با miniPdf داخلی ساخته
-  // می‌شود)؛ پس optimizeDeps هم چیزی برای پیش‌باندل کردن ندارد. اگر روزی
-  // پکیج سنگینی اضافه کردید، اسمش را این‌جا بگذارید تا dev سریع‌تر بالا بیاید.
+  // می‌شود). اگر روزی پکیج سنگینی اضافه کردید، اسمش را در include بگذارید تا
+  // dev سریع‌تر بالا بیاید.
   build: { outDir: 'dist', chunkSizeWarningLimit: 1600 },
 })

@@ -254,10 +254,18 @@ def books(request):
 
     # فصل‌های سریع: «3» یا «فصل‌ها را خودم می‌نویسم»
     raw_chapters = data.get("chapters") or []
+    created_chapters = 0
     if isinstance(raw_chapters, list):
         for i, item in enumerate(raw_chapters[:200], start=1):
             title_c = str(item.get("title") if isinstance(item, dict) else item or "").strip()
             ReadingChapter.objects.create(book=book, order=i, title=title_c[:200])
+            created_chapters += 1
+    if created_chapters == 0 and book.total_chapters > 0:
+        # فرم اپ فقط «تعداد فصل» می‌گیرد؛ فصل‌های خالی را می‌سازیم تا
+        # یادداشت/نقل‌قول/گفتگو از همان اول ممکن باشد (برچسب «فصل ۱…» خودکار است).
+        ReadingChapter.objects.bulk_create(
+            [ReadingChapter(book=book, order=i) for i in range(1, min(book.total_chapters, 200) + 1)]
+        )
     if book.total_chapters == 0:
         book.total_chapters = book.chapters.count()
         book.save(update_fields=["total_chapters", "updated_at"])

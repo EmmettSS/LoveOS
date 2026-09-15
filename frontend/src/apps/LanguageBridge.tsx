@@ -70,7 +70,8 @@ export default function LanguageBridge() {
   const { t } = useTranslation()
   const overview = useApi<Overview>('/language/overview')
   const [tab, setTab] = useState<Tab>('dictionary')
-  const [owner, setOwner] = useState<Owner>('daughter')
+  // پنل همیشه مال دختر است؛ سوییچ 👧/👨 حذف شد (درخواست صاحب پروژه)
+  const owner: Owner = 'daughter'
 
   if (overview.loading || overview.error) return <ApiStatus loading={overview.loading} error={overview.error} onRetry={() => void overview.reload()} />
   if (!overview.data) return <Empty />
@@ -105,25 +106,15 @@ export default function LanguageBridge() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Chips
-          items={[
-            { key: 'dictionary' as Tab, label: t('language.tab.dictionary') },
-            { key: 'flash' as Tab, label: t('language.tab.flash') },
-            { key: 'quiz' as Tab, label: t('language.tab.quiz') },
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
-        <Chips
-          items={[
-            { key: 'daughter' as Owner, label: '👧' },
-            { key: 'daddy' as Owner, label: '👨' },
-          ]}
-          value={owner}
-          onChange={setOwner}
-        />
-      </div>
+      <Chips
+        items={[
+          { key: 'dictionary' as Tab, label: t('language.tab.dictionary') },
+          { key: 'flash' as Tab, label: t('language.tab.flash') },
+          { key: 'quiz' as Tab, label: t('language.tab.quiz') },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       <AnimatePresence mode="wait">
         <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>

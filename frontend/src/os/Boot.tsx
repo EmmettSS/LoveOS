@@ -201,7 +201,7 @@ export function Boot() {
     <motion.div
       onClick={skip}
       dir={isFa ? 'rtl' : 'ltr'}
-      className="relative flex h-full w-full cursor-pointer select-none flex-col items-center justify-center overflow-hidden px-5"
+      className="relative flex h-full w-full cursor-pointer select-none flex-col items-center overflow-y-auto px-5 py-8"
       style={{
         background:
           'radial-gradient(110% 80% at 50% 0%, #241030 0%, #160a20 48%, #0a0410 100%)',
@@ -244,6 +244,9 @@ export function Boot() {
         aria-hidden
       />
 
+      {/* ستون محتوای بوت: با m-auto وقتی جا هست وسط می‌ایستد و وقتی صفحه
+          کوتاه است (موبایل افقی، پنجره‌ی کوچک) به‌جای بریده‌شدن اسکرول می‌خورد. */}
+      <div className="m-auto flex w-full flex-col items-center">
       {/* --------------------------------------------------------- قلب نبض‌دار */}
       <motion.div
         className="relative z-10 mb-5 grid h-[150px] w-[150px] place-items-center"
@@ -459,12 +462,13 @@ export function Boot() {
           {t('boot.skipHint')}
         </motion.p>
       </motion.div>
+      </div>
 
       {/* --------------------------------------------- پرده‌ی پایان و خوش‌آمد */}
       <AnimatePresence>
         {finished && (
           <motion.div
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center px-8 text-center"
+            className="fixed inset-0 z-20 flex flex-col items-center justify-center px-8 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

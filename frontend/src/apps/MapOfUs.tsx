@@ -9,6 +9,7 @@
  */
 import * as maplibregl from 'maplibre-gl'
 import type { Map as MLMap } from 'maplibre-gl'
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -90,6 +91,7 @@ export default function MapOfUs() {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const container = useRef<HTMLDivElement | null>(null)
+  const topRef = useRef<HTMLDivElement | null>(null)
   const map = useRef<MLMap | null>(null)
   const markers = useRef<maplibregl.Marker[]>([])
   const eggFired = useRef(false)
@@ -111,6 +113,9 @@ export default function MapOfUs() {
     const daddy: [number, number] = [data.daddy.lng, data.daddy.lat]
     const daughter: [number, number] = [data.daughter.lng, data.daughter.lat]
 
+    // آدرس صریح ورکر: با اسم‌هش‌خورده‌ی بیلد هم درست حل می‌شود (به‌همراه
+    // optimizeDeps.exclude در vite.config این خطای ورکر را می‌بندد)
+    maplibregl.config.WORKER_URL = maplibreWorkerUrl
     const m = new maplibregl.Map({
       container: container.current,
       style: {
@@ -214,6 +219,13 @@ export default function MapOfUs() {
     if (!data || !map.current) return
     playClick()
     const m = map.current
+    // نقشه پایینِ محتواست؛ اول به بالای اپ اسکرول می‌کنیم تا پرواز دیده شود
+    topRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    window.setTimeout(() => {
+      topRef.current
+        ?.closest?.('.overflow-y-auto')
+        ?.scrollTo?.({ top: 0, behavior: 'smooth' })
+    }, 60)
     m.flyTo({ center: [data.daddy.lng, data.daddy.lat], zoom: 9, duration: 2600 })
     setTimeout(() => m.flyTo({ center: [data.daughter.lng, data.daughter.lat], zoom: 9, duration: 3200 }), 3000)
     setTimeout(
@@ -261,7 +273,7 @@ export default function MapOfUs() {
   const timeDiff = Math.abs(data.daddy.hour - data.daughter.hour)
 
   return (
-    <div className="space-y-3">
+    <div ref={topRef} className="space-y-3">
       <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
         <div ref={container} className="h-[360px] w-full" />
       </div>
