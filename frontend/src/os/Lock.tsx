@@ -12,6 +12,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playError, playSuccess, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { useFitScale } from '../shared/useFitScale'
 
 export function Lock() {
   const { t } = useTranslation()
@@ -90,10 +91,13 @@ export function Lock() {
   }
 
   const delta = config?.next_meeting_delta
+  // صفحه‌ی قفل هم دقیقاً اندازه‌ی صفحه است: در گوشی‌های کوچک یا با فونت
+  // بزرگ‌تر، محتوا کمی جمع می‌شود تا هیچ اسکرولی لازم نشود.
+  const { ref: fitRef, scale: fit } = useFitScale<HTMLDivElement>()
 
   return (
     <motion.div
-      className="relative flex h-full w-full flex-col items-center overflow-y-auto px-6 py-8"
+      className="os-screen relative flex flex-col items-center justify-center px-6 py-6"
       style={{
         backgroundImage: `linear-gradient(170deg, rgba(255,245,249,.42), rgba(243,236,255,.48)), url(${
           config?.lock_background || '/backgrounds/lock.jpg'
@@ -105,8 +109,13 @@ export function Lock() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
     >
-      {/* ستون محتوا: با m-auto وسط می‌ایستد و در صفحه‌های کوتاه اسکرول می‌خورد. */}
-      <div className="m-auto flex w-full flex-col items-center">
+      {/* ستون محتوا — وسط‌چین، و در صفحه‌های کوتاه با مقیاسِ محاسبه‌شده */}
+      <div
+        ref={fitRef}
+        data-fit-column="lock"
+        className="flex w-full flex-col items-center"
+        style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
+      >
       <motion.div className={shake ? 'animate-shake' : 'animate-float'}>
         {config?.logo ? (
           <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />

@@ -24,6 +24,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { useFitScale } from '../shared/useFitScale'
 
 type Tone = 'ok' | 'cyan' | 'violet' | 'pink' | 'amber' | 'heart'
 
@@ -196,12 +197,15 @@ export function Boot() {
   }
   const pct = Math.round(progress * 100)
   const bootBg = config?.boot_background || '/backgrounds/boot.jpg'
+  // اگر صفحه کوتاه بود (گوشی کوچک، پنجره‌ی کم‌ارتفاع، فونت بزرگ) محتوا کمی
+  // جمع‌وجور می‌شود تا همه‌چیز داخل صفحه جا شود و هیچ اسکرولی نباشد.
+  const { ref: fitRef, scale: fit } = useFitScale<HTMLDivElement>()
 
   return (
     <motion.div
       onClick={skip}
       dir={isFa ? 'rtl' : 'ltr'}
-      className="relative flex h-full w-full cursor-pointer select-none flex-col items-center overflow-y-auto px-5 py-8"
+      className="os-screen relative flex cursor-pointer select-none flex-col items-center justify-center px-5 py-6"
       style={{
         background:
           'radial-gradient(110% 80% at 50% 0%, #241030 0%, #160a20 48%, #0a0410 100%)',
@@ -244,9 +248,14 @@ export function Boot() {
         aria-hidden
       />
 
-      {/* ستون محتوای بوت: با m-auto وقتی جا هست وسط می‌ایستد و وقتی صفحه
-          کوتاه است (موبایل افقی، پنجره‌ی کوچک) به‌جای بریده‌شدن اسکرول می‌خورد. */}
-      <div className="m-auto flex w-full flex-col items-center">
+      {/* ستون محتوای بوت — با m-auto وسط می‌ایستد و اگر صفحه کوتاه بود با
+          مقیاسِ محاسبه‌شده جمع می‌شود (هیچ‌وقت اسکرول یا بریدگی). */}
+      <div
+        ref={fitRef}
+        data-fit-column="boot"
+        className="relative z-10 flex w-full flex-col items-center"
+        style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
+      >
       {/* --------------------------------------------------------- قلب نبض‌دار */}
       <motion.div
         className="relative z-10 mb-5 grid h-[150px] w-[150px] place-items-center"

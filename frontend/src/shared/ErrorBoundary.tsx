@@ -13,6 +13,13 @@ import { Icon } from './Icon'
 interface Props {
   children: ReactNode
   title?: string
+  /**
+   * کلاسِ پوسته‌ی نگهبان. مهم: وقتی این نگهبان دورِ کلِ اپ گذاشته می‌شود
+   * (main.tsx) باید `h-full w-full` بگیرد، وگرنه این `div` وسطِ زنجیره‌ی
+   * ارتفاع می‌ایستد و پوسته‌ی سیستم (`h-full`) به‌جای تمام‌صفحه، به‌اندازه‌ی
+   * محتوایش جمع می‌شود.
+   */
+  className?: string
 }
 
 interface State {
@@ -43,13 +50,19 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) {
-      return <div key={this.state.tries}>{this.props.children}</div>
+      return (
+        <div key={this.state.tries} className={this.props.className}>
+          {this.props.children}
+        </div>
+      )
     }
     const chunkError = /dynamically imported module|Loading chunk|MIME type|Importing a module script failed/i.test(
       this.state.error.message,
     )
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-center">
+      <div
+        className={`${this.props.className ? `${this.props.className} ` : ''}flex flex-col items-center justify-center gap-3 py-12 text-center`}
+      >
         <span className="text-3xl">🥺</span>
         <p className="os-title text-base">{this.props.title ? `«${this.props.title}» باز نشد` : 'این بخش باز نشد'}</p>
         <p className="max-w-xs text-xs leading-6 os-muted">
