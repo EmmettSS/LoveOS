@@ -13,24 +13,39 @@ import { formatDuration } from './format'
 /** هوک ساده برای گرفتن داده از API با وضعیت بارگذاری و امکان بارگذاری دوباره */
 export function useApi<T>(path: string | null, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(path))
   const [error, setError] = useState<string | null>(null)
+  const requestId = useRef(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const reload = useCallback(async () => {
-    if (!path) return
+    if (!path) {
+      setData(null)
+      setLoading(false)
+      setError(null)
+      return
+    }
+    const id = ++requestId.current
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     setLoading(true)
     try {
-      setData(await get<T>(path))
+      const next = await get<T>(path, { signal: controller.signal })
+      if (id !== requestId.current) return
+      setData(next)
       setError(null)
     } catch (e) {
-      setError((e as Error).message)
+      if (controller.signal.aborted || id !== requestId.current) return
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
-      setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
   }, [path])
 
   useEffect(() => {
     void reload()
+    return () => abortRef.current?.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, ...deps])
 
@@ -40,11 +55,27 @@ export function useApi<T>(path: string | null, deps: unknown[] = []) {
 export function Loading() {
   const { t } = useTranslation()
   return (
-    <div className="flex items-center justify-center gap-2 py-14 text-sm os-muted">
+    <div className="flex items-center justify-center gap-2 py-14 text-sm os-muted" role="status" aria-live="polite">
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
       {t('os.loading')}
     </div>
   )
+}
+
+export function ApiError({ onRetry }: { onRetry?: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="os-card space-y-2 p-4 text-center text-sm" role="alert">
+      <p>🥺 {t('os.error')}</p>
+      {onRetry && <button type="button" className="os-btn-primary !px-4 !py-2 text-xs" onClick={onRetry}>{t('os.retry')}</button>}
+    </div>
+  )
+}
+
+export function ApiStatus({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry?: () => void }) {
+  if (loading) return <Loading />
+  if (error) return <ApiError onRetry={onRetry} />
+  return null
 }
 
 export function Empty({ text }: { text?: string }) {
@@ -65,6 +96,7 @@ export function Chips<T extends string>({
     <div className="flex flex-wrap gap-2">
       {items.map((it) => (
         <button
+          type="button"
           key={it.key}
           className={`os-chip ${value === it.key ? 'os-chip-active' : ''}`}
           onClick={() => onChange(it.key)}
@@ -111,11 +143,7 @@ export function AudioPlayer({
     const a = ref.current
     if (!a) return
     if (a.paused) {
-      void a.play()
-      if (!counted.current) {
-        counted.current = true
-        onPlayed?.()
-      }
+      void a.play().catch(() => undefined)
     } else {
       a.pause()
     }
@@ -124,6 +152,7 @@ export function AudioPlayer({
   return (
     <div className={`flex items-center gap-3 ${compact ? '' : 'os-card p-3'}`}>
       <button
+        type="button"
         onClick={toggle}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition active:scale-90"
         style={{ background: accent }}
@@ -151,7 +180,13 @@ export function AudioPlayer({
         src={src}
         autoPlay={autoPlay}
         preload="metadata"
-        onPlay={() => setPlaying(true)}
+        onPlay={() => {
+          setPlaying(true)
+          if (!counted.current) {
+            counted.current = true
+            onPlayed?.()
+          }
+        }}
         onPause={() => setPlaying(false)}
         onTimeUpdate={(e) => setTime((e.target as HTMLAudioElement).currentTime)}
         onLoadedMetadata={(e) => setDur((e.target as HTMLAudioElement).duration || 0)}

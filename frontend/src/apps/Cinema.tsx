@@ -12,7 +12,7 @@ import { del, patch, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick } from '../shared/sound'
-import { Chips, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
 
 interface Item {
   id: number
@@ -52,7 +52,7 @@ function PosterInput({ onReady, onClear, label }: { onReady: (f: File, preview: 
         className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl"
         style={{ background: preview ? undefined : 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
       >
-        {preview ? <img src={preview} alt="" className="h-full w-full object-cover" /> : <Icon name="cinema" size={22} />}
+        {preview ? <img src={preview} alt="پیش‌نمایش پوستر" className="h-full w-full object-cover" /> : <Icon name="cinema" size={22} />}
       </span>
       <div className="flex flex-1 flex-col gap-1">
         <button type="button" className="os-chip self-start" onClick={() => ref.current?.click()} disabled={busy}>
@@ -81,7 +81,7 @@ function PosterInput({ onReady, onClear, label }: { onReady: (f: File, preview: 
 
 export default function Cinema() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: Item[] }>('/cinema')
+  const { data, loading, error, reload } = useApi<{ items: Item[] }>('/cinema')
   const [form, setForm] = useState({ title: '', kind: 'film' as 'film' | 'series', link: '' })
   const [filter, setFilter] = useState<'all' | (typeof STATUSES)[number]>('all')
   const [posterFile, setPosterFile] = useState<File | null>(null)
@@ -130,7 +130,7 @@ export default function Cinema() {
     await reload()
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
 
@@ -169,7 +169,7 @@ export default function Cinema() {
             <motion.div key={it.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="os-card overflow-hidden">
               <div className="flex gap-3 p-3">
                 {it.poster ? (
-                  <img src={it.poster} alt="" className="h-24 w-16 shrink-0 rounded-xl object-cover shadow" />
+                  <img src={it.poster} alt={it.title} className="h-24 w-16 shrink-0 rounded-xl object-cover shadow" />
                 ) : (
                   <span className="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
                     <Icon name="cinema" size={22} />

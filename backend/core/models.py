@@ -32,6 +32,10 @@ class OSNotification(TimeStamped):
         ("book", "کتاب"),
         ("easter", "راز"),
         ("system", "سیستم"),
+        ("call", "تماس"),
+        ("gift", "هدیه"),
+        ("home", "خانه‌ی رویایی"),
+        ("language", "پل زبان"),
     ]
     kind = models.CharField("نوع", max_length=20, choices=KIND, default="daddy")
     title = models.CharField("عنوان", max_length=160)
@@ -119,6 +123,9 @@ class AchievementUnlock(TimeStamped):
         verbose_name = "دستاورد باز شده"
         verbose_name_plural = "دستاوردهای باز شده"
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["achievement"], name="unique_achievement_unlock"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.achievement.title} ✓"

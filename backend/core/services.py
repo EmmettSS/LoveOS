@@ -4,6 +4,7 @@ core.services — موتورهای مشترک LoveOS
 """
 from __future__ import annotations
 
+from django.db.models import F
 from django.utils import timezone
 
 from core.models import (
@@ -16,6 +17,7 @@ from core.models import (
     OSNotification,
 )
 from core.soroush import notify_daddy
+from core.utils import file_url
 
 
 # --------------------------------------------------- موقعیت زنده‌ی دخترم ---
@@ -81,9 +83,10 @@ def log_activity(action: str, app: str = "", detail: str = "", **meta) -> Activi
 
 # ----------------------------------------------------------- شمارنده‌ها -----
 def bump(key: str, amount: int = 1) -> int:
+    """شمارنده را اتمیک زیاد می‌کند تا دو درخواست همزمان مقدار هم را نپوشانند."""
     counter, _ = Counter.objects.get_or_create(key=key)
-    counter.value += amount
-    counter.save(update_fields=["value", "updated_at"])
+    Counter.objects.filter(pk=counter.pk).update(value=F("value") + amount)
+    counter.refresh_from_db(fields=["value"])
     check_achievements()
     return counter.value
 
@@ -147,7 +150,9 @@ def check_achievements() -> list[str]:
         if not counter_key:
             continue
         if values.get(counter_key, 0) >= ach.threshold:
-            AchievementUnlock.objects.create(achievement=ach)
+            _, created = AchievementUnlock.objects.get_or_create(achievement=ach)
+            if not created:
+                continue
             push_notification(
                 "achievement",
                 f"نشان جدید: {ach.title}",
@@ -207,7 +212,7 @@ def trigger_easter_egg(trigger_type: str) -> dict | None:
         "title": egg.title,
         "trigger_type": egg.trigger_type,
         "message": egg.message,
-        "attachment": egg.attachment.url if egg.attachment else None,
+        "attachment": file_url(egg.attachment),
         "extra": egg.extra,
         "first_time": first_time,
     }

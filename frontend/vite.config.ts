@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // LoveOS frontend — Vite config
-// همه‌ی درخواست‌های /api و /media به بک‌اند جنگو پراکسی می‌شوند.
+// درخواست‌های API، static و پنل به بک‌اند جنگو پراکسی می‌شوند.
 export default defineConfig({
   plugins: [
     react(),
@@ -41,11 +41,6 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: { cacheName: 'loveos-locales', expiration: { maxEntries: 20 } },
           },
-          {
-            urlPattern: /\/media\/.*/,
-            handler: 'CacheFirst',
-            options: { cacheName: 'loveos-media', expiration: { maxEntries: 120 } },
-          },
         ],
       },
     }),
@@ -57,7 +52,6 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-      '/media': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       // پنل بابا و فایل‌های استاتیک ادمین هم از همین دامنه در دسترس باشند
       '/daddy-panel-9x7k': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/static': { target: 'http://127.0.0.1:8000', changeOrigin: true },

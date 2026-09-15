@@ -14,7 +14,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playHeartbeat, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Loading, useApi } from '../shared/ui'
+import { ApiStatus, useApi } from '../shared/ui'
 
 interface HugState {
   received: number
@@ -134,7 +134,7 @@ export default function Hug() {
   const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
   const showToast = useOS((s) => s.showToast)
-  const { data, loading, reload } = useApi<HugState>('/hug')
+  const { data, loading, error, reload } = useApi<HugState>('/hug')
   const [warm, setWarm] = useState(false)
   const [burst, setBurst] = useState(0)
   const [hugOpen, setHugOpen] = useState(false) // حالت «فشرده شدن» بزرگ
@@ -144,7 +144,8 @@ export default function Hug() {
 
   // اگر بابا بغلی فرستاده که هنوز دیده نشده، همان اول نشانش بده
   useEffect(() => {
-    if (data?.pending.length) setIncoming(data.pending[0])
+    const pending = data?.pending || []
+    if (pending.length) setIncoming(pending[0])
   }, [data])
 
   useEffect(() => {
@@ -189,8 +190,19 @@ export default function Hug() {
     await reload()
   }
 
-  if (loading || !data) return <Loading />
-  const warmColor = data.settings.warm_color || '#ffd6a5'
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
+  if (!data) return <ApiStatus loading={false} error="empty" />
+  // پاسخ ناقص (مثلاً هنگام deploy یا نسخه‌ی قدیمی API) نباید کل پنجره را crash کند.
+  const settings = data.settings || {
+    incoming_title: t('hug.incoming'),
+    incoming_message: t('hug.incoming'),
+    vibration_pattern: [],
+    warm_color: '#ffd6a5',
+    heartbeat_sound: null,
+  }
+  const received = Number.isFinite(data.received) ? data.received : 0
+  const sent = Number.isFinite(data.sent) ? data.sent : 0
+  const warmColor = settings.warm_color || '#ffd6a5'
 
   return (
     <div className="relative flex flex-col items-center gap-5 overflow-hidden py-4">
@@ -254,7 +266,7 @@ export default function Hug() {
             >
               🎀
             </motion.span>
-            <p className="os-title text-base">{data.settings.incoming_title}</p>
+            <p className="os-title text-base">{settings.incoming_title}</p>
             <p className="mt-1 text-sm">{incoming.text}</p>
             <button className="os-btn-primary mt-3 w-full" onClick={() => void openHug(incoming.id)}>
               {t('hug.openHug')}
@@ -311,12 +323,12 @@ export default function Hug() {
 
       <div className="grid w-full grid-cols-2 gap-3">
         <div className="os-card p-3 text-center">
-          <p className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(data.received)}</p>
-          <p className="text-[11px] os-muted">{t('hug.received', { count: digits(data.received) })}</p>
+          <p className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(received)}</p>
+          <p className="text-[11px] os-muted">{t('hug.received', { count: digits(received) })}</p>
         </div>
         <div className="os-card p-3 text-center">
-          <p className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(data.sent)}</p>
-          <p className="text-[11px] os-muted">{t('hug.sent', { count: digits(data.sent) })}</p>
+          <p className="os-title text-2xl" style={{ color: 'var(--os-accent)' }}>{digits(sent)}</p>
+          <p className="text-[11px] os-muted">{t('hug.sent', { count: digits(sent) })}</p>
         </div>
       </div>
     </div>

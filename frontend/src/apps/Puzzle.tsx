@@ -20,7 +20,7 @@ import { del, post, upload } from '../shared/api'
 import { digits, formatDuration } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick, playSuccess } from '../shared/sound'
-import { AudioPlayer, Chips, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Chips, SectionTitle, useApi } from '../shared/ui'
 
 interface P {
   id: number
@@ -161,7 +161,7 @@ function CreatePuzzle({ onCreated }: { onCreated: () => Promise<void> }) {
           style={{ background: preview ? undefined : 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
           onClick={() => ref.current?.click()}
         >
-          {preview ? <img src={preview} alt="" className="h-full w-full object-cover" /> : <Icon name="camera" size={26} />}
+          {preview ? <img src={preview} alt="پیش‌نمایش تصویر پازل" className="h-full w-full object-cover" /> : <Icon name="camera" size={26} />}
         </button>
         <div className="min-w-0 flex-1">
           <input className="os-input" placeholder={t('puzzle.newTitle')} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -198,7 +198,7 @@ function CreatePuzzle({ onCreated }: { onCreated: () => Promise<void> }) {
 /* ------------------------------------------------------------- اپ ---- */
 export default function Puzzle() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: P[] }>('/puzzles')
+  const { data, loading, error, reload } = useApi<{ items: P[] }>('/puzzles')
   const [active, setActive] = useState<P | null>(null)
   const [tiles, setTiles] = useState<number[]>([])
   const [selected, setSelected] = useState<number | null>(null)
@@ -375,7 +375,7 @@ export default function Puzzle() {
     setCheckFlash(null)
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
 
   if (!active) {
@@ -386,7 +386,7 @@ export default function Puzzle() {
           {items.map((p) => (
             <div key={p.id} className="os-card overflow-hidden">
               <button onClick={() => void start(p)} className="block w-full text-start">
-                {p.image ? <img src={p.image} alt="" className="h-28 w-full object-cover" /> : <div className="h-28 w-full" style={{ background: 'var(--os-accent-soft)' }} />}
+                {p.image ? <img src={p.image} alt={p.title} className="h-28 w-full object-cover" /> : <div className="h-28 w-full" style={{ background: 'var(--os-accent-soft)' }} />}
                 <div className="p-3">
                   <p className="os-title break-words text-sm">{p.title}</p>
                   <p className="text-[11px] os-muted">
@@ -438,6 +438,10 @@ export default function Puzzle() {
           gridTemplateColumns: `repeat(${size}, 1fr)`,
           gap: 3,
           background: 'var(--os-border)',
+          // محیط LoveOS فارسی و RTL است، اما تصویر پازل ترتیب طبیعی LTR دارد.
+          // بدون این override، Grid قطعه‌ی صفر را از سمت راست می‌چیند و
+          // الگوریتمِ درستِ [0, 1, 2, ...] از نظر بصری معکوس دیده می‌شود.
+          direction: 'ltr',
         }}
       >
         {tiles.map((tile, i) => {

@@ -2,6 +2,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
+from core.utils import file_url
+
 from reading.models import (
     ChapterComment,
     ReadingBook,
@@ -51,7 +53,7 @@ class ReadingBookAdmin(admin.ModelAdmin):
     def cover_thumb(self, obj):
         if not obj.cover:
             return "—"
-        return format_html('<img src="{}" style="height:64px;border-radius:8px" />', obj.cover.url)
+        return format_html('<img src="{}" style="height:64px;border-radius:8px" />', file_url(obj.cover))
 
 
 @admin.register(ReadingChapter)

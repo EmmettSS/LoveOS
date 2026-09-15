@@ -103,7 +103,7 @@ LoveOS/
 │   │                            format، sound، geo، recorder، prefs،
 │   │                            ErrorBoundary
 │   ├── public/locales/          fa / en
-│   └── vite.config.ts           پراکسی /api و /media + سرویس‌ورکر PWA
+│   └── vite.config.ts           پراکسی /api + سرویس‌ورکر PWA
 ├── scripts/                     اسکریپت‌های کمکی (QR، بکاپ، استقرار)
 ├── DOCUMENTATION.md             همین مستند (انگلیسی)
 ├── DOCUMENTATION_FA.md          همین مستند (فارسی)
@@ -138,7 +138,7 @@ LoveOS/
               │
               ├─ /            → فایل‌های SPA (React)
               ├─ /api/...     → جنگو + DRF  →  مدل‌ها  →  JSON
-              ├─ /media/...   → فایل‌های آپلودی (ویس، عکس، PDF، صدای تلفظ)
+              ├─ /api/media/... → رسانه‌ی خصوصی با URL امضاشده (ویس، عکس، PDF، صدای تلفظ)
               └─ /daddy-panel-9x7k/  → ادمین جنگو (فقط من)
 ```
 
@@ -239,7 +239,7 @@ npm install
 npm run dev     # http://localhost:5173
 ```
 
-پراکسی Vite مسیرهای `/api`، `/media`، `/static` و `/daddy-panel-9x7k` را به `127.0.0.1:8000` می‌فرستد،
+پراکسی Vite مسیرهای `/api`، `/static` و `/daddy-panel-9x7k` را به `127.0.0.1:8000` می‌فرستد،
 پس هر دو ترمینال لازم است. راهنمای گام‌به‌گام با تصویر ذهنی هر مرحله در
 [`QUICKSTART_FA.md`](./QUICKSTART_FA.md) آمده.
 
@@ -558,7 +558,7 @@ SOROUSH_PARSE_MODE=HTML
 |---|---|
 | `/` | خود LoveOS (SPA) |
 | `/daddy-panel-9x7k/` | پنل بابا |
-| `/media/…` | فایل‌های آپلودی |
+| `/api/media/<path>?sig=…` | فایل خصوصی با URL امضاشده و کوتاه‌عمر |
 | `/robots.txt` | بستن همه‌ی خزنده‌ها |
 
 ---

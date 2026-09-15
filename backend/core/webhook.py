@@ -32,17 +32,25 @@ def soroush_webhook(request, secret: str):
     allowed = str(settings.LOVEOS["SOROUSH_DADDY_CHAT_ID"] or "")
 
     # فقط پیام‌های بابا (اگر chat_id تنظیم شده باشد)
-    if allowed and chat_id and chat_id != allowed:
+    if allowed and chat_id != allowed:
         return JsonResponse({"ok": True, "ignored": True})
 
     if text:
-        ChatMessage.objects.create(
-            sender="daddy",
-            text=text,
-            via="soroush",
-            soroush_message_id=str(message.get("message_id", "")),
+        message_id = str(message.get("message_id", ""))
+        duplicate = bool(
+            message_id
+            and ChatMessage.objects.filter(
+                via="soroush", soroush_message_id=message_id
+            ).exists()
         )
-        push_notification("chat", "پیام تازه از بابا 💬", text[:160], action_app="chat")
+        if not duplicate:
+            ChatMessage.objects.create(
+                sender="daddy",
+                text=text,
+                via="soroush",
+                soroush_message_id=message_id,
+            )
+            push_notification("chat", "پیام تازه از بابا 💬", text[:160], action_app="chat")
 
     callback = update.get("callback_query")
     if callback:

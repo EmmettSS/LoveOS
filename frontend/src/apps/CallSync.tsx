@@ -17,7 +17,7 @@ import { del, post, upload } from '../shared/api'
 import { digits, formatDate, monthKeyLabel, weekdayName, weekdayNameByIndex } from '../shared/format'
 import { formatClock, micSupported, useRecorder } from '../shared/recorder'
 import { playError, playSuccess, vibrate } from '../shared/sound'
-import { Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, SectionTitle, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
 
@@ -50,7 +50,7 @@ interface Appointment {
   alternative_of: number | null
   seconds_to_start: number
   is_upcoming: boolean
-  sides_time: Record<string, { city: string; timezone: string; time: string; day_offset: number }>
+  sides_time: Record<string, { city?: string; label?: string; timezone?: string; time: string; date?: string; day_offset?: number }>
   logged: boolean
 }
 
@@ -112,10 +112,11 @@ function humanSeconds(total: number, hoursWord: string, minutesWord: string) {
 
 export default function CallSync() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<Overview>('/calls/overview')
+  const { data, loading, error, reload } = useApi<Overview>('/calls/overview')
   const [tab, setTab] = useState<'next' | 'week' | 'plan' | 'logs'>('next')
 
-  if (loading || !data) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
+  if (!data) return <Empty />
 
   return (
     <div className="space-y-3">
@@ -197,7 +198,7 @@ function NextCallHero({ next, stats, onGo }: { next: Appointment | null; stats: 
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
           {sides.map((s, i) => (
             <div key={i} className="rounded-xl p-2" style={{ background: 'var(--os-border)' }}>
-              <p className="os-muted">{s.city || t('calls.yourSide')}</p>
+              <p className="os-muted">{s.city || s.label || t('calls.yourSide')}</p>
               <p className="mt-0.5 text-base font-bold tabular-nums">{digits(s.time)}</p>
             </div>
           ))}

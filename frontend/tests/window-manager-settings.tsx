@@ -131,7 +131,6 @@ async function main() {
   const chatZ = useOS.getState().windows.find((x) => x.app === 'chat')!.z
   const countZ = useOS.getState().windows.find((x) => x.app === 'countdown')!.z
   check('پنجره‌ی تازه باز شده جلوتر است', chatZ > countZ, `chat=${chatZ} countdown=${countZ}`)
-  const posBefore = geo()
   await click(icon('countdown'))
   const countZ2 = useOS.getState().windows.find((x) => x.app === 'countdown')!.z
   const topZ = Math.max(...useOS.getState().windows.map((x) => x.z))

@@ -21,7 +21,7 @@ import {
 } from '../shared/format'
 import { playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Chips, Loading, SectionTitle, Toggle, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Loading, SectionTitle, Toggle, useApi } from '../shared/ui'
 
 interface Overview {
   disclaimer: string
@@ -62,9 +62,10 @@ export default function CycleCare() {
   const { t } = useTranslation()
   const showToast = useOS((s) => s.showToast)
   const [tab, setTab] = useState<Tab>('calendar')
-  const { data: ov, loading, reload } = useApi<Overview>('/cycle')
+  const { data: ov, loading, error, reload } = useApi<Overview>('/cycle')
 
-  if (loading || !ov) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
+  if (!ov) return <ApiStatus loading={false} error="empty" />
 
   return (
     <div className="space-y-3">
@@ -317,7 +318,7 @@ function SymptomsTab({ showToast }: { showToast: (s: string, tone?: 'love' | 'in
 /* ------------------------------------------------------------ داروها --- */
 function MedsTab({ showToast }: { showToast: (s: string, tone?: 'love' | 'info') => void }) {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: MedSlot[] }>('/meds/today')
+  const { data, loading, error, reload } = useApi<{ items: MedSlot[] }>('/meds/today')
   const [form, setForm] = useState({ name: '', dose: '', times: '', note: '' })
   const [adding, setAdding] = useState(false)
 
@@ -346,7 +347,7 @@ function MedsTab({ showToast }: { showToast: (s: string, tone?: 'love' | 'info')
     }
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
 
   return (
@@ -523,8 +524,8 @@ function HBar({ label, value, max = 5, color = 'var(--os-accent)' }: { label: st
 /* ----------------------------------------------------------- گزارش‌ها -- */
 function ReportsTab({ ov }: { ov: Overview }) {
   const { t } = useTranslation()
-  const { data: meds, loading: medsLoading } = useApi<{ taken: number; skipped: number; total: number; adherence: number; by_day: { day: string; taken: number; skipped: number }[] }>('/meds/report')
-  const { data: symptoms, loading: symLoading } = useApi<{ items: SymptomDay[] }>('/cycle/symptoms?days=90')
+  const { data: meds, loading: medsLoading, error: medsError } = useApi<{ taken: number; skipped: number; total: number; adherence: number; by_day: { day: string; taken: number; skipped: number }[] }>('/meds/report')
+  const { data: symptoms, loading: symLoading, error: symptomsError } = useApi<{ items: SymptomDay[] }>('/cycle/symptoms?days=90')
   const [range, setRange] = useState<'30' | '90'>('90')
 
   const gaps = ov.stats.gaps
@@ -568,6 +569,7 @@ function ReportsTab({ ov }: { ov: Overview }) {
   if (ov.stats.next_start) {
     insights.push({ icon: '📅', text: t('cycle.insightNext', { date: formatDate(ov.stats.next_start) }) })
   }
+  if (medsError || symptomsError) return <ApiStatus loading={false} error={medsError || symptomsError} />
 
   return (
     <div className="space-y-3">
@@ -713,14 +715,14 @@ function SummaryCard({ icon, label, value, small = false }: { icon: string; labe
 /* ------------------------------------------------------ مراقبت از خود -- */
 function CareTab() {
   const { t } = useTranslation()
-  const { data, loading, setData } = useApi<{ items: CareItem[] }>('/care')
+  const { data, loading, error, setData } = useApi<{ items: CareItem[] }>('/care')
 
   const toggle = async (c: CareItem) => {
     const res = await post<{ enabled: boolean }>(`/care/${c.id}/toggle`)
     setData((prev) => (prev ? { items: prev.items.map((x) => (x.id === c.id ? { ...x, enabled: res.enabled } : x)) } : prev))
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <p className="os-empty">{t('os.empty')}</p>
 

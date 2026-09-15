@@ -13,7 +13,7 @@ import { digits } from '../shared/format'
 import { exportBookPdf } from '../shared/printBook'
 import { playPaper } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { AudioPlayer, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Empty, SectionTitle, useApi } from '../shared/ui'
 
 interface Note { id: number; author: string; text: string; color: string }
 interface Paragraph { id: number; order: number; text: string; author: string; audio: string | null; is_draft: boolean; notes: Note[] }
@@ -42,10 +42,10 @@ export default function Library() {
   const { t } = useTranslation()
   const [bookId, setBookId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
-  const { data: shelf, loading, reload } = useApi<{ items: BookCard[] }>('/books')
+  const { data: shelf, loading, error, reload } = useApi<{ items: BookCard[] }>('/books')
 
   if (bookId) return <BookReader id={bookId} onBack={() => setBookId(null)} />
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = shelf?.items || []
 
   return (
@@ -81,7 +81,7 @@ export default function Library() {
             style={{ background: 'var(--os-card)', border: '1px solid var(--os-border)' }}
           >
             {b.cover ? (
-              <img src={b.cover} alt="" className="h-36 w-full object-cover" />
+              <img src={b.cover} alt={b.title} className="h-36 w-full object-cover" />
             ) : (
               <div className="flex h-36 w-full items-center justify-center" style={{ background: 'linear-gradient(150deg,#f9a8d4,#c4b5fd)', color: '#fff' }}>
                 <Icon name="book" size={34} />
@@ -160,7 +160,7 @@ function NewBook({ onDone, onCancel }: { onDone: (id: number | null) => void; on
 function BookReader({ id, onBack }: { id: number; onBack: () => void }) {
   const { t } = useTranslation()
   const showToast = useOS((s) => s.showToast)
-  const { data, loading, reload } = useApi<BookDetail>(`/books/${id}`)
+  const { data, loading, error, reload } = useApi<BookDetail>(`/books/${id}`)
   const [chapterIdx, setChapterIdx] = useState(0)
   const [pageIdx, setPageIdx] = useState(0)
   const [dir, setDir] = useState(1)
@@ -184,7 +184,8 @@ function BookReader({ id, onBack }: { id: number; onBack: () => void }) {
     }
   }
 
-  if (loading || !data) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
+  if (!data) return <Empty />
   const chapters = data.chapters
   if (chapters.length === 0) {
     return (
@@ -276,7 +277,7 @@ function BookReader({ id, onBack }: { id: number; onBack: () => void }) {
             className="paper rounded-3xl p-5"
             style={{ transformStyle: 'preserve-3d' }}
           >
-            {page.image && <img src={page.image} alt="" className="mb-3 w-full rounded-2xl object-cover" />}
+            {page.image && <img src={page.image} alt="تصویر صفحه" className="mb-3 w-full rounded-2xl object-cover" />}
             {page.audio && <div className="mb-3"><AudioPlayer src={page.audio} compact accent="#b9895a" /></div>}
 
             {page.paragraphs.length === 0 && <p className="text-center text-sm" style={{ color: '#8a7256' }}>{t('os.empty')}</p>}

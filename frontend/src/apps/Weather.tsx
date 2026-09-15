@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon, type IconName } from '../shared/Icon'
 import { digits, isFa, weekdayName } from '../shared/format'
-import { Loading, useApi } from '../shared/ui'
+import { ApiStatus, useApi } from '../shared/ui'
 
 interface ForecastDay {
   date: string | null
@@ -391,8 +391,8 @@ function forecastDayName(date: string | null, i: number, t: (k: string) => strin
 /* ------------------------------------------------------------- اپ ---- */
 export default function Weather() {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ daddy: Side; daughter: Side; message: string }>('/weather')
-  if (loading) return <Loading />
+  const { data, loading, error } = useApi<{ daddy: Side; daughter: Side; message: string }>('/weather')
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   if (!data) return <p className="os-empty">{t('weather.unavailable')}</p>
 
   const diff =

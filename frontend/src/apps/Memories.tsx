@@ -13,7 +13,7 @@ import { del, upload } from '../shared/api'
 import { formatDate } from '../shared/format'
 import { playClick, playPaper, playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { AudioPlayer, Chips, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Chips, Empty, useApi } from '../shared/ui'
 
 interface Memory {
   id: number
@@ -33,7 +33,7 @@ type Tab = 'past' | 'future'
 
 export default function Memories() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: Memory[] }>('/memories')
+  const { data, loading, error, reload } = useApi<{ items: Memory[] }>('/memories')
   const [tab, setTab] = useState<Tab>('past')
   const [slideshow, setSlideshow] = useState(false)
   const [index, setIndex] = useState(0)
@@ -48,7 +48,7 @@ export default function Memories() {
     return () => clearInterval(id)
   }, [slideshow, withPhoto.length])
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
 
   return (
     <div className="space-y-3">
@@ -91,7 +91,7 @@ export default function Memories() {
             transition={{ duration: 0.8 }}
             className="overflow-hidden rounded-3xl"
           >
-            <img src={withPhoto[index].photo!} alt="" className="h-56 w-full object-cover" />
+            <img src={withPhoto[index].photo!} alt={withPhoto[index].title} className="h-56 w-full object-cover" />
             <p className="os-title -mt-9 px-4 pb-3 text-white drop-shadow-lg">{withPhoto[index].title}</p>
           </motion.div>
         )}
@@ -117,7 +117,7 @@ export default function Memories() {
                   style={{ background: m.locked ? 'var(--os-border)' : 'var(--os-accent)', boxShadow: '0 0 0 4px var(--os-card)' }}
                 />
                 <div className="os-card overflow-hidden" onClick={() => !m.locked && playPaper()}>
-                  {m.photo && !m.locked && <img src={m.photo} alt="" className="h-44 w-full object-cover" />}
+                  {m.photo && !m.locked && <img src={m.photo} alt={m.title} className="h-44 w-full object-cover" />}
                   <div className="p-3">
                     <div className="flex items-center gap-2">
                       <h4 className="os-title flex-1 text-base">{m.title}</h4>

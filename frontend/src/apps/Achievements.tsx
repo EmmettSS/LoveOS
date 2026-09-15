@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { digits, formatDate } from '../shared/format'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface A {
   id: number
@@ -28,10 +28,10 @@ const EMOJI: Record<string, string> = {
 
 export default function Achievements() {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ items: A[]; unlocked: number; total: number }>('/achievements')
+  const { data, loading, error } = useApi<{ items: A[]; unlocked: number; total: number }>('/achievements')
   const [open, setOpen] = useState<number | null>(null)
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 

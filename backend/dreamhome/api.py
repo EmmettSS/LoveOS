@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from accounts.models import UserConfig
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
+from core.utils import file_url, validate_upload
 from core.soroush import notify_daddy
 from dreamhome.models import (
     IMPORTANCE,
@@ -62,7 +63,7 @@ def _feature_json(f: DreamHomeFeature) -> dict:
         "importance": f.importance,
         "importance_label": IMPORTANCE_LABEL.get(f.importance, f.importance),
         "description": f.description,
-        "photo": f.photo.url if f.photo else None,
+        "photo": file_url(f.photo),
         "added_by": f.added_by,
         "added_by_label": _label(f.added_by),
         "is_done": f.is_done,
@@ -108,7 +109,7 @@ def _room_json(r: DreamHomeRoom, with_ideas: bool = False) -> dict:
 def _inspiration_json(i: DreamHomeInspiration, with_comments: bool = False) -> dict:
     data = {
         "id": i.id,
-        "photo": i.photo.url if i.photo else None,
+        "photo": file_url(i.photo),
         "title": i.title,
         "category": i.category_id,
         "category_name": i.category.name if i.category else "",
@@ -169,6 +170,9 @@ def features(request):
 
         feature.linked_plan = FuturePlan.objects.filter(pk=data["linked_plan"]).first()
     photo = request.FILES.get("photo")
+    upload_error = validate_upload(photo, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if photo:
         feature.photo = photo
     feature.save()
@@ -211,6 +215,9 @@ def feature_item(request, pk: int):
     if "category" in data:
         feature.category = DreamHomeCategory.objects.filter(pk=data["category"]).first() if data["category"] else None
     photo = request.FILES.get("photo")
+    upload_error = validate_upload(photo, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if photo:
         feature.photo = photo
     feature.save()
@@ -350,6 +357,9 @@ def inspirations(request):
     photo = request.FILES.get("photo")
     if not photo:
         return Response({"ok": False, "message": "عکس الهام را انتخاب کن"}, status=400)
+    upload_error = validate_upload(photo, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     insp = DreamHomeInspiration.objects.create(
         photo=photo,
         title=str(data.get("title") or "")[:160],

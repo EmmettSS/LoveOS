@@ -26,6 +26,7 @@ from accounts.models import UserConfig
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url, validate_upload
 from library.models import Book as LibraryBook
 from reading.models import (
     OWNER,
@@ -57,12 +58,12 @@ def _book_json(b: ReadingBook, full: bool = False) -> dict:
         "id": b.id,
         "title": b.title,
         "author": b.author,
-        "cover": b.cover.url if b.cover else None,
+        "cover": file_url(b.cover),
         "status": b.status,
         "status_label": STATUS_LABEL.get(b.status, b.status),
         "summary": b.summary,
         "why_this_book": b.why_this_book,
-        "pdf": b.pdf.url if b.pdf else None,
+        "pdf": file_url(b.pdf),
         "link": b.link,
         "is_physical": b.is_physical,
         "chapters_count": b.chapters_count,
@@ -240,15 +241,15 @@ def books(request):
         added_by=_owner_from(data, "daughter"),
     )
     upload_pdf = request.FILES.get("pdf")
+    cover = request.FILES.get("cover")
+    upload_error = validate_upload(upload_pdf, "document") or validate_upload(cover, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if upload_pdf:
         book.pdf = upload_pdf
-    cover = request.FILES.get("cover")
     if cover:
         book.cover = cover
-    try:
-        book.total_chapters = max(0, int(data.get("total_chapters") or 0))
-    except (TypeError, ValueError):
-        book.total_chapters = 0
+    book.total_chapters = bounded_int(data.get("total_chapters"), default=0, minimum=0, maximum=2000)
     book.save()
 
     # فصل‌های سریع: «3» یا «فصل‌ها را خودم می‌نویسم»
@@ -313,9 +314,12 @@ def book_item(request, pk: int):
         # اتصال/جداکردن این کتاب از کتابِ اپ کتابخانه (قفسه‌ی مشترک)
         book.library_book = LibraryBook.objects.filter(pk=data["library_book"]).first() if data["library_book"] else None
     cover = request.FILES.get("cover")
+    pdf = request.FILES.get("pdf")
+    upload_error = validate_upload(pdf, "document") or validate_upload(cover, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if cover:
         book.cover = cover
-    pdf = request.FILES.get("pdf")
     if pdf:
         book.pdf = pdf
     book.save()
@@ -331,10 +335,8 @@ def chapter_create(request, pk: int):
         return Response({"ok": False}, status=404)
     data = request.data if isinstance(request.data, dict) else {}
     order = data.get("order")
-    try:
-        order = int(order) if order else (book.chapters.order_by("-order").first().order + 1 if book.chapters.exists() else 1)
-    except (TypeError, ValueError):
-        order = 1
+    default_order = book.chapters.order_by("-order").first().order + 1 if book.chapters.exists() else 1
+    order = bounded_int(order, default=default_order, minimum=1, maximum=2000)
     chapter, _ = ReadingChapter.objects.get_or_create(
         book=book,
         order=order,
@@ -367,10 +369,7 @@ def notes(request, pk: int):
     owner = _owner_from(data, "daughter")
     text = str(data.get("text") or "").strip()
     is_finished = bool(data.get("is_finished"))
-    try:
-        rating = max(0, min(5, int(data.get("rating") or 0)))
-    except (TypeError, ValueError):
-        rating = 0
+    rating = bounded_int(data.get("rating") or 0, default=0, minimum=0, maximum=5)
 
     if not text and not is_finished:
         return Response({"ok": False, "message": "یه یادداشت بنویس یا «خوندم» را بزن"}, status=400)

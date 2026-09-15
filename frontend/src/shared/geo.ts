@@ -117,7 +117,7 @@ export function getPrecisePosition(): Promise<Coords | null> {
     const finish = () => {
       clearTimeout(timer)
       try {
-        watchId != null && navigator.geolocation.clearWatch(watchId)
+        if (watchId != null) navigator.geolocation.clearWatch(watchId)
       } catch {
         /* ignore */
       }

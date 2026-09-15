@@ -17,7 +17,7 @@ import { post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { formatClock, micSupported, useRecorder } from '../shared/recorder'
 import { playError, playSuccess, playClick } from '../shared/sound'
-import { AudioPlayer, Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
 
@@ -72,7 +72,8 @@ export default function LanguageBridge() {
   const [tab, setTab] = useState<Tab>('dictionary')
   const [owner, setOwner] = useState<Owner>('daughter')
 
-  if (overview.loading || !overview.data) return <Loading />
+  if (overview.loading || overview.error) return <ApiStatus loading={overview.loading} error={overview.error} onRetry={() => void overview.reload()} />
+  if (!overview.data) return <Empty />
   const data = overview.data
   const myProgress = data.stats.progress.find((p) => p.owner === owner)
 
@@ -222,7 +223,9 @@ function DictionaryTab({ data, owner, onChanged }: { data: Overview; owner: Owne
         )}
       </AnimatePresence>
 
-      {list.loading ? (
+      {list.error ? (
+        <ApiStatus loading={false} error={list.error} onRetry={() => void list.reload()} />
+      ) : list.loading ? (
         <Loading />
       ) : items.length === 0 ? (
         <Empty text={t('language.empty')} />
@@ -547,6 +550,7 @@ function FlashTab({
     void deck.reload()
   }
 
+  if (deck.error) return <ApiStatus loading={false} error={deck.error} onRetry={() => void deck.reload()} />
   if (deck.loading) return <Loading />
   if (cards.length === 0) return <Empty text={t('language.noCards')} />
 
@@ -736,6 +740,7 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
     )
   }
 
+  if (quiz.error) return <ApiStatus loading={false} error={quiz.error} onRetry={() => void quiz.reload()} />
   if (quiz.loading || !current) return <Loading />
 
   return (

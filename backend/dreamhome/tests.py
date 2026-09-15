@@ -64,9 +64,13 @@ class DreamHomeTests(TestCase):
         self.assertEqual(len(stats["checklist"]["must"]), 2)
 
     def test_inspiration_comment_flow(self):
+        from io import BytesIO
         from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
 
-        photo = SimpleUploadedFile("room.jpg", b"fake-image-bytes", content_type="image/jpeg")
+        stream = BytesIO()
+        Image.new("RGB", (16, 16), (240, 180, 220)).save(stream, format="JPEG")
+        photo = SimpleUploadedFile("room.jpg", stream.getvalue(), content_type="image/jpeg")
         res = self.client.post(
             "/api/home/inspirations",
             {"title": "اتاق خواب روشن", "photo": photo, "room": ""},

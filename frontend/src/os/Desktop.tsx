@@ -39,7 +39,7 @@ interface NextCallPayload {
     duration_minutes?: number
     topic?: string
     seconds_to_start: number
-    sides_time?: Record<string, { city: string; time: string }>
+    sides_time?: Record<string, { city?: string; label?: string; time: string }>
   } | null
 }
 

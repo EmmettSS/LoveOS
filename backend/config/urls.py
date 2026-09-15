@@ -3,7 +3,6 @@ config.urls — نقشه‌ی آدرس‌های LoveOS
 پنل بابا روی مسیر مخفی (ADMIN_PATH) قرار دارد.
 """
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, re_path
@@ -15,6 +14,7 @@ from gifts import api as gifts_api
 from language import api as language_api
 from reading import api as reading_api
 from core import api_auth
+from core.media import protected_media
 from core.webhook import soroush_webhook
 from games import api as games_api
 from health import api as health_api
@@ -39,6 +39,7 @@ urlpatterns = [
     path("robots.txt", robots),
     path("healthz", healthz),
     # ---------------------------------------------------------- auth/shell
+    path("api/media/<path:path>", protected_media),
     path("api/boot", api_auth.boot),
     path("api/auth/unlock", api_auth.unlock),
     path("api/auth/forgot", api_auth.forgot),
@@ -174,7 +175,6 @@ urlpatterns = [
     path("api/soroush/webhook/<str:secret>/", soroush_webhook),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # ---------------------------------------------------------------------------
 # حالت پروداکشن تک‌ورودی (cPanel/Passenger): جنگو خودش فرانت‌اند را سرو می‌کند.
@@ -185,7 +185,6 @@ if settings.SERVE_FRONTEND:
     from core import spa as spa_views
 
     urlpatterns += [
-        re_path(r"^media/(?P<path>.*)$", spa_views.media_file),
         re_path(r"^static/(?P<path>.*)$", spa_views.static_file),
         re_path(r"^(?P<path>.*)$", spa_views.spa),
     ]

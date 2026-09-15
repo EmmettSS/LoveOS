@@ -26,6 +26,7 @@ from accounts.models import UserConfig
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url, validate_upload
 from language.models import (
     LANGUAGES,
     OWNER,
@@ -63,7 +64,7 @@ def _entry_json(e: LanguageEntry) -> dict:
         "literal_meaning": e.literal_meaning,
         "real_meaning": e.real_meaning,
         "example": e.example,
-        "pronunciation": e.pronunciation.url if e.pronunciation else None,
+        "pronunciation": file_url(e.pronunciation),
         "category": e.category_id,
         "category_name": e.category.name if e.category else "",
         "category_icon": e.category.icon if e.category else "💬",
@@ -121,6 +122,9 @@ def entries(request):
     if data.get("category"):
         entry.category = LanguageCategory.objects.filter(pk=data["category"]).first()
     audio = request.FILES.get("pronunciation")
+    upload_error = validate_upload(audio, "audio")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if audio:
         entry.pronunciation = audio
     entry.save()
@@ -174,6 +178,9 @@ def entry_item(request, pk: int):
     if "category" in data:
         entry.category = LanguageCategory.objects.filter(pk=data["category"]).first() if data["category"] else None
     audio = request.FILES.get("pronunciation")
+    upload_error = validate_upload(audio, "audio")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if audio:
         entry.pronunciation = audio
     entry.save()
@@ -203,10 +210,7 @@ def flashcards(request):
     """کارت‌های فلش؛ به‌صورت تصادفی و با اولویت کلماتی که یاد نگرفته‌ایم."""
     owner = request.GET.get("owner") if request.GET.get("owner") in OWNER_LABEL else "daughter"
     target = request.GET.get("target") if request.GET.get("target") in LANG_LABEL else "tr"
-    try:
-        count = max(1, min(50, int(request.GET.get("count", 12))))
-    except (TypeError, ValueError):
-        count = 12
+    count = bounded_int(request.GET.get("count", 12), default=12, minimum=1, maximum=50)
 
     qs = list(LanguageEntry.objects.filter(is_active=True).select_related("category"))
     category = request.GET.get("category")
@@ -236,18 +240,14 @@ def practice(request):
     learned_ids = data.get("learned_ids") or []
     if not isinstance(learned_ids, list):
         learned_ids = []
-    try:
-        correct = max(0, int(data.get("correct") or 0))
-        total = max(0, int(data.get("total") or 0))
-    except (TypeError, ValueError):
-        correct, total = 0, 0
+    correct = bounded_int(data.get("correct") or 0, default=0, minimum=0, maximum=1000)
+    total = bounded_int(data.get("total") or 0, default=0, minimum=0, maximum=1000)
 
     progress = LanguageProgress.get_for(owner)
-    for entry_id in learned_ids[:200]:
-        try:
-            progress.mark_learned(int(entry_id))
-        except (TypeError, ValueError):
-            continue
+    candidate_ids = {bounded_int(entry_id, default=-1, minimum=-1) for entry_id in learned_ids[:200]}
+    valid_ids = set(LanguageEntry.objects.filter(is_active=True, id__in=candidate_ids).values_list("id", flat=True))
+    for entry_id in valid_ids:
+        progress.mark_learned(entry_id)
     progress.save()
 
     LanguageAttempt.objects.create(owner=owner, mode=mode, correct=correct, total=total)
@@ -287,10 +287,7 @@ def _progress_json(owner: str) -> dict:
 @require_session
 def quiz(request):
     """سؤال‌های کوییز — همه از پنل بابا؛ گزینه‌ها در لحظه شافل می‌شوند."""
-    try:
-        count = max(1, min(30, int(request.GET.get("count", 8))))
-    except (TypeError, ValueError):
-        count = 8
+    count = bounded_int(request.GET.get("count", 8), default=8, minimum=1, maximum=30)
 
     qs = list(LanguageQuiz.objects.filter(is_active=True).select_related("category"))
     random.shuffle(qs)

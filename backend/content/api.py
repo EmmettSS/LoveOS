@@ -32,13 +32,7 @@ from content.models import (
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
-
-
-def url_of(f):
-    try:
-        return f.url if f else None
-    except ValueError:
-        return None
+from core.utils import bounded_int, file_url, validate_upload
 
 
 # ------------------------------------------------------------------ ویس ----
@@ -48,7 +42,7 @@ def voice_json(v: Voice) -> dict:
         "title": v.title,
         "category": v.category,
         "category_label": v.get_category_display(),
-        "audio": url_of(v.audio),
+        "audio": file_url(v.audio),
         "note": v.note,
         "duration": v.duration,
         "play_count": v.play_count,
@@ -94,8 +88,8 @@ def song_json(s: Song) -> dict:
         "id": s.id,
         "title": s.title,
         "artist": s.artist,
-        "audio": url_of(s.audio),
-        "cover": url_of(s.cover),
+        "audio": file_url(s.audio),
+        "cover": file_url(s.cover),
         "is_main": s.is_main,
         "why_this_song": s.why_this_song,
         "lyrics": s.lyrics,
@@ -121,6 +115,9 @@ def song_upload(request):
     audio = request.FILES.get("audio")
     if not audio:
         return Response({"ok": False, "message": "فایل آهنگ رو انتخاب کن"}, status=400)
+    upload_error = validate_upload(audio, "audio") or validate_upload(request.FILES.get("cover"), "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     song = Song.objects.create(
         title=request.data.get("title") or audio.name.rsplit(".", 1)[0],
         artist=request.data.get("artist", ""),
@@ -166,14 +163,14 @@ def memory_json(m: Memory) -> dict:
         "id": m.id,
         "title": m.title if not locked else "؟؟؟",
         "text": "" if locked else m.text,
-        "photo": None if locked else url_of(m.photo),
+        "photo": None if locked else file_url(m.photo),
         "happened_on": m.happened_on.isoformat() if m.happened_on else None,
         "place": "" if locked else m.place,
         "is_future": m.is_future,
         "locked": locked,
         "locked_text": m.locked_text,
         "unlock_at": m.unlock_at.isoformat() if m.unlock_at else None,
-        "voice": url_of(m.voice.audio) if m.voice else None,
+        "voice": file_url(m.voice.audio) if m.voice else None,
     }
 
 
@@ -197,6 +194,9 @@ def memories(request):
                 parsed_date = None
         photo = request.FILES.get("photo")
         voice_file = request.FILES.get("voice")
+        upload_error = validate_upload(photo, "image") or validate_upload(voice_file, "audio")
+        if upload_error:
+            return Response({"ok": False, "message": upload_error}, status=400)
         m = Memory.objects.create(
             title=title,
             text=text,
@@ -409,7 +409,7 @@ def cinema_json(c: CinemaItem) -> dict:
         "status": c.status,
         "rating": c.rating,
         "note": c.note,
-        "poster": url_of(c.poster),
+        "poster": file_url(c.poster),
         "added_by": c.added_by,
         "created_at": c.created_at.isoformat(),
     }
@@ -425,11 +425,14 @@ def cinema(request):
             kind=request.data.get("kind", "film"),
             link=request.data.get("link", ""),
             status=request.data.get("status", "todo"),
-            rating=int(request.data.get("rating") or 0),
+            rating=bounded_int(request.data.get("rating") or 0, default=0, minimum=0, maximum=5),
             note=request.data.get("note", ""),
             added_by="daughter",
         )
         poster = request.FILES.get("poster")
+        upload_error = validate_upload(poster, "image")
+        if upload_error:
+            return Response({"ok": False, "message": upload_error}, status=400)
         if poster:
             item.poster = poster
         item.save()
@@ -455,6 +458,9 @@ def cinema_item(request, pk: int):
             setattr(item, field, request.data[field])
     # پوستر: هم با POST (فرم) و هم با PATCH (فرم) قابل آپلود است
     poster = request.FILES.get("poster")
+    upload_error = validate_upload(poster, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if poster:
         item.poster = poster
     item.save()
@@ -563,7 +569,7 @@ def mood_set(request):
         {
             "ok": True,
             "message": mm.message if mm else "",
-            "voice": url_of(mm.voice.audio) if (mm and mm.voice) else None,
+            "voice": file_url(mm.voice.audio) if (mm and mm.voice) else None,
         }
     )
 
@@ -575,7 +581,7 @@ def vault(request):
     if not request.loveos_session.vault_open:
         return Response({"locked": True, "items": []})
     items = [
-        {"id": v.id, "title": v.title, "kind": v.kind, "file": url_of(v.file), "text": v.text}
+        {"id": v.id, "title": v.title, "kind": v.kind, "file": file_url(v.file), "text": v.text}
         for v in VaultItem.objects.filter(is_active=True)
     ]
     return Response({"locked": False, "items": items})

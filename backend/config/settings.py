@@ -26,9 +26,12 @@ def env_list(key: str, default: str = "") -> list[str]:
 
 
 # ---------------------------------------------------------------- core -------
-SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-loveos-key-change-me")
+SECRET_KEY = env(
+    "DJANGO_SECRET_KEY",
+    "dev-only-loveos-key-change-this-before-production-9f3a7c2e1d",
+)
 DEBUG = env_bool("DEBUG", True)
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "*") or ["*"]
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]") or ["localhost", "127.0.0.1", "[::1]"]
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "https://*.e2b.app")
 
 # مسیر مخفی پنل بابا / secret admin path (no trailing slash in .env)
@@ -137,8 +140,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# سرو کردن فرانت‌اند توسط جنگو (برای هاست‌های تک‌ورودی مثل cPanel/Passenger)
-# پیش‌فرض خاموش است؛ در توسعه Vite جدا اجرا می‌شود و Hot Reload دارد.
+# سرو کردن فرانت‌اند و static توسط جنگو (برای هاست‌های تک‌ورودی مثل cPanel/Passenger)
+# media خصوصی فقط با URL امضاشده‌ی /api/media تحویل می‌شود.
 SERVE_FRONTEND = env_bool("SERVE_FRONTEND", False)
 FRONTEND_DIST = env("FRONTEND_DIST", str(BASE_DIR.parent / "frontend" / "dist"))
 
@@ -155,18 +158,22 @@ REST_FRAMEWORK = {
     "UNAUTHENTICATED_USER": None,
 }
 
-CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL", True)
-CORS_ALLOW_CREDENTIALS = True
+# Production is same-origin; broad credentialed CORS would expose the private API.
+# Enable it explicitly only when a separate trusted frontend origin is required.
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL", False)
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOW_CREDENTIALS = bool(CORS_ALLOWED_ORIGINS) or CORS_ALLOW_ALL_ORIGINS
 
 # ------------------------------------------------------------ security ------
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-X_FRAME_OPTIONS = "SAMEORIGIN"
+X_FRAME_OPTIONS = "DENY"
 
 # ------------------------------------------------------- LoveOS settings ----
 LOVEOS = {

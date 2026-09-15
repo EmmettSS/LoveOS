@@ -26,6 +26,7 @@ from calls.models import CallAppointment, CallFreeSlot, CallLog, CallSettings, M
 from core.auth import require_session
 from core.services import bump, effective_daughter_location, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url, validate_upload
 
 try:  # منطقه‌ی زمانی محلی هر طرف (برای تبدیل خودکار ساعت‌ها)
     from zoneinfo import ZoneInfo
@@ -62,23 +63,36 @@ def _tz_for(owner: str):
 def _sides_time(owner: str, date, slot_time) -> dict:
     """ساعت یک لحظه را به وقت محلی هر دو طرف برمی‌گرداند (تبدیل خودکار منطقه‌ی زمانی)."""
     cfg = UserConfig.get_solo()
+    daughter_location = effective_daughter_location(cfg)
 
     def local(tz_name: str, fallback_label: str) -> dict:
+        def payload(local_time: str, local_date: str, day_offset: int = 0) -> dict:
+            # label/date قرارداد قدیمی‌اند؛ city/timezone/day_offset قرارداد خواناتر
+            # برای کلاینت‌های جدیدند. هر دو را نگه می‌داریم تا API سازگار بماند.
+            return {
+                "label": fallback_label,
+                "city": fallback_label,
+                "timezone": tz_name,
+                "time": local_time,
+                "date": local_date,
+                "day_offset": day_offset,
+            }
+
         if ZoneInfo is None:
-            return {"label": fallback_label, "time": slot_time.strftime("%H:%M"), "date": str(date)}
+            return payload(slot_time.strftime("%H:%M"), str(date))
         try:
             zone = ZoneInfo(tz_name)
         except Exception:
-            return {"label": fallback_label, "time": slot_time.strftime("%H:%M"), "date": str(date)}
-        # یک لحظه‌ی فرضی در تهران می‌سازیم و به منطقه‌ی مقصد می‌بریم
+            return payload(slot_time.strftime("%H:%M"), str(date))
+        # لحظه‌ی قرار در منطقه‌ی زمانی پیشنهاددهنده ساخته و به مقصد تبدیل می‌شود.
         base = datetime.combine(date, slot_time)
         anchor = timezone.make_aware(base, _tz_for(owner) or zone)
         shifted = anchor.astimezone(zone)
-        return {"label": fallback_label, "time": shifted.strftime("%H:%M"), "date": shifted.date().isoformat()}
+        return payload(shifted.strftime("%H:%M"), shifted.date().isoformat(), shifted.date().toordinal() - date.toordinal())
 
     return {
         "daddy": local(cfg.daddy_timezone, cfg.daddy_city),
-        "daughter": local(effective_daughter_location(cfg)["timezone"], effective_daughter_location(cfg)["city"]),
+        "daughter": local(daughter_location["timezone"], daughter_location["city"]),
     }
 
 
@@ -135,7 +149,7 @@ def _log_json(log: CallLog) -> dict:
         "daddy_mood": log.daddy_mood,
         "daughter_mood": log.daughter_mood,
         "note": log.note,
-        "attachment": log.attachment.url if log.attachment else None,
+        "attachment": file_url(log.attachment),
         "recorded_by": log.recorded_by,
         "recorded_by_label": _label(log.recorded_by),
         "created_at": log.created_at.isoformat(),
@@ -177,11 +191,7 @@ def slots(request):
     end = _parse_time(data.get("end"), time(21, 0))
     if end <= start:
         return Response({"ok": False, "message": "ساعت پایان باید بعد از شروع باشد"}, status=400)
-    weekday = data.get("weekday", 0)
-    try:
-        weekday = max(0, min(6, int(weekday)))
-    except (TypeError, ValueError):
-        weekday = 0
+    weekday = bounded_int(data.get("weekday", 0), default=0, minimum=0, maximum=6)
 
     slot = CallFreeSlot.objects.create(
         owner=owner,
@@ -245,17 +255,14 @@ def appointments(request):
         status_filter = request.GET.get("status")
         if status_filter in dict(CallAppointment.STATUS):
             qs = qs.filter(status=status_filter)
-        limit = min(int(request.GET.get("limit", 60)), 200)
+        limit = bounded_int(request.GET.get("limit", 60), default=60, minimum=1, maximum=200)
         return Response({"items": [_appointment_json(a) for a in qs[:limit]]})
 
     data = request.data if isinstance(request.data, dict) else {}
     proposer = data.get("proposer") if data.get("proposer") in OWNER_LABEL else "daughter"
     date = _parse_date(data.get("date"), timezone.localdate())
     slot_time = _parse_time(data.get("time"), time(20, 0))
-    try:
-        duration = max(5, min(600, int(data.get("duration_minutes") or settings_obj.default_duration)))
-    except (TypeError, ValueError):
-        duration = settings_obj.default_duration
+    duration = bounded_int(data.get("duration_minutes") or settings_obj.default_duration, default=settings_obj.default_duration, minimum=5, maximum=600)
 
     appt = CallAppointment.objects.create(
         proposer=proposer,
@@ -328,10 +335,7 @@ def appointment_respond(request, pk: int):
     elif action == "reschedule":
         new_date = _parse_date(data.get("date"), appt.date)
         new_time = _parse_time(data.get("time"), appt.time)
-        try:
-            new_duration = max(5, min(600, int(data.get("duration_minutes") or appt.duration_minutes)))
-        except (TypeError, ValueError):
-            new_duration = appt.duration_minutes
+        new_duration = bounded_int(data.get("duration_minutes") or appt.duration_minutes, default=appt.duration_minutes, minimum=5, maximum=600)
         appt.status = "rescheduled"
         appt.answer_note = note
         appt.answered_at = timezone.now()
@@ -380,7 +384,7 @@ def appointment_cancel(request, pk: int):
 @require_session
 def logs(request):
     if request.method == "GET":
-        limit = min(int(request.GET.get("limit", 60)), 200)
+        limit = bounded_int(request.GET.get("limit", 60), default=60, minimum=1, maximum=200)
         return Response({"items": [_log_json(log) for log in CallLog.objects.all()[:limit]]})
 
     data = request.data if isinstance(request.data, dict) else {}
@@ -389,10 +393,7 @@ def logs(request):
     if data.get("appointment"):
         appointment = CallAppointment.objects.filter(pk=data["appointment"]).first()
 
-    try:
-        duration = max(0, min(24 * 60, int(data.get("duration_minutes") or 0)))
-    except (TypeError, ValueError):
-        duration = 0
+    duration = bounded_int(data.get("duration_minutes") or 0, default=0, minimum=0, maximum=24 * 60)
 
     log = CallLog.objects.create(
         appointment=appointment,
@@ -409,6 +410,9 @@ def logs(request):
 
     # ضمیمه: یا فایل آپلودی، یا صدای ضبط‌شده در مرورگر
     upload = request.FILES.get("attachment")
+    upload_error = validate_upload(upload, "any")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if upload:
         log.attachment = upload
         log.save(update_fields=["attachment", "updated_at"])
@@ -442,11 +446,8 @@ def log_item(request, pk: int):
     for field, limit in (("topic", 160), ("note", 255)):
         if field in data:
             setattr(log, field, str(data[field])[:limit])
-    if data.get("duration_minutes"):
-        try:
-            log.duration_minutes = max(0, min(24 * 60, int(data["duration_minutes"])))
-        except (TypeError, ValueError):
-            pass
+    if "duration_minutes" in data:
+        log.duration_minutes = bounded_int(data.get("duration_minutes"), default=log.duration_minutes, minimum=0, maximum=24 * 60)
     for field in ("daddy_mood", "daughter_mood"):
         if data.get(field) in dict(MOODS):
             setattr(log, field, data[field])

@@ -102,7 +102,7 @@ LoveOS/
 │   ├── src/shared/              store (Zustand), api, ui, Icon, i18n, format,
 │   │                            sound, geo, recorder, prefs, ErrorBoundary
 │   ├── public/locales/          fa / en
-│   └── vite.config.ts           /api & /media proxy + PWA service worker
+│   └── vite.config.ts           /api proxy + PWA service worker
 ├── scripts/                     helper scripts (QR, backup, deploy)
 ├── DOCUMENTATION.md             this document (English)
 ├── DOCUMENTATION_FA.md          this document (Persian)
@@ -137,7 +137,7 @@ her phone ──► Vite (dev) / Nginx or Passenger (production)
                 │
                 ├─ /            → SPA files (React)
                 ├─ /api/...     → Django + DRF  →  models  →  JSON
-                ├─ /media/...   → uploads (voices, photos, PDFs, pronunciation audio)
+                ├─ /api/media/... → signed private media (voices, photos, PDFs, pronunciation audio)
                 └─ /daddy-panel-9x7k/  → Django admin (me only)
 ```
 
@@ -242,7 +242,7 @@ npm install
 npm run dev     # http://localhost:5173
 ```
 
-The Vite proxy forwards `/api`, `/media`, `/static` and `/daddy-panel-9x7k` to `127.0.0.1:8000`, so both
+The Vite proxy forwards `/api`, `/static` and `/daddy-panel-9x7k` to `127.0.0.1:8000`, so both
 terminals are needed. A step-by-step walkthrough is in [`QUICKSTART_FA.md`](./QUICKSTART_FA.md).
 
 ### Admin commands
@@ -564,7 +564,7 @@ clamped server-side.
 |---|---|
 | `/` | LoveOS itself (SPA) |
 | `/daddy-panel-9x7k/` | the Daddy Panel |
-| `/media/…` | uploaded files |
+| `/api/media/<path>?sig=…` | short-lived signed private files |
 | `/robots.txt` | keeps every crawler out |
 
 ---

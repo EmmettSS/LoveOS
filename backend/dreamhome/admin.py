@@ -2,6 +2,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
+from core.utils import file_url
+
 from dreamhome.models import (
     DreamHomeCategory,
     DreamHomeFeature,
@@ -48,7 +50,7 @@ class DreamHomeFeatureAdmin(admin.ModelAdmin):
     def thumb(self, obj):
         if not obj.photo:
             return "—"
-        return format_html('<img src="{}" style="height:52px;border-radius:10px" />', obj.photo.url)
+        return format_html('<img src="{}" style="height:52px;border-radius:10px" />', file_url(obj.photo))
 
 
 @admin.register(DreamHomeRoom)
@@ -91,7 +93,7 @@ class DreamHomeInspirationAdmin(admin.ModelAdmin):
     def thumb(self, obj):
         if not obj.photo:
             return "—"
-        return format_html('<img src="{}" style="height:56px;border-radius:10px" />', obj.photo.url)
+        return format_html('<img src="{}" style="height:56px;border-radius:10px" />', file_url(obj.photo))
 
     @admin.display(description="کامنت‌ها")
     def comments_count(self, obj):

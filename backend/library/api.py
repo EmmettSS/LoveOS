@@ -4,15 +4,9 @@ from rest_framework.response import Response
 
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
+from core.utils import file_url
 from core.soroush import notify_daddy
 from library.models import Book, Bookmark, Chapter, MarginNote, Page, Paragraph
-
-
-def url_of(f):
-    try:
-        return f.url if f else None
-    except ValueError:
-        return None
 
 
 def paragraph_json(p: Paragraph) -> dict:
@@ -21,7 +15,7 @@ def paragraph_json(p: Paragraph) -> dict:
         "order": p.order,
         "text": p.text,
         "author": p.author,
-        "audio": url_of(p.audio),
+        "audio": file_url(p.audio),
         "is_draft": p.is_draft,
         "notes": [
             {"id": n.id, "author": n.author, "text": n.text, "color": n.color}
@@ -34,8 +28,8 @@ def page_json(pg: Page) -> dict:
     return {
         "id": pg.id,
         "order": pg.order,
-        "image": url_of(pg.image),
-        "audio": url_of(pg.audio),
+        "image": file_url(pg.image),
+        "audio": file_url(pg.audio),
         "paragraphs": [paragraph_json(p) for p in pg.paragraphs.all()],
     }
 
@@ -58,7 +52,7 @@ def books(request):
                     "id": b.id,
                     "title": b.title,
                     "subtitle": b.subtitle,
-                    "cover": url_of(b.cover),
+                    "cover": file_url(b.cover),
                     "description": b.description,
                     "chapters": b.chapters.filter(is_published=True).count(),
                     "allow_daughter_edit": b.allow_daughter_edit,
@@ -94,7 +88,7 @@ def book_detail(request, pk: int):
             "id": book.id,
             "title": book.title,
             "subtitle": book.subtitle,
-            "cover": url_of(book.cover),
+            "cover": file_url(book.cover),
             "allow_daughter_edit": book.allow_daughter_edit,
             "chapters": chapters,
             "bookmarks": [
