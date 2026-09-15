@@ -10,7 +10,7 @@ import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playClick } from '../shared/sound'
-import { AudioPlayer, Chips, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Chips, Empty, Loading, useApi } from '../shared/ui'
 
 interface Voice {
   id: number
@@ -29,7 +29,7 @@ type Cat = (typeof CATEGORIES)[number]
 export default function VoiceVault() {
   const { t } = useTranslation()
   const [cat, setCat] = useState<Cat>('random')
-  const { data, loading } = useApi<{ items: Voice[] }>(`/voices?category=${cat}`, [cat])
+  const { data, loading, error } = useApi<{ items: Voice[] }>(`/voices?category=${cat}`, [cat])
   const [picked, setPicked] = useState<Voice | null>(null)
 
   const markPlayed = (id: number) => {
@@ -69,7 +69,9 @@ export default function VoiceVault() {
         </motion.div>
       )}
 
-      {loading ? (
+      {error ? (
+        <ApiStatus loading={false} error={error} />
+      ) : loading ? (
         <Loading />
       ) : !data || data.items.length === 0 ? (
         <Empty />

@@ -19,14 +19,14 @@
 رد می‌شوند و به **یک** اپ WSGI (همان `passenger_wsgi.py`) می‌رسند. پس در پروداکشن:
 
 - جنگو باید **هم** API را جواب بدهد، **هم** اپ React ساخته‌شده (`frontend/dist`) را سرو کند،
-  **هم** فایل‌های `static` و `media` را.
+  **فایل‌های static** را؛ media خصوصی را فقط از endpoint امضاشده‌ی `/api/media` تحویل بدهد.
 - Vite در پروداکشن اصلاً اجرا نمی‌شود؛ فقط یک بار `npm run build` می‌گیریم و خروجی را آپلود می‌کنیم.
 
 این دقیقاً کاری است که سوییچ `SERVE_FRONTEND=True` انجام می‌دهد. جدول مقایسه:
 
 | | `SERVE_FRONTEND=False` (توسعه) | `SERVE_FRONTEND=True` (cPanel) |
 |---|---|---|
-| جنگو | فقط API | API + اپ React + static + media |
+| جنگو | فقط API | API + اپ React + static + signed private media |
 | Vite | جدا اجرا می‌شود، Hot Reload دارد | اجرا نمی‌شود |
 | تعداد ترمینال/پروسه | دو تا | یکی |
 

@@ -107,7 +107,7 @@ export function Lock() {
     >
       <motion.div className={shake ? 'animate-shake' : 'animate-float'}>
         {config?.logo ? (
-          <img src={config.logo} alt="" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />
+          <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />
         ) : (
           <LoveOSLogo size={88} />
         )}

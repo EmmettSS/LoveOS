@@ -21,6 +21,7 @@ from accounts.models import UserConfig
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url, validate_upload
 from gifts.models import OWNER, PRICE_BANDS, Gift, GiftOccasion
 
 OWNER_LABEL = dict(OWNER)
@@ -49,7 +50,7 @@ def _gift_json(g: Gift) -> dict:
         "price_band": g.effective_price_band,
         "description": g.description,
         "reaction": g.reaction,
-        "photo": g.photo.url if g.photo else None,
+        "photo": file_url(g.photo),
         "is_favorite": g.is_favorite,
         "memory": g.memory_id,
         "recorded_by": g.recorded_by,
@@ -138,7 +139,7 @@ def gifts(request):
         text = (request.GET.get("q") or "").strip()
         if text:
             qs = qs.filter(Q(name__icontains=text) | Q(description__icontains=text) | Q(reaction__icontains=text))
-        limit = min(int(request.GET.get("limit", 100)), 300)
+        limit = bounded_int(request.GET.get("limit", 100), default=100, minimum=1, maximum=300)
         items = [_gift_json(g) for g in qs[:limit]]
         return Response({"items": items, "count": len(items)})
 
@@ -148,6 +149,9 @@ def gifts(request):
 
     gift = _apply_payload(Gift(), data)
     upload = request.FILES.get("photo")
+    upload_error = validate_upload(upload, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if upload:
         gift.photo = upload
     gift.save()
@@ -190,6 +194,9 @@ def gift_item(request, pk: int):
     data = request.data if isinstance(request.data, dict) else {}
     _apply_payload(gift, data)
     upload = request.FILES.get("photo")
+    upload_error = validate_upload(upload, "image")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
     if upload:
         gift.photo = upload
     gift.save()

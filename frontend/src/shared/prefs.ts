@@ -33,6 +33,7 @@ export function getStoredSettings(): LocalPrefs {
 }
 
 export function setStoredSetting(key: string, value: unknown): void {
+  if (!(ALLOWED as readonly string[]).includes(key)) return
   const current = getStoredSettings() as Record<string, unknown>
   current[key] = value
   try {

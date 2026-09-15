@@ -9,6 +9,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import App from './App'
+import { ErrorBoundary } from './shared/ErrorBoundary'
 import { i18nReady } from './shared/i18n'
 import './styles/index.css'
 
@@ -36,7 +37,7 @@ function showBootFailure() {
         <p dir="ltr" style="font-size:13px;opacity:.72;margin:0 0 22px;line-height:1.7">
           LoveOS could not load its language files.<br/>Please check your connection and try again.
         </p>
-        <button id="loveos-retry"
+        <button type="button" id="loveos-retry"
           style="border:0;cursor:pointer;border-radius:999px;padding:12px 30px;font-weight:700;font-size:14px;
                  color:#fff;background:linear-gradient(135deg,#ff8cc0,#bba0fb);
                  box-shadow:0 12px 28px -12px rgba(247,103,168,.85);font-family:inherit">
@@ -51,7 +52,9 @@ void i18nReady
   .then(() => {
     createRoot(rootEl).render(
       <StrictMode>
-        <App />
+        <ErrorBoundary title="LoveOS">
+          <App />
+        </ErrorBoundary>
       </StrictMode>,
     )
   })

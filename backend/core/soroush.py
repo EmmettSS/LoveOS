@@ -16,7 +16,7 @@ from typing import Any
 
 import requests
 from django.conf import settings
-from django.db import connection
+from django.db import connection, transaction
 from django.utils import timezone
 
 logger = logging.getLogger("loveos.soroush")
@@ -164,7 +164,9 @@ def notify_daddy(event: str, text: str, chat_id: str | None = None) -> "object":
         chat_id=chat_id or _cfg("SOROUSH_DADDY_CHAT_ID", ""),
     )
     if bool(_cfg("NOTIFY_ASYNC", True)):
-        flush_in_background(msg.pk)
+        # اگر اعلان داخل transaction ساخته شده باشد، worker نباید قبل از commit
+        # دنبال رکوردی بگردد که هنوز برای اتصال خودش قابل مشاهده نیست.
+        transaction.on_commit(lambda: flush_in_background(msg.pk))
     else:
         flush_one(msg)
     return msg

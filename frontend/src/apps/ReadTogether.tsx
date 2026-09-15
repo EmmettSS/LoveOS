@@ -13,7 +13,7 @@ import { Icon } from '../shared/Icon'
 import { post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { playSuccess } from '../shared/sound'
-import { Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, SectionTitle, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
 type Status = 'want' | 'reading' | 'finished'
@@ -108,7 +108,8 @@ export default function ReadTogether() {
   const [openBook, setOpenBook] = useState<Book | null>(null)
   const overview = useApi<Overview>('/reading/overview')
 
-  if (overview.loading || !overview.data) return <Loading />
+  if (overview.loading || overview.error) return <ApiStatus loading={overview.loading} error={overview.error} onRetry={() => void overview.reload()} />
+  if (!overview.data) return <Empty />
   const data = overview.data
 
   return (
@@ -193,7 +194,7 @@ function ShelfRow({ books, onOpen }: { books: Book[]; onOpen: (b: Book) => void 
           className="os-card flex w-full items-center gap-3 p-3 text-start"
         >
           {b.cover ? (
-            <img src={b.cover} alt="" className="h-14 w-11 shrink-0 rounded-lg object-cover" />
+            <img src={b.cover} alt={b.title} className="h-14 w-11 shrink-0 rounded-lg object-cover" />
           ) : (
             <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-lg text-xl" style={{ background: 'var(--os-accent-soft)' }}>
               📕
@@ -339,7 +340,7 @@ function BookView({ book, onBack, onChanged }: { book: Book; onBack: () => void;
   const [openChapter, setOpenChapter] = useState<number | null>(null)
   const [newChapter, setNewChapter] = useState('')
   const detail = useApi<{ item: Book & { chapters: Chapter[] } }>(`/reading/books/${book.id}`)
-
+  const detailStatus = <ApiStatus loading={detail.loading} error={detail.error} onRetry={() => void detail.reload()} />
   const chapters = detail.data?.item.chapters || []
 
   const addChapter = async (e: React.FormEvent) => {
@@ -349,6 +350,9 @@ function BookView({ book, onBack, onChanged }: { book: Book; onBack: () => void;
     setNewChapter('')
     await detail.reload()
   }
+
+  if (detail.loading || detail.error) return <div className="space-y-3"><BackButton onBack={onBack} title={book.title} />{detailStatus}</div>
+  if (!detail.data) return <Empty />
 
   return (
     <div className="space-y-3">

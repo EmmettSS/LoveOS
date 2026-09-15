@@ -18,6 +18,18 @@ export function mediaUrl(path?: string | null): string {
   return path
 }
 
+export class ApiRequestError extends Error {
+  readonly status: number
+  readonly payload: unknown
+
+  constructor(status: number, message: string, payload: unknown = null) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.payload = payload
+  }
+}
+
 type Options = {
   method?: string
   body?: unknown
@@ -52,9 +64,22 @@ export async function api<T = any>(path: string, opts: Options = {}): Promise<T>
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `HTTP ${res.status}`)
+    let payload: unknown = null
+    let message = text || `HTTP ${res.status}`
+    try {
+      payload = text ? JSON.parse(text) : null
+      if (payload && typeof payload === 'object') {
+        const candidate = payload as { message?: unknown; detail?: unknown }
+        message = String(candidate.message || candidate.detail || message)
+      }
+    } catch {
+      // پاسخ‌های غیر JSON (مثلاً خطای reverse proxy) همان متن خام را نگه می‌دارند.
+    }
+    throw new ApiRequestError(res.status, message, payload)
   }
   if (res.status === 204) return undefined as T
+  const contentType = res.headers?.get?.('content-type') || 'application/json'
+  if (!contentType.includes('application/json')) return undefined as T
   return (await res.json()) as T
 }
 

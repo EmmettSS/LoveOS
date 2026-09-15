@@ -12,7 +12,7 @@ import { del, post } from '../shared/api'
 import { digits, formatDate } from '../shared/format'
 import { playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Item {
   id: number
@@ -43,7 +43,7 @@ function Unit({ value, label }: { value: number; label: string }) {
 
 export default function CountdownApp() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: Item[] }>('/countdowns')
+  const { data, loading, error, reload } = useApi<{ items: Item[] }>('/countdowns')
   const [, setTick] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
 
@@ -53,7 +53,7 @@ export default function CountdownApp() {
     return () => clearInterval(id)
   }, [reload])
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
 
   return (

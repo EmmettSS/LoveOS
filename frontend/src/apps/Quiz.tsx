@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playClick, playError, playSuccess } from '../shared/sound'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Q {
   id: number
@@ -21,13 +21,13 @@ const LETTERS = ['a', 'b', 'c', 'd'] as const
 
 export default function Quiz() {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ items: Q[] }>('/quiz')
+  const { data, loading, error } = useApi<{ items: Q[] }>('/quiz')
   const [started, setStarted] = useState(false)
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [result, setResult] = useState<null | { score: number; total: number; perfect: boolean; reward: string | null; correct: Record<string, string> }>(null)
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 

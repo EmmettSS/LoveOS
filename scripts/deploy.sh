@@ -81,7 +81,7 @@ server {
     location /robots.txt      { proxy_pass http://127.0.0.1:8001; include proxy_params; }
 
     location /static/ { alias ${APP_DIR}/backend/staticfiles/; expires 30d; }
-    location /media/  { alias ${APP_DIR}/backend/media/;       expires 7d; }
+    # media خصوصی فقط از /api/media با URL امضاشده تحویل می‌شود؛ alias عمومی نگذارید.
 
     # سرویس‌ورکر نباید کش شود
     location = /sw.js { add_header Cache-Control "no-cache"; try_files \$uri =404; }

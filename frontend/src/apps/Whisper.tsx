@@ -10,7 +10,7 @@ import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
 import { formatDate } from '../shared/format'
 import { playPaper } from '../shared/sound'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Letter {
   id: number
@@ -24,7 +24,7 @@ interface Letter {
 
 export default function Whisper() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: Letter[] }>('/letters')
+  const { data, loading, error, reload } = useApi<{ items: Letter[] }>('/letters')
   const [open, setOpen] = useState<Letter | null>(null)
 
   const openLetter = async (le: Letter) => {
@@ -42,7 +42,7 @@ export default function Whisper() {
     if (res.item) void openLetter(res.item)
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
 
   return (

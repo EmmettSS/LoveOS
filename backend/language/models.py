@@ -12,6 +12,7 @@ language.models — پل زبان (Language Bridge)
 from django.db import models
 
 from core.models import TimeStamped
+from core.utils import file_url
 
 OWNER = [("daddy", "بابا"), ("daughter", "دخترم")]
 LANGUAGES = [
@@ -95,7 +96,7 @@ class LanguageEntry(TimeStamped):
             "example": self.example,
             "literal": self.literal_meaning,
             "real": self.real_meaning,
-            "pronunciation": self.pronunciation.url if self.pronunciation else None,
+            "pronunciation": file_url(self.pronunciation),
             "category": self.category.name if self.category else "",
             "category_icon": self.category.icon if self.category else "💬",
         }

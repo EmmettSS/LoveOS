@@ -6,6 +6,11 @@
   POST   /api/puzzles/<pk>/complete  تکمیل بازی
   DELETE /api/puzzles/<pk>       حذف (فقط پازل‌هایی که خودِ دختر ساخته)
 """
+from __future__ import annotations
+
+from django.db import transaction
+from django.db.models import Prefetch, F
+from PIL import Image, UnidentifiedImageError
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -13,17 +18,22 @@ from rest_framework.response import Response
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url
 from games.models import Puzzle, PuzzleRecord
+
+MAX_PUZZLE_IMAGE_BYTES = 10 * 1024 * 1024
 
 
 def puzzle_json(p: Puzzle) -> dict:
-    record = PuzzleRecord.objects.filter(puzzle=p).first()
+    # این لیست با prefetch ساخته می‌شود؛ fallback برای استفاده‌ی پنل/تست‌هاست.
+    records = getattr(p, "prefetched_records", None)
+    record = records[0] if records else (PuzzleRecord.objects.filter(puzzle=p).first() if records is None else None)
     return {
         "id": p.id,
         "title": p.title,
         "level": p.level,
         "level_label": p.get_level_display(),
-        "image": p.image.url if p.image else None,
+        "image": file_url(p.image),
         "hint_text": p.hint_text,
         "max_hints": p.max_hints,
         "best_time": record.best_time if record else 0,
@@ -33,10 +43,17 @@ def puzzle_json(p: Puzzle) -> dict:
     }
 
 
+def active_puzzles():
+    """پازل‌های فعال را با رکوردشان در یک query اصلی و یک prefetch می‌خواند."""
+    return Puzzle.objects.filter(is_active=True).prefetch_related(
+        Prefetch("records", queryset=PuzzleRecord.objects.order_by("pk"), to_attr="prefetched_records")
+    )
+
+
 @api_view(["GET"])
 @require_session
 def puzzles(request):
-    return Response({"items": [puzzle_json(p) for p in Puzzle.objects.filter(is_active=True)]})
+    return Response({"items": [puzzle_json(p) for p in active_puzzles()]})
 
 
 @api_view(["POST"])
@@ -47,10 +64,22 @@ def puzzle_upload(request):
     image = request.FILES.get("image")
     if not image:
         return Response({"ok": False, "message": "یه عکس برای پازل انتخاب کن"}, status=400)
-    level = int(request.data.get("level") or 3)
+    if image.size > MAX_PUZZLE_IMAGE_BYTES:
+        return Response({"ok": False, "message": "عکس پازل باید کوچک‌تر از ۱۰ مگابایت باشد"}, status=400)
+    try:
+        # ImageField به‌تنهایی محتوای فایل را validate نمی‌کند.
+        with Image.open(image) as opened:
+            opened.verify()
+        image.seek(0)
+    except (UnidentifiedImageError, OSError, ValueError):
+        return Response({"ok": False, "message": "فایل انتخاب‌شده یک تصویر معتبر نیست"}, status=400)
+
+    level = bounded_int(request.data.get("level"), default=3)
     if level not in (3, 4, 5):
         level = 3
-    title = str(request.data.get("title") or image.name.rsplit(".", 1)[0])[:140]
+    title = str(request.data.get("title") or "").strip()[:140]
+    if not title:
+        title = image.name.rsplit(".", 1)[0][:140] or "پازل من"
     p = Puzzle.objects.create(
         title=title,
         level=level,
@@ -67,28 +96,31 @@ def puzzle_upload(request):
 @api_view(["POST"])
 @require_session
 def puzzle_start(request, pk: int):
-    p = Puzzle.objects.filter(pk=pk).first()
-    if not p:
-        return Response({"ok": False}, status=404)
-    record, _ = PuzzleRecord.objects.get_or_create(puzzle=p)
-    record.plays += 1
-    record.save(update_fields=["plays"])
+    with transaction.atomic():
+        p = Puzzle.objects.filter(pk=pk, is_active=True).first()
+        if not p:
+            return Response({"ok": False}, status=404)
+        record, _ = PuzzleRecord.objects.select_for_update().get_or_create(puzzle=p)
+        PuzzleRecord.objects.filter(pk=record.pk).update(plays=F("plays") + 1)
+        record.refresh_from_db(fields=["plays"])
     return Response({"ok": True, "plays": record.plays})
 
 
 @api_view(["POST"])
 @require_session
 def puzzle_complete(request, pk: int):
-    p = Puzzle.objects.filter(pk=pk).first()
-    if not p:
-        return Response({"ok": False}, status=404)
-    seconds = int(request.data.get("seconds") or 0)
-    record, _ = PuzzleRecord.objects.get_or_create(puzzle=p)
-    record.completions += 1
-    is_record = record.best_time == 0 or (0 < seconds < record.best_time)
-    if is_record:
-        record.best_time = seconds
-    record.save()
+    seconds = bounded_int(request.data.get("seconds"), default=0, minimum=0, maximum=24 * 60 * 60)
+    with transaction.atomic():
+        p = Puzzle.objects.filter(pk=pk, is_active=True).first()
+        if not p:
+            return Response({"ok": False}, status=404)
+        record, _ = PuzzleRecord.objects.select_for_update().get_or_create(puzzle=p)
+        record.completions += 1
+        is_record = record.best_time == 0 or (0 < seconds < record.best_time)
+        if is_record:
+            record.best_time = seconds
+        record.save(update_fields=["completions", "best_time", "updated_at"])
+
     bump("puzzle_done")
     log_activity("تکمیل پازل", "puzzle", p.title)
     notify_daddy("puzzle", f"دخترت پازل «{p.title}» رو حل کرد 🧩 ({seconds} ثانیه)")
@@ -96,7 +128,7 @@ def puzzle_complete(request, pk: int):
         {
             "ok": True,
             "message": p.end_message,
-            "voice": p.end_voice.url if p.end_voice else None,
+            "voice": file_url(p.end_voice),
             "best_time": record.best_time,
             "new_record": is_record,
         }

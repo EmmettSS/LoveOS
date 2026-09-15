@@ -15,7 +15,7 @@ import { Icon } from '../shared/Icon'
 import { del, patch, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { playError, playSuccess } from '../shared/sound'
-import { Chips, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
 type Importance = 'must' | 'nice' | 'luxury'
@@ -98,10 +98,11 @@ const PALETTE = ['#f9a8d4', '#7dd3fc', '#86efac', '#fcd34d', '#c4b5fd', '#fdba74
 
 export default function DreamHome() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<Overview>('/home/overview')
+  const { data, loading, error, reload } = useApi<Overview>('/home/overview')
   const [tab, setTab] = useState<'plan' | 'map' | 'gallery'>('plan')
 
-  if (loading || !data) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
+  if (!data) return <Empty />
 
   return (
     <div className="space-y-3">
@@ -282,7 +283,7 @@ function PlanTab({
                   {f.description ? ` • ${f.description}` : ''}
                 </p>
               </div>
-              {f.photo && <img src={f.photo} alt="" className="h-12 w-12 rounded-xl object-cover" />}
+              {f.photo && <img src={f.photo} alt={f.title} className="h-12 w-12 rounded-xl object-cover" />}
               {f.added_by === 'daughter' && (
                 <button
                   className="os-muted"
@@ -495,10 +496,9 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
 
 function RoomIdeas({ room, onChanged }: { room: Room; onChanged: () => void }) {
   const { t } = useTranslation()
-  const { data, reload } = useApi<{ items: { id: number; kind: string; text: string }[] }>(`/home/rooms/${room.id}/ideas`)
+  const { data, error, reload } = useApi<{ items: { id: number; kind: string; text: string }[] }>(`/home/rooms/${room.id}/ideas`)
   const [text, setText] = useState('')
   const [kind, setKind] = useState('idea')
-
   const add = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!text.trim()) return
@@ -507,6 +507,8 @@ function RoomIdeas({ room, onChanged }: { room: Room; onChanged: () => void }) {
     await reload()
     onChanged()
   }
+
+  if (error) return <ApiStatus loading={false} error={error} onRetry={() => void reload()} />
 
   return (
     <div className="space-y-2">
@@ -651,12 +653,13 @@ function InspirationCard({ item, onChanged }: { item: Inspiration; onChanged: ()
     open ? `/home/inspirations/${item.id}` : null,
   )
   const [text, setText] = useState('')
+  const detailStatus = <ApiStatus loading={detail.loading} error={detail.error} onRetry={() => void detail.reload()} />
 
   return (
     <div className="os-card overflow-hidden">
       <button className="w-full text-start" onClick={() => setOpen((v) => !v)}>
         {item.photo ? (
-          <img src={item.photo} alt="" className="h-28 w-full object-cover" />
+          <img src={item.photo} alt={item.title} className="h-28 w-full object-cover" />
         ) : (
           <span className="flex h-28 w-full items-center justify-center text-3xl" style={{ background: 'var(--os-accent-soft)' }}>
             🖼
@@ -674,7 +677,8 @@ function InspirationCard({ item, onChanged }: { item: Inspiration; onChanged: ()
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="space-y-2 p-2">
-              {(detail.data?.item.comments || []).map((c) => (
+              {detailStatus}
+              {!detailStatus && (detail.data?.item.comments || []).map((c) => (
                 <div key={c.id} className="text-[11px]">
                   <span className="os-muted">{c.owner === 'daddy' ? '👨' : '👧'} </span>
                   {c.text}

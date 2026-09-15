@@ -14,13 +14,11 @@ from accounts.models import DeviceSession, LiveLocation, UnlockAttempt, UserConf
 from core.auth import get_session, require_session
 from core.services import bump, effective_daughter_location, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_float, file_url, validate_upload
 
 
 def _media(field) -> str | None:
-    try:
-        return field.url if field else None
-    except ValueError:
-        return None
+    return file_url(field)
 
 
 def public_config(cfg: UserConfig) -> dict:
@@ -217,7 +215,7 @@ def update_settings(request):
             cfg.sound_enabled = bool(val)
     if "font_scale" in data:
         try:
-            cfg.font_scale = min(1.6, max(0.7, float(data["font_scale"])))
+            cfg.font_scale = bounded_float(data["font_scale"], default=cfg.font_scale, minimum=0.7, maximum=1.6)
         except (TypeError, ValueError):
             pass
 
@@ -225,6 +223,9 @@ def update_settings(request):
     for field in BACKGROUND_FIELDS:
         upload = request.FILES.get(field)
         if upload is not None:
+            upload_error = validate_upload(upload, "image")
+            if upload_error:
+                return Response({"ok": False, "message": upload_error}, status=400)
             setattr(cfg, field, upload)
             changed_bg.append(field)
         elif data.get(field) == "":
@@ -282,9 +283,10 @@ def location(request):
     try:
         lat = float(data.get("lat"))
         lng = float(data.get("lng"))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return Response({"ok": False, "message": "مختصات نامعتبر است"}, status=400)
-    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+    import math
+    if not (math.isfinite(lat) and math.isfinite(lng)) or not (-90 <= lat <= 90 and -180 <= lng <= 180):
         return Response({"ok": False, "message": "مختصات بیرون از محدوده است"}, status=400)
 
     accuracy = data.get("accuracy")

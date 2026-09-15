@@ -11,7 +11,7 @@ import { Icon } from '../shared/Icon'
 import { del, patch, post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playSuccess, tone } from '../shared/sound'
-import { Chips, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
 
 interface Plan {
   id: number
@@ -61,7 +61,7 @@ function SparkleBurst({ seed }: { seed: number }) {
 
 export default function FuturePlans() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ items: Plan[] }>('/plans')
+  const { data, loading, error, reload } = useApi<{ items: Plan[] }>('/plans')
   const [title, setTitle] = useState('')
   const [cat, setCat] = useState<(typeof CATS)[number]>('wish')
   const [filter, setFilter] = useState<'all' | (typeof CATS)[number]>('all')
@@ -91,7 +91,7 @@ export default function FuturePlans() {
     await reload()
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = data?.items || []
   const shown = filter === 'all' ? items : items.filter((p) => p.category === filter)
   const done = items.filter((p) => p.is_done).length

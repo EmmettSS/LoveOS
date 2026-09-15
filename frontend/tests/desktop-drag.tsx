@@ -96,7 +96,7 @@ const { act } = await import('react')
 const { createRoot } = await import('react-dom/client')
 const React = await import('react')
 const { useOS } = await import('../src/shared/store')
-const { default: i18n, i18nReady } = await import('../src/shared/i18n')
+const { i18nReady } = await import('../src/shared/i18n')
 await i18nReady
 const { Desktop } = await import('../src/os/Desktop')
 const { effectiveAppOrder } = await import('../src/os/appRegistry')

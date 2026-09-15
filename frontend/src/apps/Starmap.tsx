@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { post } from '../shared/api'
 import { tone } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Constellation {
   id: number
@@ -33,7 +33,7 @@ const toCanvasY = (y: number) => 1 - y
 export default function Starmap() {
   const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
-  const { data, loading } = useApi<{ items: Constellation[] }>('/starmap')
+  const { data, loading, error } = useApi<{ items: Constellation[] }>('/starmap')
   const [active, setActive] = useState<Constellation | null>(null)
   const [allLit, setAllLit] = useState(false)
   // چیدمان پیش‌فرض: چپ به راست (حرف اول سمت چپ). دخترم می‌تواند با چیپ
@@ -65,7 +65,7 @@ export default function Starmap() {
     setActive(c)
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 

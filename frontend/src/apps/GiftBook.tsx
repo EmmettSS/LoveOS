@@ -16,7 +16,7 @@ import { DateField } from '../shared/JalaliDatePicker'
 import { del, patch, upload } from '../shared/api'
 import { digits, formatDate } from '../shared/format'
 import { playError, playSuccess } from '../shared/sound'
-import { Chips, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, Chips, Empty, SectionTitle, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
 
@@ -86,7 +86,9 @@ export default function GiftBook() {
     await Promise.all([list.reload(), stats.reload(), meta.reload()])
   }
 
-  if (list.loading && stats.loading) return <Loading />
+  const error = list.error || stats.error || meta.error
+  if (list.loading && stats.loading && meta.loading) return <ApiStatus loading error={null} />
+  if (error) return <ApiStatus loading={false} error={error} onRetry={() => void reloadAll()} />
   const items = list.data?.items || []
   const s = stats.data
 
@@ -261,7 +263,7 @@ function GiftCard({ gift, index, onChange }: { gift: Gift; index: number; onChan
     >
       <button className="flex w-full items-center gap-3 p-3 text-start" onClick={() => setOpen((v) => !v)}>
         {gift.photo ? (
-          <img src={gift.photo} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+          <img src={gift.photo} alt={gift.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
         ) : (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: 'var(--os-accent-soft)' }}>
             {gift.occasion_icon || '🎁'}

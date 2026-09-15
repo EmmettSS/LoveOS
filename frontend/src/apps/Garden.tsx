@@ -11,7 +11,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playBloom } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Flower {
   id: number
@@ -77,7 +77,7 @@ function Plant({ f, bloom }: { f: Flower; bloom: boolean }) {
 export default function Garden() {
   const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
-  const { data, loading, setData } = useApi<{ items: Flower[] }>('/garden')
+  const { data, loading, error, setData } = useApi<{ items: Flower[] }>('/garden')
   const [message, setMessage] = useState('')
   const [blooming, setBlooming] = useState<number | null>(null)
 
@@ -95,7 +95,7 @@ export default function Garden() {
     }
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 

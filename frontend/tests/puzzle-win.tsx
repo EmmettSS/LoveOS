@@ -145,6 +145,8 @@ console.log('\n--- سناریوی ۱: حل کامل ---')
 {
   const host = await mountPuzzle()
   const tiles0 = readTiles(host)
+  const grid = host.querySelector('div[style*="grid-template-columns"]') as HTMLElement | null
+  check('جهت چیدن قطعه‌های تصویر چپ‌به‌راست است', grid?.style.direction === 'ltr')
   check('۹ قطعه رندر شد', tiles0.length === 9, tiles0.join(','))
   check('شروع بازی نامرتب است', tiles0.some((t, i) => t !== i), tiles0.join(','))
   const { tiles, guard } = await solveByTaps(host)

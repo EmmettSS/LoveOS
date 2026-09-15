@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 
 import { post } from '../shared/api'
 import { playClick } from '../shared/sound'
-import { AudioPlayer, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Empty, useApi } from '../shared/ui'
 
 interface MoodItem { mood: string; label: string }
 
@@ -18,7 +18,7 @@ const EMOJI: Record<string, string> = {
 
 export default function Mood() {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ items: MoodItem[] }>('/moods')
+  const { data, loading, error } = useApi<{ items: MoodItem[] }>('/moods')
   const [selected, setSelected] = useState<string | null>(null)
   const [reply, setReply] = useState<{ message: string; voice: string | null } | null>(null)
 
@@ -30,7 +30,7 @@ export default function Mood() {
     setReply({ message: res.message, voice: res.voice })
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 

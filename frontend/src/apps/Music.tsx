@@ -14,7 +14,7 @@ import { digits } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { AudioPlayer, Empty, Loading, SectionTitle, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Empty, SectionTitle, useApi } from '../shared/ui'
 
 interface Song {
   id: number
@@ -36,12 +36,13 @@ export default function Music() {
   const config = useOS((s) => s.config)
   const showEgg = useOS((s) => s.showEgg)
   const showToast = useOS((s) => s.showToast)
-  const { data, loading, reload } = useApi<{ items: Song[] }>('/songs')
+  const { data, loading, error, reload } = useApi<{ items: Song[] }>('/songs')
 
   const [timer, setTimer] = useState(0)
   const [showLyrics, setShowLyrics] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({ title: '', artist: '' })
+  const [audioName, setAudioName] = useState('')
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -84,6 +85,7 @@ export default function Music() {
       await upload('/songs/upload', fd)
       showToast(t('music.uploadDone'), 'love')
       setForm({ title: '', artist: '' })
+      setAudioName('')
       setCoverFile(null)
       setCoverPreview(null)
       if (fileRef.current) fileRef.current.value = ''
@@ -101,7 +103,7 @@ export default function Music() {
     await reload()
   }
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
 
   const items = data?.items || []
   const main = items.find((s) => s.is_main)
@@ -114,7 +116,7 @@ export default function Music() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card overflow-hidden">
           <div className="flex items-center gap-3 p-3">
             {main.cover ? (
-              <img src={main.cover} alt="" className="h-20 w-20 rounded-2xl object-cover" />
+              <img src={main.cover} alt={main.title} className="h-20 w-20 rounded-2xl object-cover" />
             ) : (
               <span className="flex h-20 w-20 items-center justify-center rounded-2xl animate-float" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
                 <Icon name="music" size={30} />
@@ -222,10 +224,16 @@ export default function Music() {
               <span className="inline-flex items-center gap-1.5"><Icon name="upload" size={14} /> {t('music.uploadFile')}</span>
             </button>
             <span className="text-xs os-muted truncate">
-              {fileRef.current?.files?.[0]?.name || t('music.uploadFileHint')}
+              {audioName || t('music.uploadFileHint')}
             </span>
           </div>
-          <input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={() => { /* برای نمایش نام فایل */ setForm({ ...form }) }} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={(e) => setAudioName(e.target.files?.[0]?.name || '')}
+          />
 
           {/* کاور آهنگ */}
           <div className="flex items-center gap-3 rounded-2xl p-2.5" style={{ background: 'var(--os-border)' }}>
@@ -233,7 +241,7 @@ export default function Music() {
               className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl shadow-sm"
               style={{ background: coverPreview ? undefined : 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
             >
-              {coverPreview ? <img src={coverPreview} alt="" className="h-full w-full object-cover" /> : <Icon name="music" size={24} />}
+              {coverPreview ? <img src={coverPreview} alt="پیش‌نمایش جلد آهنگ" className="h-full w-full object-cover" /> : <Icon name="music" size={24} />}
             </span>
             <div className="flex-1">
               <p className="text-xs font-semibold">{t('music.cover')}</p>

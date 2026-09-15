@@ -72,7 +72,7 @@ export function EggOverlay() {
             <h3 className="os-title text-xl" style={{ color: 'var(--os-accent)' }}>{egg.title}</h3>
             <p className="mt-3 whitespace-pre-line text-sm leading-7">{egg.message}</p>
             {egg.attachment && (
-              <img src={egg.attachment} alt="" className="mt-4 w-full rounded-2xl object-cover" />
+              <img src={egg.attachment} alt="پیوست راز" className="mt-4 w-full rounded-2xl object-cover" />
             )}
             <button className="os-btn-primary mt-5 w-full" onClick={() => showEgg(null)}>
               {t('os.close')}

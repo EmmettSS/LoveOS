@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { post } from '../shared/api'
 import { playError, playSuccess } from '../shared/sound'
-import { AudioPlayer, Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, AudioPlayer, Empty, useApi } from '../shared/ui'
 
 interface VItem {
   id: number
@@ -20,7 +20,7 @@ interface VItem {
 
 export default function Vault() {
   const { t } = useTranslation()
-  const { data, loading, reload } = useApi<{ locked: boolean; items: VItem[] }>('/vault')
+  const { data, loading, error: apiError, reload } = useApi<{ locked: boolean; items: VItem[] }>('/vault')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
@@ -41,7 +41,7 @@ export default function Vault() {
     }
   }
 
-  if (loading) return <Loading />
+  if (loading || apiError) return <ApiStatus loading={loading} error={apiError} onRetry={() => void reload()} />
 
   if (data?.locked) {
     return (

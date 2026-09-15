@@ -170,21 +170,21 @@ export default function Settings() {
         field="lock_background"
         label={t('settings.bgLock')}
         current={config.lock_background}
-        onUploaded={(url) => { patchConfig({ lock_background: url }); void save({ lock_background: url }, { silent: true }) }}
+        onUploaded={(url) => patchConfig({ lock_background: url })}
         onReset={() => void save({ lock_background: '' }, { silent: true })}
       />
       <BackgroundPicker
         field="desktop_background_day"
         label={t('settings.bgDesktopDay')}
         current={config.desktop_background_day}
-        onUploaded={(url) => { patchConfig({ desktop_background_day: url }); void save({ desktop_background_day: url }, { silent: true }) }}
+        onUploaded={(url) => patchConfig({ desktop_background_day: url })}
         onReset={() => void save({ desktop_background_day: '' }, { silent: true })}
       />
       <BackgroundPicker
         field="desktop_background_night"
         label={t('settings.bgDesktopNight')}
         current={config.desktop_background_night}
-        onUploaded={(url) => { patchConfig({ desktop_background_night: url }); void save({ desktop_background_night: url }, { silent: true }) }}
+        onUploaded={(url) => patchConfig({ desktop_background_night: url })}
         onReset={() => void save({ desktop_background_night: '' }, { silent: true })}
       />
 
@@ -287,8 +287,10 @@ function BackgroundPicker({
     try {
       const res = await upload<{ config: Config }>('/settings', fd)
       const url = res?.config?.[field] || ''
-      if (url) onUploaded(url)
-      else showToast(t('settings.savedLocally'), 'info')
+      if (url) {
+        onUploaded(url)
+        showToast(t('os.saved'), 'love')
+      } else showToast(t('settings.savedLocally'), 'info')
     } catch {
       playError()
       showToast(t('settings.savedLocally'), 'info')
@@ -301,7 +303,7 @@ function BackgroundPicker({
       <div className="min-w-0 flex-1">
         <span className="block text-sm">{label}</span>
         {current && (
-          <img src={current} alt="" className="mt-2 h-14 w-24 rounded-lg object-cover" style={{ border: '1px solid var(--os-border)' }} />
+          <img src={current} alt="پیش‌نمایش پس‌زمینه" className="mt-2 h-14 w-24 rounded-lg object-cover" style={{ border: '1px solid var(--os-border)' }} />
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">

@@ -24,6 +24,7 @@ from core.services import (
     trigger_easter_egg,
 )
 from core.soroush import notify_daddy
+from core.utils import bounded_int, file_url
 from social.models import ChatMessage, Hug, HugSettings, Reminder, ReminderLog
 
 
@@ -60,7 +61,7 @@ def chat(request):
     since = request.GET.get("since")
     qs = ChatMessage.objects.all()
     if since:
-        qs = qs.filter(id__gt=int(since))
+        qs = qs.filter(id__gt=bounded_int(since, default=0, minimum=0))
     items = [chat_json(m) for m in qs[:200]]
     ChatMessage.objects.filter(sender="daddy", is_read=False).update(is_read=True)
     return Response({"items": items})
@@ -73,7 +74,7 @@ def hug_settings_json(s: HugSettings) -> dict:
         "incoming_message": s.incoming_message,
         "vibration_pattern": s.pattern_list,
         "warm_color": s.warm_color,
-        "heartbeat_sound": s.heartbeat_sound.url if s.heartbeat_sound else None,
+        "heartbeat_sound": file_url(s.heartbeat_sound),
     }
 
 
@@ -142,7 +143,7 @@ def hug_open(request, pk: int):
             "message": hug.text or s.incoming_message,
             "vibration_pattern": s.pattern_list,
             "warm_color": s.warm_color,
-            "heartbeat_sound": s.heartbeat_sound.url if s.heartbeat_sound else None,
+            "heartbeat_sound": file_url(s.heartbeat_sound),
         }
     )
 
@@ -480,7 +481,7 @@ def map_data(request):
     dp = math.radians(eff["lat"] - cfg.daddy_lat)
     dl = math.radians(eff["lng"] - cfg.daddy_lng)
     a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
-    distance = round(2 * r * math.asin(math.sqrt(a)))
+    distance = round(2 * r * math.asin(math.sqrt(max(0.0, min(1.0, a)))))
 
     def local(tz_name: str) -> dict:
         try:

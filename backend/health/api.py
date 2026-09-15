@@ -2,7 +2,7 @@
 API چرخه و مراقبت — پریود، علائم، داروها، گزارش‌ها
 مهم: تحلیل‌ها فقط از تاریخچه‌ی خود دخترم محاسبه می‌شوند.
 """
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from statistics import mean
 
 from django.utils import timezone
@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
+from core.utils import bounded_int, iso_date
 from health.models import CareReminder, CycleEntry, Medication, MedicationLog, SymptomLog
 
 DISCLAIMER = "این اپ جایگزین مشاوره پزشک نیست."
@@ -118,8 +119,7 @@ SYMPTOM_FIELDS = ["mood", "energy", "headache", "backache", "stomachache", "naus
 @require_session
 def symptoms(request):
     if request.method == "POST":
-        day = request.data.get("day")
-        day = date.fromisoformat(day) if day else timezone.localdate()
+        day = iso_date(request.data.get("day"), timezone.localdate())
         log, _ = SymptomLog.objects.get_or_create(day=day)
         for f in SYMPTOM_FIELDS:
             if f in request.data:
@@ -129,7 +129,7 @@ def symptoms(request):
             notify_daddy("symptoms", "دخترت امروز حالش خوب نیست 🥺 یه پیام بهش بده")
         return Response({"ok": True, "severity": log.severity})
 
-    days = int(request.GET.get("days", 60))
+    days = bounded_int(request.GET.get("days", 60), default=60, minimum=1, maximum=366)
     since = timezone.localdate() - timedelta(days=days)
     qs = SymptomLog.objects.filter(day__gte=since)
     return Response(
@@ -161,11 +161,20 @@ def med_json(m: Medication) -> dict:
 @require_session
 def medications(request):
     if request.method == "POST":
+        raw_times = request.data.get("times") or []
+        if not isinstance(raw_times, list):
+            raw_times = []
+        valid_times = []
+        for raw_time in raw_times[:24]:
+            try:
+                valid_times.append(datetime.strptime(str(raw_time), "%H:%M").strftime("%H:%M"))
+            except (TypeError, ValueError):
+                continue
         med = Medication.objects.create(
             name=request.data.get("name", ""),
             dose=request.data.get("dose", ""),
-            pills_per_time=int(request.data.get("pills_per_time") or 1),
-            times=request.data.get("times") or [],
+            pills_per_time=bounded_int(request.data.get("pills_per_time"), default=1, minimum=1, maximum=20),
+            times=valid_times,
             duration=request.data.get("duration", "ongoing"),
             note=request.data.get("note", ""),
         )
@@ -179,7 +188,6 @@ def medications(request):
 def medication_today(request):
     """نوبت‌های امروز + وضعیت هرکدام."""
     today = timezone.localdate()
-    start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
     logs = MedicationLog.objects.filter(scheduled_for__date=today)
     by_key = {(l.medication_id, l.scheduled_for.strftime("%H:%M")): l for l in logs}
     items = []
@@ -208,12 +216,17 @@ def medication_act(request):
     """«خوردم» / «بعداً» / «نمی‌تونم بخورم» — هرکدام رویداد سروش دارد."""
     med_id = request.data.get("medication_id")
     time_str = request.data.get("time", "08:00")
-    action = request.data.get("action", "taken")
+    action = str(request.data.get("action") or "taken")
     med = Medication.objects.filter(pk=med_id).first()
     if not med:
         return Response({"ok": False}, status=404)
-    hh, mm = (int(x) for x in time_str.split(":"))
-    scheduled = timezone.make_aware(datetime.combine(timezone.localdate(), datetime.min.time()).replace(hour=hh, minute=mm))
+    if action not in {"taken", "snooze", "skip", "skipped"}:
+        return Response({"ok": False, "message": "عملیات نامعتبر"}, status=400)
+    try:
+        parsed_time = datetime.strptime(str(time_str), "%H:%M").time()
+    except (TypeError, ValueError):
+        return Response({"ok": False, "message": "ساعت نامعتبر"}, status=400)
+    scheduled = timezone.make_aware(datetime.combine(timezone.localdate(), parsed_time))
     log, _ = MedicationLog.objects.get_or_create(medication=med, scheduled_for=scheduled)
     log.acted_at = timezone.now()
     if action == "taken":

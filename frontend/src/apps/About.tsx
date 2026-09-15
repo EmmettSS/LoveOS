@@ -15,7 +15,7 @@ export default function About() {
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center">
       {config?.logo ? (
-        <img src={config.logo} alt="" className="h-20 w-20 rounded-3xl object-cover" />
+        <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover" />
       ) : (
         <LoveOSLogo size={84} />
       )}

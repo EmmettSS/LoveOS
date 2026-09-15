@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import DeviceSession, UserConfig
+from core.jalali import to_jalali
 from core.models import OSNotification, SoroushOutbox
 from gifts.models import Gift, GiftOccasion
 
@@ -79,4 +80,5 @@ class GiftHistoryTests(TestCase):
         self._post({"name": "کادو", "occasion": self.occasion.id})
         data = self.client.get("/api/gifts/occasions", **self.auth).json()
         self.assertTrue(any(o["name"] == "تولد" for o in data["items"]))
-        self.assertIn(timezone.localdate().year, data["years"])
+        # قرارداد اپ سال شمسی است؛ `given_on` در دیتابیس میلادی می‌ماند.
+        self.assertIn(to_jalali(timezone.localdate())[0], data["years"])

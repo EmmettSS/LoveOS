@@ -10,13 +10,13 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { digits } from '../shared/format'
 import { playClick } from '../shared/sound'
-import { Empty, Loading, useApi } from '../shared/ui'
+import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Chapter { id: number; key: string; title: string; body: string; order: number }
 
 export default function Tutorial({ focus }: { focus?: string }) {
   const { t } = useTranslation()
-  const { data, loading } = useApi<{ items: Chapter[] }>('/tutorial')
+  const { data, loading, error } = useApi<{ items: Chapter[] }>('/tutorial')
   const [open, setOpen] = useState<number | null>(null)
 
   // اگر با «کمک» یک اپ باز شده، همان درس را باز کن
@@ -26,7 +26,7 @@ export default function Tutorial({ focus }: { focus?: string }) {
     if (found) setOpen(found.id)
   }, [focus, data])
 
-  if (loading) return <Loading />
+  if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
 
