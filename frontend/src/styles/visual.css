@@ -1,0 +1,429 @@
+/* ----------------------------------------------------------------- عمق LoveOS --- */
+/*
+   زبان بصری سه‌بعدی عمداً hybrid است: متن و کنترل‌ها در DOM می‌مانند و فقط
+   سطوح، نور و حرکت عمق می‌گیرند. این باعث می‌شود RTL، لمس و دسترسی‌پذیری
+   قربانی جلوه‌ی نمایشی نشوند.
+*/
+
+:root {
+  --loveos-depth-1: 0 10px 24px -16px rgba(70, 27, 88, .44);
+  --loveos-depth-2: 0 24px 48px -26px rgba(70, 27, 88, .54);
+  --loveos-depth-3: 0 34px 72px -32px rgba(32, 17, 65, .62);
+  --loveos-surface-highlight: rgba(255, 255, 255, .52);
+  --loveos-scene-grid: rgba(255, 255, 255, .2);
+}
+
+html[data-theme='night'] {
+  --loveos-depth-1: 0 10px 26px -16px rgba(4, 7, 32, .78);
+  --loveos-depth-2: 0 26px 58px -28px rgba(4, 7, 32, .88);
+  --loveos-depth-3: 0 42px 92px -36px rgba(1, 3, 18, .95);
+  --loveos-surface-highlight: rgba(255, 255, 255, .14);
+  --loveos-scene-grid: rgba(187, 160, 251, .16);
+}
+
+.loveos-atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  contain: paint;
+}
+.loveos-atmosphere-orb {
+  position: absolute;
+  display: block;
+  width: min(34vw, 300px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(34px);
+  opacity: .22;
+  transform: translateZ(0);
+}
+.loveos-atmosphere-orb-a {
+  inset-inline-start: -12%;
+  top: 8%;
+  background: color-mix(in srgb, var(--os-accent) 60%, #f9a8d4);
+}
+.loveos-atmosphere-orb-b {
+  inset-inline-end: -15%;
+  bottom: 8%;
+  background: color-mix(in srgb, var(--scene-accent, #bba0fb) 58%, #7dd3fc);
+}
+.loveos-atmosphere-star {
+  position: absolute;
+  color: color-mix(in srgb, var(--scene-accent, #ffd98a) 72%, white);
+  opacity: .42;
+  text-shadow: 0 0 16px currentColor;
+  animation: loveos-depth-twinkle 3.8s ease-in-out infinite;
+}
+.loveos-atmosphere-star-a { inset-inline-start: 16%; top: 18%; font-size: 18px; }
+.loveos-atmosphere-star-b { inset-inline-end: 14%; top: 42%; font-size: 12px; animation-delay: -1.7s; }
+.loveos-atmosphere-ribbon {
+  position: absolute;
+  inset-inline: 8%;
+  bottom: 8%;
+  height: 28%;
+  border: 1px solid color-mix(in srgb, var(--os-accent) 22%, transparent);
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  transform: perspective(450px) rotateX(58deg) rotateZ(-7deg) translateZ(-8px);
+  opacity: .34;
+}
+
+.loveos-depth-card {
+  --depth-rotate-x: 0deg;
+  --depth-rotate-y: 0deg;
+  --depth-accent: var(--os-accent);
+  position: relative;
+  transform-style: preserve-3d;
+  transform: perspective(900px) rotateX(var(--depth-rotate-x)) rotateY(var(--depth-rotate-y));
+  transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease;
+  will-change: transform;
+}
+.loveos-depth-card::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  border-top: 1px solid var(--loveos-surface-highlight);
+  opacity: .75;
+}
+.loveos-depth-card-interactive:hover {
+  box-shadow: var(--loveos-depth-2);
+}
+
+.os-card {
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow: var(--os-shadow), var(--loveos-depth-1);
+  transition: box-shadow .28s ease, border-color .28s ease, background .28s ease;
+}
+.os-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255,255,255,.2), transparent 36%);
+  opacity: .55;
+}
+
+.loveos-desktop {
+  isolation: isolate;
+}
+.loveos-boot, .loveos-lock { isolation: isolate; }
+.loveos-boot > [data-fit-column], .loveos-lock > [data-fit-column] { position: relative; z-index: 1; }
+.loveos-desktop-scroll {
+  position: relative;
+  z-index: 1;
+}
+.loveos-desktop .os-card {
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+.loveos-desktop-icon {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: filter .25s ease;
+}
+.loveos-desktop-icon::after {
+  content: '';
+  position: absolute;
+  inset: 18% 13% 22%;
+  z-index: -1;
+  border-radius: 28%;
+  background: var(--app-color, var(--os-accent));
+  filter: blur(17px);
+  opacity: .16;
+  transform: translateY(10px) translateZ(-12px);
+}
+.loveos-icon-tile {
+  position: relative;
+  transform: translateZ(0) rotateX(0) rotateY(0);
+  transform-style: preserve-3d;
+  border: 1px solid color-mix(in srgb, var(--app-color, var(--os-accent)) 45%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.38), 0 12px 20px -13px var(--app-color, var(--os-accent));
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease;
+}
+.loveos-icon-tile::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,.26);
+  transform: translateZ(5px);
+  pointer-events: none;
+}
+
+.loveos-dock {
+  position: relative;
+  border-color: color-mix(in srgb, var(--os-accent) 34%, var(--os-border));
+  box-shadow: var(--loveos-depth-3), inset 0 1px 0 var(--loveos-surface-highlight);
+  backdrop-filter: blur(24px) saturate(1.25);
+}
+.loveos-dock button {
+  transform: translateZ(0);
+  transition: transform .22s ease, background .22s ease;
+}
+.loveos-dock button:hover { transform: translateY(-3px) translateZ(8px); }
+
+.loveos-window {
+  transform-style: preserve-3d;
+  box-shadow: var(--loveos-depth-3), var(--os-shadow);
+  border-color: color-mix(in srgb, var(--app-accent, var(--os-accent)) 28%, var(--os-border));
+}
+.loveos-window-header {
+  position: relative;
+  box-shadow: inset 0 1px 0 var(--loveos-surface-highlight);
+}
+.loveos-window-header::after {
+  content: '';
+  position: absolute;
+  inset-inline: 16px;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--app-accent, var(--os-accent)), transparent);
+  opacity: .38;
+}
+.loveos-app-body {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(90% 40% at 50% 0%, color-mix(in srgb, var(--app-accent, var(--os-accent)) 6%, transparent), transparent 75%),
+    transparent;
+}
+.loveos-app-content {
+  position: relative;
+  z-index: 1;
+}
+.loveos-app-backdrop {
+  position: absolute;
+  inset: 0;
+  min-height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .82;
+  contain: paint;
+  background:
+    radial-gradient(55% 35% at 82% 5%, color-mix(in srgb, var(--backdrop-accent) 12%, transparent), transparent 75%),
+    radial-gradient(48% 30% at 12% 95%, color-mix(in srgb, var(--backdrop-accent) 9%, transparent), transparent 78%);
+}
+.loveos-backdrop-glyph {
+  position: absolute;
+  inset-inline-end: 1.1rem;
+  top: .75rem;
+  color: color-mix(in srgb, var(--backdrop-accent) 72%, var(--os-text));
+  opacity: .12;
+  font-family: 'Lalezar', 'Vazirmatn', sans-serif;
+  font-size: clamp(2.3rem, 9vw, 5.2rem);
+  line-height: 1;
+  transform: perspective(400px) rotateY(-16deg) translateZ(-10px);
+  text-shadow: 0 12px 20px color-mix(in srgb, var(--backdrop-accent) 30%, transparent);
+}
+.loveos-backdrop-orbit {
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--backdrop-accent) 22%, transparent);
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  transform: perspective(480px) rotateX(66deg) rotateZ(-14deg);
+}
+.loveos-backdrop-orbit-a { width: 15rem; height: 5.5rem; inset-inline-start: -4rem; bottom: 8%; }
+.loveos-backdrop-orbit-b { width: 11rem; height: 4rem; inset-inline-end: -3rem; bottom: 14%; opacity: .62; transform: perspective(480px) rotateX(66deg) rotateZ(18deg); }
+.loveos-backdrop-glow {
+  position: absolute;
+  width: 9rem;
+  height: 9rem;
+  inset-inline-start: 12%;
+  top: 6%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--backdrop-accent) 16%, transparent);
+  filter: blur(28px);
+  transform: translateZ(-20px);
+}
+.loveos-app-backdrop-heart .loveos-backdrop-orbit-a,
+.loveos-app-backdrop-heart .loveos-backdrop-orbit-b { border-radius: 48% 52% 58% 42%; }
+.loveos-app-backdrop-cosmic { background: radial-gradient(70% 65% at 50% 0%, color-mix(in srgb, #818cf8 11%, transparent), transparent 74%); }
+.loveos-app-backdrop-cosmic .loveos-backdrop-orbit-a { border-style: dashed; }
+.loveos-app-backdrop-nature .loveos-backdrop-orbit-a { border-radius: 45% 55% 38% 62%; transform: perspective(480px) rotateX(62deg) rotateZ(12deg); }
+.loveos-app-backdrop-sky .loveos-backdrop-orbit-a { border-radius: 50%; border-style: dotted; }
+.loveos-app-backdrop-terminal { background: radial-gradient(60% 50% at 50% 8%, rgba(74, 222, 128, .08), transparent 75%); }
+.loveos-app-backdrop-terminal .loveos-backdrop-glyph { font-family: ui-monospace, monospace; font-size: 2rem; }
+.loveos-app-backdrop-paper .loveos-backdrop-glyph { opacity: .08; transform: rotate(-8deg); }
+.loveos-app-backdrop-tools .loveos-backdrop-orbit-a { border-style: dashed; opacity: .55; }
+.loveos-app-backdrop-vault { background: radial-gradient(52% 36% at 50% 0%, rgba(148, 163, 184, .1), transparent 75%); }
+.loveos-app-backdrop-trophy .loveos-backdrop-glyph { color: #fcd34d; }
+html[data-visual-mode='calm'] .loveos-app-backdrop { opacity: .32; }
+html[data-visual-mode='calm'] .loveos-backdrop-orbit { display: none; }
+
+.loveos-scene {
+  position: relative;
+  overflow: hidden;
+  min-height: 100%;
+  isolation: isolate;
+  border-radius: 1.65rem;
+  padding: .45rem;
+  background:
+    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--scene-accent) 12%, transparent), transparent 72%),
+    color-mix(in srgb, var(--os-card) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--scene-accent) 22%, var(--os-border));
+  box-shadow: var(--loveos-depth-2), inset 0 1px 0 var(--loveos-surface-highlight);
+}
+.loveos-scene-content {
+  position: relative;
+  z-index: 2;
+  transform: translateZ(12px);
+}
+.loveos-scene-grid {
+  position: absolute;
+  inset: -22% -10% 10%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .25;
+  background-image: linear-gradient(var(--loveos-scene-grid) 1px, transparent 1px), linear-gradient(90deg, var(--loveos-scene-grid) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, transparent, black 38%, transparent 100%);
+  transform: perspective(480px) rotateX(62deg) translateY(26%) translateZ(-20px);
+}
+.loveos-scene-label {
+  position: absolute;
+  inset-inline-end: 1rem;
+  top: .65rem;
+  z-index: 3;
+  color: color-mix(in srgb, var(--scene-accent) 72%, var(--os-text));
+  opacity: .54;
+  font-size: 1.05rem;
+  text-shadow: 0 0 15px var(--scene-accent);
+}
+.loveos-scene-cosmic {
+  background: radial-gradient(120% 100% at 50% 0%, #232a5c 0%, #0b1026 80%);
+  color: #f3edff;
+}
+.loveos-scene-cosmic .loveos-scene-content { color: #f3edff; }
+.loveos-scene-cosmic .os-muted { color: rgba(235, 230, 255, .68); }
+.loveos-scene-cosmic .os-chip { color: #f3edff; background: rgba(30, 36, 80, .72); border-color: rgba(187, 160, 251, .28); }
+.loveos-scene-map { --scene-accent: #7dd3fc; }
+.loveos-scene-garden { --scene-accent: #86efac; }
+.loveos-scene-heart { --scene-accent: #fb7185; }
+.loveos-scene-cosmic .loveos-atmosphere-orb { opacity: .2; }
+
+.loveos-three-starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .9;
+}
+.loveos-starmap-panel {
+  min-height: 210px;
+  transform-style: preserve-3d;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 22px 38px -28px #050817;
+}
+.loveos-starmap-depth {
+  position: absolute;
+  inset: 8% 16%;
+  pointer-events: none;
+  border: 1px solid rgba(187,160,251,.2);
+  border-radius: 50%;
+  transform: perspective(620px) rotateX(64deg) rotateZ(-7deg) translateZ(-14px);
+  box-shadow: 0 0 34px rgba(129,140,248,.18), inset 0 0 30px rgba(187,160,251,.08);
+}
+.loveos-starmap-panel svg { position: relative; z-index: 2; transform: translateZ(18px); }
+
+.loveos-heart-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 220px;
+  height: 220px;
+  perspective: 760px;
+}
+.loveos-heart-stage::before,
+.loveos-heart-stage::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--scene-accent, #fb7185) 40%, transparent);
+  transform: rotateX(68deg) translateZ(-10px);
+  animation: loveos-heart-orbit 6s linear infinite;
+}
+.loveos-heart-stage::before { inset: 18px; }
+.loveos-heart-stage::after { inset: 2px 30px; animation-direction: reverse; animation-duration: 8s; opacity: .62; }
+.loveos-heart-stage button { z-index: 1; filter: drop-shadow(0 24px 20px rgba(190, 49, 103, .22)); }
+.loveos-heart-stage button svg { transform: translateZ(20px); filter: drop-shadow(0 12px 10px rgba(111, 24, 67, .35)); }
+
+.loveos-garden-grid > .os-card {
+  position: relative;
+  overflow: hidden;
+  transform: perspective(800px) rotateX(1deg);
+}
+.loveos-garden-grid > .os-card::after {
+  content: '';
+  position: absolute;
+  inset: auto 12% 7px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(65, 94, 58, .18);
+  filter: blur(8px);
+  transform: translateZ(-12px);
+  pointer-events: none;
+}
+.loveos-map-shell {
+  position: relative;
+  box-shadow: var(--loveos-depth-2), inset 0 1px 0 rgba(255,255,255,.32);
+  transform: perspective(1100px) rotateX(.5deg);
+}
+.loveos-map-content > .os-card {
+  box-shadow: var(--loveos-depth-1), inset 0 1px 0 var(--loveos-surface-highlight);
+}
+.loveos-mode-dot {
+  display: inline-block;
+  width: .45rem;
+  height: .45rem;
+  margin-inline-end: .2rem;
+  border-radius: 50%;
+  background: var(--os-accent);
+  box-shadow: 0 0 10px currentColor;
+  vertical-align: middle;
+}
+.loveos-mode-dot-full { color: #818cf8; background: #818cf8; }
+.loveos-mode-dot-soft { color: #67e8f9; background: #67e8f9; }
+.loveos-mode-dot-calm { color: #94a3b8; background: #94a3b8; }
+
+@keyframes loveos-depth-twinkle {
+  0%, 100% { opacity: .22; transform: translateZ(0) scale(.9); }
+  50% { opacity: .78; transform: translateZ(14px) scale(1.16); }
+}
+@keyframes loveos-heart-orbit {
+  from { transform: rotateX(68deg) rotateZ(0deg) translateZ(-10px); }
+  to { transform: rotateX(68deg) rotateZ(360deg) translateZ(-10px); }
+}
+
+html[data-visual-mode='calm'] .loveos-atmosphere-star,
+html[data-visual-mode='calm'] .loveos-atmosphere-ribbon,
+html[data-visual-mode='calm'] .loveos-scene-grid,
+html[data-visual-mode='calm'] .loveos-three-starfield {
+  display: none;
+}
+html[data-visual-mode='calm'] .loveos-depth-card,
+html[data-visual-mode='calm'] .loveos-icon-tile,
+html[data-visual-mode='calm'] .loveos-scene-content,
+html[data-visual-mode='calm'] .loveos-map-shell,
+html[data-visual-mode='calm'] .loveos-garden-grid > .os-card {
+  transform: none;
+  transition: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .loveos-desktop-icon:hover .loveos-icon-tile {
+    transform: translateY(-5px) translateZ(13px) rotateX(5deg) rotateY(-5deg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.52), 0 22px 28px -16px var(--app-color, var(--os-accent));
+  }
+}
+
+@media (max-width: 640px) {
+  .loveos-atmosphere-orb { width: 190px; filter: blur(28px); opacity: .17; }
+  .loveos-scene { border-radius: 1.35rem; padding: .25rem; }
+  .loveos-scene-content { transform: none; }
+  .loveos-heart-stage { width: 205px; height: 205px; }
+}

@@ -12,6 +12,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playError, playSuccess, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { LoveAtmosphere } from '../shared/visual'
 import { useFitScale } from '../shared/useFitScale'
 
 export function Lock() {
@@ -97,7 +98,7 @@ export function Lock() {
 
   return (
     <motion.div
-      className="os-screen relative flex flex-col items-center justify-center px-6 py-6"
+      className="os-screen loveos-lock relative flex flex-col items-center justify-center px-6 py-6"
       style={{
         backgroundImage: `linear-gradient(170deg, rgba(255,245,249,.42), rgba(243,236,255,.48)), url(${
           config?.lock_background || '/backgrounds/lock.jpg'
@@ -109,6 +110,7 @@ export function Lock() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
     >
+      <LoveAtmosphere variant="app" />
       {/* ستون محتوا — وسط‌چین، و در صفحه‌های کوتاه با مقیاسِ محاسبه‌شده */}
       <div
         ref={fitRef}

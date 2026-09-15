@@ -11,6 +11,8 @@ import { post } from '../shared/api'
 import { tone } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { ApiStatus, Empty, useApi } from '../shared/ui'
+import { ThreeStarfield } from '../shared/ThreeStarfield'
+import { SceneFrame } from '../shared/visual'
 
 interface Constellation {
   id: number
@@ -73,10 +75,13 @@ export default function Starmap() {
   const height = CELL + PAD * 2
 
   return (
-    <div className="space-y-3">
+    <SceneFrame variant="cosmic" accent="#818cf8" label="✦">
+      <div className="space-y-3">
       <p className="text-center text-sm os-muted">{t('starmap.caption')}</p>
 
-      <div className="relative overflow-hidden rounded-3xl" style={{ background: 'radial-gradient(120% 100% at 50% 0%, #232a5c 0%, #0b1026 75%)' }}>
+      <div className="loveos-starmap-panel relative overflow-hidden rounded-3xl" style={{ background: 'radial-gradient(120% 100% at 50% 0%, #232a5c 0%, #0b1026 75%)' }}>
+        <ThreeStarfield />
+        <div className="loveos-starmap-depth" aria-hidden />
         {/* غبار ستاره‌ای */}
         {dust.map((d) => (
           <motion.span
@@ -151,6 +156,7 @@ export default function Starmap() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </SceneFrame>
   )
 }

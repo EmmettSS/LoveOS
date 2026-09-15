@@ -19,6 +19,8 @@ import { Icon } from '../shared/Icon'
 import { ErrorBoundary } from '../shared/ErrorBoundary'
 import { playClick } from '../shared/sound'
 import { useOS, type WindowState } from '../shared/store'
+import { AppVisualBackdrop } from '../shared/visual'
+import { useVisualMode } from '../shared/visualMode'
 import { appByKey } from './appRegistry'
 
 const MIN_W = 320
@@ -43,6 +45,7 @@ export function AppWindow({ win }: { win: WindowState }) {
   const minimizeApp = useOS((s) => s.minimizeApp)
   const saveGeometry = useOS((s) => s.saveWindowGeometry)
   const openApp = useOS((s) => s.openApp)
+  const visual = useVisualMode()
   const def = appByKey(win.app)
   const dragControls = useDragControls()
   const constraints = useRef<HTMLDivElement | null>(null)
@@ -68,7 +71,7 @@ export function AppWindow({ win }: { win: WindowState }) {
 
   const header = (
     <div
-      className="flex shrink-0 items-center gap-2 border-b px-4 py-3"
+      className="loveos-window-header flex shrink-0 items-center gap-2 border-b px-4 py-3"
       style={{
         borderColor: 'var(--os-border)',
         background: 'var(--os-card)',
@@ -126,12 +129,19 @@ export function AppWindow({ win }: { win: WindowState }) {
   )
 
   const body = (
-    <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-28 no-scrollbar md:pb-4">
-      <ErrorBoundary title={t(def.titleKey)}>
-        <Suspense fallback={<div className="py-16 text-center text-sm os-muted">{t('os.loading')}</div>}>
-          <Comp {...(win.props || {})} />
-        </Suspense>
-      </ErrorBoundary>
+    <div
+      className="loveos-app-body flex-1 overflow-y-auto overscroll-contain p-4 pb-28 no-scrollbar md:pb-4"
+      data-visual-mode={visual.mode}
+      style={{ '--app-accent': def.color } as React.CSSProperties}
+    >
+      <AppVisualBackdrop app={win.app} accent={def.color} />
+      <div className="loveos-app-content">
+        <ErrorBoundary title={t(def.titleKey)}>
+          <Suspense fallback={<div className="py-16 text-center text-sm os-muted">{t('os.loading')}</div>}>
+            <Comp {...(win.props || {})} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
     </div>
   )
 
@@ -139,8 +149,10 @@ export function AppWindow({ win }: { win: WindowState }) {
   if (!isDesktop) {
     return (
       <motion.div
-        className="fixed inset-0 z-40 flex flex-col os-card !rounded-b-none"
-        style={{ zIndex: 40 + win.z, display: win.minimized ? 'none' : 'flex' }}
+        className="loveos-window fixed inset-0 z-40 flex flex-col os-card !rounded-b-none"
+        data-visual-mode={visual.mode}
+        data-app={win.app}
+        style={{ zIndex: 40 + win.z, display: win.minimized ? 'none' : 'flex', '--app-accent': def.color } as React.CSSProperties}
         initial={{ y: '100%', opacity: 0.6 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0.4 }}
@@ -170,9 +182,12 @@ export function AppWindow({ win }: { win: WindowState }) {
         dragElastic={0}
         dragConstraints={constraints}
         onDragEnd={rememberGeometry}
-        className="pointer-events-auto absolute flex flex-col overflow-hidden os-card"
+        className="loveos-window pointer-events-auto absolute flex flex-col overflow-hidden os-card"
+        data-visual-mode={visual.mode}
+        data-app={win.app}
         style={{
           pointerEvents: isPresent ? 'auto' : 'none',
+          '--app-accent': def.color,
           width: win.w ? `min(${win.w}px, 92vw)` : 'min(760px, 78vw)',
           height: win.h ? `min(${win.h}px, 86vh)` : 'min(620px, 76vh)',
           minWidth: MIN_W,
@@ -180,7 +195,7 @@ export function AppWindow({ win }: { win: WindowState }) {
           left: `${win.x ?? 24}px`,
           top: `${win.y ?? 18}px`,
           display: win.minimized ? 'none' : 'flex',
-        }}
+        } as React.CSSProperties}
         initial={{ scale: 0.94, opacity: 0, y: 14 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.96, opacity: 0 }}

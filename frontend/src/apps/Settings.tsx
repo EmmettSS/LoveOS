@@ -20,6 +20,7 @@ import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../s
 import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
 import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
+import { useVisualMode, type VisualPreference } from '../shared/visualMode'
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -42,6 +43,7 @@ export default function Settings() {
   const logout = useOS((s) => s.logout)
   const openApp = useOS((s) => s.openApp)
   const showToast = useOS((s) => s.showToast)
+  const visual = useVisualMode()
 
   const [installEvent, setInstallEvent] = useState<any>(null)
   const [vibrationOn, setVibrationOn] = useState(() => localStorage.getItem('loveos_vibration') !== 'off')
@@ -134,6 +136,27 @@ export default function Settings() {
             {t(th === 'auto' ? 'settings.themeAuto' : th === 'day' ? 'settings.themeDay' : 'settings.themeNight')}
           </button>
         ))}
+      </Row>
+
+      <Row label={t('settings.visualMode')} hint={t('settings.visualModeHint')}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {(['adaptive', 'full', 'soft', 'calm'] as VisualPreference[]).map((value) => (
+            <button
+              key={value}
+              className={`os-chip ${visual.preference === value ? 'os-chip-active' : ''}`}
+              onClick={() => {
+                playClick()
+                visual.setPreference(value)
+                showToast(t('settings.visualModeSaved'), 'love')
+              }}
+            >
+              {t(`settings.visualMode${value[0].toUpperCase()}${value.slice(1)}`)}
+            </button>
+          ))}
+          <span className="os-chip os-chip-status">
+            {t(`settings.visualModeCurrent${visual.mode[0].toUpperCase()}${visual.mode.slice(1)}`)}
+          </span>
+        </div>
       </Row>
 
       <Row label={t('settings.sound')}>

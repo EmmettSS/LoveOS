@@ -20,6 +20,7 @@ import { digits, formatDate, formatTime } from '../shared/format'
 import { enableLiveLocation, getCurrentPosition, lookupCity, pushLocation } from '../shared/geo'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { SceneFrame } from '../shared/visual'
 import { Loading } from '../shared/ui'
 
 interface Side {
@@ -273,8 +274,9 @@ export default function MapOfUs() {
   const timeDiff = Math.abs(data.daddy.hour - data.daughter.hour)
 
   return (
-    <div ref={topRef} className="space-y-3">
-      <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
+    <SceneFrame variant="map" accent="#7dd3fc" label="⌁">
+      <div ref={topRef} className="loveos-map-content space-y-3">
+      <div className="loveos-map-shell overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
         <div ref={container} className="h-[360px] w-full" />
       </div>
 
@@ -343,6 +345,7 @@ export default function MapOfUs() {
 
       <button className="os-btn-primary w-full" onClick={fly}>{t('map.flyRoute')}</button>
       <p className="pt-1 text-center text-sm os-hand" style={{ color: 'var(--os-accent)' }}>{data.end_message}</p>
-    </div>
+      </div>
+    </SceneFrame>
   )
 }

@@ -29,7 +29,7 @@ export function Dock() {
       className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
-      <div className="os-card flex max-w-full items-center gap-1.5 overflow-x-auto px-2.5 py-2 no-scrollbar">
+      <div className="loveos-dock os-card flex max-w-full items-center gap-1.5 overflow-x-auto px-2.5 py-2 no-scrollbar">
         <button
           onClick={() => { playClick(); toggleStartMenu() }}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition active:scale-90"

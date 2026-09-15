@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { digits } from '../shared/format'
 import { playHeartbeat, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { SceneFrame } from '../shared/visual'
 
 export default function Heartbeat() {
   const { t } = useTranslation()
@@ -43,9 +44,11 @@ export default function Heartbeat() {
   }, [bpm])
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-6">
+    <SceneFrame variant="heart" accent="#fb7185" label="♥">
+      <div className="flex flex-col items-center justify-center gap-4 py-5">
       <p className="os-title text-lg" style={{ color: 'var(--os-accent)' }}>{t('heartbeat.feelIt')}</p>
 
+      <div className="loveos-heart-stage">
       <motion.button
         onPointerDown={() => setHolding(true)}
         onPointerUp={() => setHolding(false)}
@@ -70,6 +73,7 @@ export default function Heartbeat() {
         </svg>
         <span className="absolute inset-0 rounded-full" style={{ boxShadow: '0 0 70px 10px rgba(247,103,168,.35)' }} />
       </motion.button>
+      </div>
 
       <div className="text-center">
         <p className="os-title text-3xl tabular-nums" style={{ color: 'var(--os-accent)' }}>{digits(bpm)}</p>
@@ -78,6 +82,7 @@ export default function Heartbeat() {
 
       <p className="max-w-xs text-center text-sm leading-7">{config?.today_message || t('heartbeat.caption')}</p>
       <p className="text-xs os-muted">{t('heartbeat.hold')}</p>
-    </div>
+      </div>
+    </SceneFrame>
   )
 }

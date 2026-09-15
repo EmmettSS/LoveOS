@@ -209,6 +209,18 @@ single truth — and I get a Soroush note about it.
 `day` and `night`. The theme sets `data-theme` on the root and swaps every colour variable. The choice
 is stored both in `localStorage` and on the server profile, so it survives a re-login.
 
+### Depth-aware 3D shell
+
+The new visual language is controlled by `src/shared/visualMode.ts` and `src/styles/visual.css`.
+`adaptive` gives capable desktop devices deeper motion, keeps touch devices in `soft`, and falls back
+to `calm` when `prefers-reduced-motion` or WebGL limitations require it. Settings exposes
+`Adaptive`, `Full 3D`, `Soft 3D`, and `Calm 2D`.
+
+The shell, dock, icons, and all 30 windows share the same depth tokens. Map of Us, the garden,
+Heartbeat, and Starmap receive richer scenes; Starmap adds a lazily loaded Three.js starfield in
+Full 3D while retaining the existing SVG as its fallback. Three.js is excluded from the initial PWA
+precache so startup and offline installation do not pay the full scene cost.
+
 ---
 
 ## 3. Installation & setup
@@ -689,7 +701,7 @@ npm run test:ui window-manager-settings
 
 | File | What it locks down |
 |---|---|
-| `tests/window-manager-settings.tsx` | Open/close/minimize, geometry staying put while clicking, correct z-order, no ghost of a closed window, reopening at the previous position, and language + theme actually being applied and stored |
+| `tests/window-manager-settings.tsx` | Open/close/minimize, geometry staying put while clicking, correct z-order, no ghost of a closed window, reopening at the previous position, language + theme actually being applied and stored, and Calm/Adaptive visual mode switching |
 | `tests/apps-render.tsx` | All five new apps booting against real backend responses (`tests/fixtures.json`), global search, desktop icons and the next-call widget |
 
 The backend responses in `tests/fixtures.json` were captured from the live API, so if an endpoint

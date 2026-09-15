@@ -5,6 +5,7 @@
  *   ۱) پنجره‌ها درست باز/بسته/مینیمایز می‌شوند و هندسه‌شان با کلیک عوض نمی‌شود
  *   ۲) لایه‌بندی (z) درست جابه‌جا می‌شود و «شبح» پنجره‌ی بسته نمی‌ماند
  *   ۳) تغییر زبان و تم واقعاً اعمال و روی سرور ذخیره می‌شود
+ *   ۴) حالت بصری Calm/Adaptive محلی و بی‌درنگ تغییر می‌کند
  */
 import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
@@ -162,6 +163,10 @@ async function main() {
   await clickText('Night')
   check('تم شب روی دستگاه اعمال شد', useOS.getState().config?.theme === 'night', String(useOS.getState().config?.theme))
   check('تم روی سرور ذخیره شد', serverConfig.theme === 'night', `server=${serverConfig.theme}`)
+  await clickText('Calm 2D')
+  check('حالت آرام سه‌بعدی را خاموش می‌کند', w.localStorage.getItem('loveos_visual_mode_v1') === 'calm')
+  await clickText('Adaptive')
+  check('حالت تطبیقی قابل بازگشت است', w.localStorage.getItem('loveos_visual_mode_v1') === 'adaptive')
   // تم روی بستر واقعی دسکتاپ: useNightMode مستقل از ذخیره‌سازی سرور هم باید تم را عوض کند
   const { useNightMode } = await import('../src/os/daynight')
   function ThemeProbe() { useNightMode(); return null }

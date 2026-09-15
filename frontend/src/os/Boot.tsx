@@ -24,6 +24,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { LoveAtmosphere } from '../shared/visual'
 import { useFitScale } from '../shared/useFitScale'
 
 type Tone = 'ok' | 'cyan' | 'violet' | 'pink' | 'amber' | 'heart'
@@ -205,7 +206,7 @@ export function Boot() {
     <motion.div
       onClick={skip}
       dir={isFa ? 'rtl' : 'ltr'}
-      className="os-screen relative flex cursor-pointer select-none flex-col items-center justify-center px-5 py-6"
+      className="os-screen loveos-boot relative flex cursor-pointer select-none flex-col items-center justify-center px-5 py-6"
       style={{
         background:
           'radial-gradient(110% 80% at 50% 0%, #241030 0%, #160a20 48%, #0a0410 100%)',
@@ -213,6 +214,7 @@ export function Boot() {
       exit={{ opacity: 0, scale: 1.04, filter: 'brightness(1.25)' }}
       transition={{ duration: 0.6 }}
     >
+      <LoveAtmosphere variant="app" />
       {/* لایه‌های پس‌زمینه */}
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-[0.15] mix-blend-screen"

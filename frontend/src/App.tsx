@@ -16,6 +16,7 @@ import { refreshLocationIfStale } from './shared/geo'
 import { applyLocalPrefs, syncSettings } from './shared/prefs'
 import { setSoundEnabled } from './shared/sound'
 import { useOS } from './shared/store'
+import { useVisualMode } from './shared/visualMode'
 
 const KONAMI = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
@@ -32,6 +33,9 @@ export default function App() {
   const patchConfig = useOS((s) => s.patchConfig)
   const [ready, setReady] = useState(false)
 
+  // پوسته همیشه یک تصمیم واحد برای عمق بصری دارد؛ اپ‌های داخلی همین حالت را
+  // می‌خوانند تا هیچ صحنه‌ای جدا از reduced-motion یا انتخاب کاربر رفتار نکند.
+  useVisualMode()
   useNightMode()
 
   // بارگذاری اولیه‌ی پیکربندی از بک‌اند

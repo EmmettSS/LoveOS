@@ -29,6 +29,8 @@ import { NotificationCenter } from './NotificationCenter'
 import { StartMenu } from './StartMenu'
 import { AppWindow } from './Window'
 import { useNightMode } from './daynight'
+import { LoveAtmosphere } from '../shared/visual'
+import { useVisualMode } from '../shared/visualMode'
 
 interface NextCallPayload {
   item: {
@@ -65,6 +67,7 @@ export function Desktop() {
   const openApp = useOS((s) => s.openApp)
   const showEgg = useOS((s) => s.showEgg)
   const isNight = useNightMode()
+  const visual = useVisualMode()
   const appOrder = useOS((s) => s.appOrder)
   const setAppOrder = useOS((s) => s.setAppOrder)
 
@@ -264,7 +267,8 @@ export function Desktop() {
 
   return (
     <div
-      className="os-screen relative"
+      className="os-screen loveos-desktop relative"
+      data-visual-mode={visual.mode}
       style={{
         // overlay کم‌رنگ‌تر شد تا والپیپر دیده شود — یک‌سومِ قبل (درخواست کاربر)
         backgroundImage: `linear-gradient(${
@@ -274,9 +278,10 @@ export function Desktop() {
         backgroundPosition: 'center',
       }}
     >
+      <LoveAtmosphere variant="desktop" />
       {midnight && <MidnightSky />}
 
-      <div className="h-full overflow-y-auto px-4 pb-32 pt-5 no-scrollbar md:px-8">
+      <div className="loveos-desktop-scroll h-full overflow-y-auto px-4 pb-32 pt-5 no-scrollbar md:px-8">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card p-4">
             <p className="os-title text-3xl">{formatTime(now)}</p>
@@ -407,8 +412,9 @@ export function Desktop() {
                   playOpen()
                   openApp(app.key)
                 }}
-                className="flex flex-col items-center gap-1.5"
+                className="loveos-desktop-icon flex flex-col items-center gap-1.5"
                 style={{
+                  '--app-color': app.color,
                   outline: isOver ? '2px dashed var(--os-accent)' : 'none',
                   outlineOffset: 4,
                   borderRadius: 18,
@@ -418,11 +424,11 @@ export function Desktop() {
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
                   WebkitTouchCallout: 'none',
-                }}
+                } as React.CSSProperties}
                 title={t(app.titleKey)}
               >
                 <span
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
+                  className="loveos-icon-tile flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
                   style={{
                     background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`,
                     color: app.color,

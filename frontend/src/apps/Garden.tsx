@@ -11,6 +11,7 @@ import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playBloom } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { SceneFrame } from '../shared/visual'
 import { ApiStatus, Empty, useApi } from '../shared/ui'
 
 interface Flower {
@@ -100,9 +101,10 @@ export default function Garden() {
   if (items.length === 0) return <Empty />
 
   return (
-    <div className="space-y-3">
+    <SceneFrame variant="garden" accent="#86efac" label="✿">
+      <div className="space-y-3">
       <p className="text-center text-sm os-muted">{t('garden.caption')}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="loveos-garden-grid grid grid-cols-2 gap-3">
         {items.map((f, i) => (
           <motion.div
             key={f.id}
@@ -131,6 +133,7 @@ export default function Garden() {
           {message}
         </motion.p>
       )}
-    </div>
+      </div>
+    </SceneFrame>
   )
 }

@@ -32,6 +32,9 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Three.js فقط هنگام باز شدن آسمانِ Full 3D لازم است؛ آن را در
+        // precache اولیه نمی‌آوریم تا نصب PWA و شروع LoveOS سنگین نشود.
+        globIgnores: ['**/three.module-*.js'],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
           {
