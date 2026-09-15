@@ -89,15 +89,21 @@ export function Toast() {
   const toast = useOS((s) => s.toast)
   return (
     <AnimatePresence>
+      {/* پوسته‌ی وسط‌چین: translate روی خودِ motion در RTL پیام را نصفه
+          از صفحه بیرون می‌برد؛ کارت واقعی تودرتوست. */}
       {toast && (
         <motion.div
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
-          className="os-card fixed inset-x-6 top-5 z-[95] mx-auto max-w-xs px-4 py-3 text-center text-sm md:inset-x-auto md:start-1/2 md:-translate-x-1/2"
-          style={{ borderColor: toast.tone === 'love' ? 'var(--os-accent)' : 'var(--os-border)' }}
+          className="pointer-events-none fixed inset-x-0 top-5 z-[95] flex justify-center"
         >
-          {toast.text}
+          <div
+            className="os-card pointer-events-auto mx-6 w-full max-w-xs px-4 py-3 text-center text-sm"
+            style={{ borderColor: toast.tone === 'love' ? 'var(--os-accent)' : 'var(--os-border)' }}
+          >
+            {toast.text}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

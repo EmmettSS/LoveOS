@@ -575,16 +575,45 @@ def mood_set(request):
 
 
 # ------------------------------------------------------------ صندوقچه -----
-@api_view(["GET"])
+def _vault_json(v: VaultItem) -> dict:
+    return {"id": v.id, "title": v.title, "kind": v.kind, "file": file_url(v.file), "text": v.text}
+
+
+@api_view(["GET", "POST"])
 @require_session
 def vault(request):
     if not request.loveos_session.vault_open:
+        if request.method == "POST":
+            return Response({"ok": False, "message": "صندوقچه قفل است"}, status=403)
         return Response({"locked": True, "items": []})
-    items = [
-        {"id": v.id, "title": v.title, "kind": v.kind, "file": file_url(v.file), "text": v.text}
-        for v in VaultItem.objects.filter(is_active=True)
-    ]
+    if request.method == "POST":
+        return vault_add(request)
+    items = [_vault_json(v) for v in VaultItem.objects.filter(is_active=True)]
     return Response({"locked": False, "items": items})
+
+
+def vault_add(request):
+    """دخترم خودش محتوا اضافه می‌کند: متن، عکس، صدا یا ویدیو."""
+    title = str(request.data.get("title") or "").strip()
+    if not title:
+        return Response({"ok": False, "message": "یه اسم برای صندوقچه‌ات بنویس"}, status=400)
+    kind = str(request.data.get("kind") or "text")
+    if kind not in ("video", "audio", "image", "text"):
+        kind = "text"
+    upload_file = request.FILES.get("file")
+    upload_error = validate_upload(upload_file, "image" if kind == "image" else "any")
+    if upload_error:
+        return Response({"ok": False, "message": upload_error}, status=400)
+    item = VaultItem.objects.create(
+        title=title[:160],
+        kind=kind if upload_file else "text",
+        file=upload_file,
+        text=str(request.data.get("text") or ""),
+    )
+    bump("vault_items")
+    log_activity("افزودن به صندوقچه", "vault", item.title[:60])
+    notify_daddy("vault_add", f"💎 دخترت یه چیز تازه تو صندوقچه گذاشت: «{item.title}»")
+    return Response({"ok": True, "item": _vault_json(item)})
 
 
 # -------------------------------------------------------------- آموزش -----

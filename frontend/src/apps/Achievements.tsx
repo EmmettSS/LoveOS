@@ -3,7 +3,7 @@
  * نشان‌های باز شده رنگی‌اند و پیام مخفی بابا را نشان می‌دهند.
  */
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { digits, formatDate } from '../shared/format'
@@ -30,6 +30,18 @@ export default function Achievements() {
   const { t } = useTranslation()
   const { data, loading, error } = useApi<{ items: A[]; unlocked: number; total: number }>('/achievements')
   const [open, setOpen] = useState<number | null>(null)
+  const detailRef = useRef<HTMLDivElement | null>(null)
+
+  const toggle = (id: number) => {
+    const next = open === id ? null : id
+    setOpen(next)
+    if (next !== null) {
+      // کارت پیام پایین گرید است؛ بعد از سوار شدنش به‌آرامی اسکرول می‌کنیم تا دیده شود
+      window.setTimeout(() => {
+        detailRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+      }, 120)
+    }
+  }
 
   if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
@@ -58,7 +70,7 @@ export default function Achievements() {
             initial={{ opacity: 0, scale: 0.86 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.03 }}
-            onClick={() => setOpen(open === a.id ? null : a.id)}
+            onClick={() => toggle(a.id)}
             className="os-card flex flex-col items-center gap-1 p-3"
             style={{ opacity: a.unlocked ? 1 : 0.45, borderColor: a.unlocked ? 'var(--os-accent)' : undefined }}
           >
@@ -71,7 +83,7 @@ export default function Achievements() {
       {open !== null && (() => {
         const a = items.find((x) => x.id === open)!
         return (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="os-card p-4">
+          <motion.div ref={detailRef} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="os-card p-4">
             <p className="os-title text-base">{EMOJI[a.icon] || '🏅'} {a.title}</p>
             <p className="mt-1 text-sm os-muted">{a.description}</p>
             {a.unlocked ? (

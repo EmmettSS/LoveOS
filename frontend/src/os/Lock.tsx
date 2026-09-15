@@ -93,7 +93,7 @@ export function Lock() {
 
   return (
     <motion.div
-      className="relative flex h-full w-full flex-col items-center justify-center px-6"
+      className="relative flex h-full w-full flex-col items-center overflow-y-auto px-6 py-8"
       style={{
         backgroundImage: `linear-gradient(170deg, rgba(255,245,249,.42), rgba(243,236,255,.48)), url(${
           config?.lock_background || '/backgrounds/lock.jpg'
@@ -105,6 +105,8 @@ export function Lock() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
     >
+      {/* ستون محتوا: با m-auto وسط می‌ایستد و در صفحه‌های کوتاه اسکرول می‌خورد. */}
+      <div className="m-auto flex w-full flex-col items-center">
       <motion.div className={shake ? 'animate-shake' : 'animate-float'}>
         {config?.logo ? (
           <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />
@@ -226,6 +228,7 @@ export function Lock() {
           ))}
         </div>
       )}
+      </div>
     </motion.div>
   )
 }

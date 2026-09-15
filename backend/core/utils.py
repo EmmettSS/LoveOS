@@ -58,6 +58,14 @@ def file_url(field: Any) -> str | None:
         return None
 
 
+_FA_DIGITS = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
+
+
+def fa_digits(value: Any) -> str:
+    """ارقام لاتین را به فارسی تبدیل می‌کند (برای متن‌های نمایشی فارسی)."""
+    return str(value).translate(_FA_DIGITS)
+
+
 def iso_date(value: Any, default: date | None = None) -> date | None:
     """تاریخ ISO را از ورودی API بدون تبدیل خطای کاربر به ۵۰۰ می‌خواند."""
     if isinstance(value, date):

@@ -342,7 +342,13 @@
         "enter": "Vault passcode",
         "open": "Open",
         "wrong": "Wrong passcode",
-        "hint": "Hint"
+        "hint": "Hint",
+        "addTitle": "Put something new in the vault",
+        "titlePh": "What is it called?",
+        "textPh": "Any words? (optional)",
+        "attach": "📎 Photo / voice / video",
+        "added": "Tucked into the vault 💎",
+        "needTitle": "Give it a name first"
     },
     "terminal": {
         "hint": "Type help to see what I know",
@@ -551,7 +557,7 @@
         "searching": "Searching…",
         "nothing": "Nothing found. Try another word 🌸",
         "footer": "Ctrl/⌘ + K to open • Esc to close",
-        "results": "{count} results"
+        "results": "{{count}} results"
     },
     "calls": {
         "tabs": {
@@ -566,7 +572,7 @@
         "proposeNow": "Suggest a call",
         "countdownHint": "Counting every second ❤",
         "yourSide": "Your side",
-        "reminderAt": "Reminder {minutes} min before",
+        "reminderAt": "Reminder {{minutes}} min before",
         "record": "Record",
         "monthSummary": "This month",
         "monthCalls": "Calls",
@@ -579,7 +585,7 @@
             "normal": "Okay",
             "missing": "Missing you"
         },
-        "answerPrompt": "{name} suggested a call — is that okay?",
+        "answerPrompt": "{{name}} suggested a call — is that okay?",
         "approve": "I'm in",
         "reject": "Not this time",
         "reschedule": "Another time",
@@ -768,15 +774,15 @@
         "daddy": "Daddy",
         "noCards": "No cards to practise. Add some words first",
         "practiceTarget": "Practise in",
-        "remaining": "{count} words left to learn",
+        "remaining": "{{count}} words left to learn",
         "tapToFlip": "Tap to see the answer",
         "notYet": "Not yet",
         "learned": "I learned it",
         "again": "One more round",
-        "roundDone": "You knew {correct} of {total}!",
+        "roundDone": "You knew {{correct}} of {{total}}!",
         "streakHint": "Practise daily and the streak keeps growing 🔥",
         "noQuiz": "Daddy has not added quiz questions yet. Nudge him 🙂",
-        "quizIntro": "{count} questions from daddy's panel. Shall we start?",
+        "quizIntro": "{{count}} questions from daddy's panel. Shall we start?",
         "quizStart": "Start the quiz",
         "answers": "Answers",
         "yourAnswer": "Your answer",
