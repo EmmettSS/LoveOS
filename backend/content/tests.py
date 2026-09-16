@@ -46,3 +46,44 @@ class VaultTests(TestCase):
             "/api/vault", {"title": "  "}, content_type="application/json", **self.auth
         )
         self.assertEqual(res.status_code, 400)
+
+
+class MoodCustomTests(TestCase):
+    """حال دلخواه دختر + یادداشت + تاریخچه."""
+
+    def setUp(self):
+        UserConfig.get_solo()
+        self.session = DeviceSession.issue(hours=1)
+        self.auth = {"HTTP_AUTHORIZATION": f"Token {self.session.token}"}
+
+    def test_custom_mood_create_and_set(self):
+        from content.models import CustomMood, MoodLog, MoodMessage
+
+        MoodMessage.objects.get_or_create(mood="happy", defaults={"message": "خنده‌ات قشنگه"})
+        res = self.client.post(
+            "/api/moods/custom",
+            {"label": "آروم", "emoji": "🌿"},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(res.status_code, 200, res.content)
+        data = res.json()
+        self.assertTrue(data.get("ok"))
+        self.assertEqual(CustomMood.objects.count(), 1)
+        cid = data["item"]["custom_id"]
+
+        res2 = self.client.post(
+            "/api/moods/set",
+            {"custom_id": cid, "note": "یه چایی داغ می‌خوام"},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(res2.status_code, 200, res2.content)
+        log = MoodLog.objects.latest("id")
+        self.assertEqual(log.note, "یه چایی داغ می‌خوام")
+        self.assertEqual(log.custom_id, cid)
+
+        listing = self.client.get("/api/moods", **self.auth)
+        body = listing.json()
+        self.assertTrue(any(c.get("custom_id") == cid for c in body.get("customs", [])))
+        self.assertTrue(len(body.get("history", [])) >= 1)

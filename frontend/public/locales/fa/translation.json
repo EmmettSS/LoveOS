@@ -253,14 +253,18 @@
         "water": "آبش بده",
         "watered": "شکوفه داد 🌸",
         "level": "مرحله {{n}}",
-        "caption": "هر بار که بهش سر بزنی، یه ذره بزرگ‌تر می‌شه."
+        "caption": "هر بار که بهش سر بزنی، یه ذره بزرگ‌تر می‌شه.",
+        "dragCan": "روی گل بزن یا از دکمه‌ی آب استفاده کن — آب‌پاش کج می‌شود"
     },
     "starmap": {
         "caption": "اسمت رو با ستاره‌ها نوشتم.",
         "tapLetter": "روی هر حرف بزن",
         "fullName": "کل اسم رو روشن کن",
         "layoutRtl": "چیدمان: راست به چپ",
-        "layoutLtr": "چیدمان: چپ به راست"
+        "layoutLtr": "چیدمان: چپ به راست",
+        "dragHint": "با انگشت آسمان را بچرخان · دو بار بزن برای راز",
+        "heartMsg": "قلب من همیشه سمت توست — حتی از فاصله‌ی ستاره‌ها.",
+        "infinityMsg": "عشق ما بی‌نهایت است؛ نه ابتدا دارد نه انتها."
     },
     "chat": {
         "placeholder": "به بابا چی بگم...",
@@ -282,7 +286,12 @@
             "sad": "ناراحتم",
             "excited": "پر انرژی‌ام",
             "sleepy": "خواب‌آلودم"
-        }
+        },
+        "custom": "حال خودم",
+        "customPh": "مثلاً آرام، هیجان‌زده…",
+        "emoji": "ایموجی",
+        "notePh": "اگر دوست داری یه خط برای بابا بنویس…",
+        "historyEmpty": "هنوز حالی ثبت نشده"
     },
     "quiz": {
         "start": "شروع کوییز",
@@ -337,7 +346,10 @@
         "textPh": "اگه حرفی داری بنویس… (اختیاری)",
         "attach": "📎 عکس / صدا / ویدیو",
         "added": "تو صندوقچه گذاشته شد 💎",
-        "needTitle": "اول یه اسم بنویس"
+        "needTitle": "اول یه اسم بنویس",
+        "opening": "داره باز می‌شه…",
+        "contents": "گنج‌های داخل صندوق",
+        "locked3d": "رمز را وارد کن تا در باز شود"
     },
     "terminal": {
         "hint": "بنویس help تا ببینی چیا بلدم",
@@ -514,7 +526,25 @@
         "layout": "چیدمان دسکتاپ",
         "layoutHint": "آیکون‌ها رو با کشیدن جابجا کن؛ ترتیبش حفظ می‌شه",
         "layoutReset": "بازنشانی چیدمان",
-        "layoutResetDone": "چیدمان به حالت اولش برگشت ✨"
+        "layoutResetDone": "چیدمان به حالت اولش برگشت ✨",
+        "quality": "کیفیت سه‌بعدی",
+        "qualityHint": "روی گوشی ضعیف‌تر، «مهتاب» روان‌تر است",
+        "qualityNow": "الان: {{tier}}",
+        "tier_auto": "خودکار",
+        "tier_lite": "مهتاب",
+        "tier_balanced": "بلور",
+        "tier_dream": "کهکشان",
+        "qualityVetoTestEnv": "محیط آزمایش",
+        "qualityVetoReducedMotion": "کاهش حرکت سیستم روشن است",
+        "qualityNoWebgl": "WebGL در دسترس نیست",
+        "qualityVetoSoftware": "رندر نرم‌افزاری GPU",
+        "qualityVetoSaveData": "صرفه‌جویی داده روشن است",
+        "qualityFps": "{{n}} فریم",
+        "qualityManualCapped": "انتخاب تو محدود شد",
+        "qualityManualChoice": "انتخاب دستی",
+        "qualityRememberedDowngrade": "تنزل قبلی به خاطر سپرده شد",
+        "qualityNet3g": "شبکه ۳G",
+        "qualityNetSlow": "شبکه کند"
     },
     "notifications": {
         "title": "مرکز اعلان",
@@ -729,7 +759,11 @@
         "pickPhoto": "انتخاب عکس",
         "noPhoto": "اول یه عکس انتخاب کن",
         "emptyGallery": "گالری خالیه. یه عکس قشنگ بذار 🖼",
-        "commentPlaceholder": "نظرت…"
+        "commentPlaceholder": "نظرت…",
+        "viewOrbit": "نمای سه‌بعدی",
+        "viewTop": "نمای بالا",
+        "roofToggle": "سقف",
+        "nightMode": "شب"
     },
     "language": {
         "title": "پل زبان",

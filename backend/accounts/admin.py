@@ -61,7 +61,7 @@ class UserConfigAdmin(admin.ModelAdmin):
                            "با روشن‌کردن ثبت عبارت‌ها، پرجستجوترین‌ها در لاگ فعالیت‌ها دیده می‌شوند.",
         }),
         ("تنظیمات", {
-            "fields": ("language", "theme", "sound_enabled", "font_scale", "allow_daughter_music_upload")
+            "fields": ("language", "theme", "sound_enabled", "font_scale", "ui_quality", "allow_daughter_music_upload")
         }),
     )
 

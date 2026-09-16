@@ -3,7 +3,7 @@
  * دخترم هم می‌تواند خودش محتوا اضافه کند: متن، عکس، صدا یا ویدیو.
  */
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
@@ -11,6 +11,8 @@ import { post, upload } from '../shared/api'
 import { playError, playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { ApiStatus, AudioPlayer, Empty, useApi } from '../shared/ui'
+
+const VaultSceneView = lazy(() => import('../three/components/VaultScene'))
 
 interface VItem {
   id: number
@@ -26,6 +28,8 @@ export default function Vault() {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
+  const [shakeToken, setShakeToken] = useState(0)
+  const [justUnlocked, setJustUnlocked] = useState(false)
 
   const unlock = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,11 +38,13 @@ export default function Vault() {
       playSuccess()
       setError('')
       setCode('')
+      setJustUnlocked(true)
       await reload()
     } else {
       playError()
       setError(res.message || t('vault.wrong'))
       setShake(true)
+      setShakeToken((n) => n + 1)
       setTimeout(() => setShake(false), 500)
     }
   }
@@ -46,13 +52,18 @@ export default function Vault() {
   if (loading || apiError) return <ApiStatus loading={loading} error={apiError} onRetry={() => void reload()} />
 
   if (data?.locked) {
+    const iconFallback = (
+      <motion.span className={shake ? 'animate-shake' : 'animate-float'} style={{ color: 'var(--os-accent)' }}>
+        <Icon name="vault" size={64} />
+      </motion.span>
+    )
     return (
-      <div className="flex flex-col items-center gap-4 py-10">
-        <motion.span className={shake ? 'animate-shake' : 'animate-float'} style={{ color: 'var(--os-accent)' }}>
-          <Icon name="vault" size={64} />
-        </motion.span>
-        <p className="text-center text-sm">{t('vault.locked')}</p>
-        <form onSubmit={unlock} className="w-full max-w-xs space-y-2">
+      <div className="flex h-full min-h-[420px] flex-col items-center gap-4 py-6" style={{ background: 'radial-gradient(70% 50% at 50% 30%, #3a2a18 0%, #120e0a 75%)' }}>
+        <Suspense fallback={iconFallback}>
+          <VaultSceneView open={false} shakeToken={shakeToken} fallback={iconFallback} />
+        </Suspense>
+        <p className="text-center text-sm text-white/80">{t('vault.locked')}</p>
+        <form onSubmit={unlock} className="w-full max-w-xs space-y-2 px-4">
           <input
             type="password"
             inputMode="numeric"
@@ -71,7 +82,11 @@ export default function Vault() {
   const items = data?.items || []
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 p-3 pb-28 md:pb-3" style={{ background: justUnlocked ? 'radial-gradient(80% 40% at 50% 0%, #5c3a1a55, transparent)' : undefined }}>
+      <Suspense fallback={null}>
+        <VaultSceneView open shakeToken={0} fallback={null} />
+      </Suspense>
+      <p className="text-center text-xs os-muted">{t('vault.contents')}</p>
       <AddVaultItem onAdded={() => void reload()} />
       {items.length === 0 ? (
         <Empty />

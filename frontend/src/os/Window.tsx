@@ -126,7 +126,13 @@ export function AppWindow({ win }: { win: WindowState }) {
   )
 
   const body = (
-    <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-28 no-scrollbar md:pb-4">
+    <div
+      className={
+        def.immersive
+          ? 'relative flex-1 overflow-hidden overscroll-none p-0 pb-24 md:pb-0'
+          : 'flex-1 overflow-y-auto overscroll-contain p-4 pb-28 no-scrollbar md:pb-4'
+      }
+    >
       <ErrorBoundary title={t(def.titleKey)}>
         <Suspense fallback={<div className="py-16 text-center text-sm os-muted">{t('os.loading')}</div>}>
           <Comp {...(win.props || {})} />

@@ -32,6 +32,7 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globIgnores: ['**/loveos-3d-*.js', '**/StarmapSky-*.js', '**/GardenScene-*.js', '**/DreamHomeMap-*.js', '**/VaultScene-*.js', '**/HeartbeatScene-*.js', '**/HugScene-*.js', '**/MoodScene-*.js'],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
           {
@@ -66,5 +67,17 @@ export default defineConfig({
   // نکته: هیچ پکیج چاپ/PDF بیرونی در کار نیست (خروجی کتاب با miniPdf داخلی ساخته
   // می‌شود). اگر روزی پکیج سنگینی اضافه کردید، اسمش را در include بگذارید تا
   // dev سریع‌تر بالا بیاید.
-  build: { outDir: 'dist', chunkSizeWarningLimit: 1600 },
+  build: {
+    outDir: 'dist',
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three') || id.includes('/src/three/')) {
+            return 'loveos-3d'
+          }
+        },
+      },
+    },
+  },
 })

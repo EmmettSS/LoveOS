@@ -8,7 +8,7 @@
  *   ۳) گالری الهام: عکس خانه‌های قشنگ + گفتگو زیر هر عکس
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
@@ -16,6 +16,8 @@ import { del, patch, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { playError, playSuccess } from '../shared/sound'
 import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
+
+const DreamHomeMap3D = lazy(() => import('../three/components/DreamHomeMap'))
 
 type Owner = 'daddy' | 'daughter'
 type Importance = 'must' | 'nice' | 'luxury'
@@ -311,6 +313,7 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
   const [dragging, setDragging] = useState<number | null>(null)
   const [name, setName] = useState('')
   const [floor, setFloor] = useState('ground')
+  const [view3d, setView3d] = useState(true)
 
   const selectedRoom = selected ? rooms.find((r) => r.id === selected.id) || null : null
 
@@ -358,8 +361,7 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
     await reload()
   }
 
-  return (
-    <div className="space-y-3">
+  const flatMap = (
       <div
         ref={canvasRef}
         className="relative w-full overflow-hidden rounded-2xl border"
@@ -377,7 +379,6 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
         }}
         onPointerLeave={() => setDragging(null)}
       >
-        {/* راهنما */}
         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           {Array.from({ length: 9 }).map((_, i) => (
             <line key={`v${i}`} x1={(i + 1) * 10} y1="0" x2={(i + 1) * 10} y2="100" stroke="var(--os-border)" strokeWidth="0.15" />
@@ -415,6 +416,44 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
           <div className="absolute inset-0 flex items-center justify-center text-xs os-muted">{t('home.emptyMap')}</div>
         )}
       </div>
+    )
+
+    return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={`os-chip ${view3d ? 'os-chip-active' : ''}`} onClick={() => setView3d(true)}>
+          {t('home.viewOrbit')}
+        </button>
+        <button type="button" className={`os-chip ${!view3d ? 'os-chip-active' : ''}`} onClick={() => setView3d(false)}>
+          {t('home.viewTop')}
+        </button>
+      </div>
+
+      {view3d ? (
+        <div className="overflow-hidden rounded-2xl border" style={{ aspectRatio: '4 / 3', borderColor: 'var(--os-border)', background: '#0f1a2e' }}>
+          <Suspense fallback={flatMap}>
+            <DreamHomeMap3D
+              rooms={rooms.map((r) => ({
+                id: r.id,
+                name: r.name,
+                x: r.x,
+                y: r.y,
+                w: r.w,
+                h: r.h,
+                color: r.color,
+                floor: r.floor || 'ground',
+              }))}
+              onSelect={(box) => {
+                const room = rooms.find((r) => r.id === box.id)
+                if (room) setSelected(room)
+              }}
+              fallback={flatMap}
+            />
+          </Suspense>
+        </div>
+      ) : (
+        flatMap
+      )}
       <p className="px-1 text-[10px] os-muted">{t('home.mapHint')}</p>
 
       <AnimatePresence>
