@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon, LoveOSLogo } from '../shared/Icon'
 import { post } from '../shared/api'
-import { AmbientDepth, Tilt, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playError, playSuccess, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -20,12 +19,6 @@ export function Lock() {
   const config = useOS((s) => s.config)
   const unlock = useOS((s) => s.unlock)
   const showEgg = useOS((s) => s.showEgg)
-  /**
-   * صفحه‌ی قفل بر خلافِ بوت محدودیتی روی افکت ندارد: بوت صفحه‌ای است که
-   * موتورِ کیفیت **حینش** فریم می‌سنجد، ولی قفل بعد از پایانِ بوت می‌آید و
-   * سنجه‌ای در کار نیست. پس این‌جا لایه‌ی «بلور» هم تیلت می‌گیرد.
-   */
-  const deep = useQualityTier() !== 'lite'
 
   const [code, setCode] = useState('')
   const [answer, setAnswer] = useState('')
@@ -102,15 +95,6 @@ export function Lock() {
   // بزرگ‌تر، محتوا کمی جمع می‌شود تا هیچ اسکرولی لازم نشود.
   const { ref: fitRef, scale: fit } = useFitScale<HTMLDivElement>()
 
-  // لوگو یک متغیر است تا در شاخه‌ی تیلت و شاخه‌ی تخت **دو بار نوشته نشود**؛
-  // دو نسخه‌ی کپی‌شده اولین باری که کسی اندازه‌اش را عوض می‌کرد واگرا
-  // می‌شدند.
-  const logoEl = config?.logo ? (
-    <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />
-  ) : (
-    <LoveOSLogo size={88} />
-  )
-
   return (
     <motion.div
       className="os-screen relative flex flex-col items-center justify-center px-6 py-6"
@@ -125,14 +109,6 @@ export function Lock() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
     >
-      {/*
-        ذره‌های شناورِ عمقی. عمداً **بیرونِ** ستونِ ``fitRef`` است تا
-        مقیاسِ جمع‌شدنِ صفحه‌های کوتاه رویشان اعمال نشود و اندازه‌شان ثابت
-        بماند. خودِ ``AmbientDepth`` در مهتاب صفر ذره و در بلور حدودِ نصف
-        می‌سازد، پس نیازی به شاخه‌ی جداگانه در این‌جا نیست.
-      */}
-      <AmbientDepth count={10} />
-
       {/* ستون محتوا — وسط‌چین، و در صفحه‌های کوتاه با مقیاسِ محاسبه‌شده */}
       <div
         ref={fitRef}
@@ -140,15 +116,12 @@ export function Lock() {
         className="flex w-full flex-col items-center"
         style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
       >
-      {/*
-        ⚠️ تیلت **داخلِ** ظرفِ ``animate-float`` است نه روی همان عنصر:
-        کلاسِ شناور یک انیمیشنِ CSS با transform است و اگر تیلت هم روی همان
-        عنصر می‌نشست، انیمیشنِ CSS در آبشار بر style درون‌خطی اولویت دارد و
-        تیلت را بی‌صدا می‌بلعید. حالا شناور روی ظرفِ بیرونی و تیلت روی
-        ظرفِ داخلی است و دو transform با هم ترکیب می‌شوند.
-      */}
       <motion.div className={shake ? 'animate-shake' : 'animate-float'}>
-        {deep ? <Tilt maxDeg={9}>{logoEl}</Tilt> : logoEl}
+        {config?.logo ? (
+          <img src={config.logo} alt="لوگوی LoveOS" className="h-20 w-20 rounded-3xl object-cover shadow-soft" />
+        ) : (
+          <LoveOSLogo size={88} />
+        )}
       </motion.div>
 
       <p className="os-title mt-6 text-center text-xl" style={{ color: 'var(--os-accent)' }}>
@@ -168,12 +141,8 @@ export function Lock() {
           <motion.form
             key="pass"
             onSubmit={submit}
-            // بازِ شدنِ سه‌بعدیِ فرم. ``transformPerspective`` روی خودِ عنصر
-            // است نه روی یک والد، چون والدِ preserve-3d با ``overflow`` در
-            // سافاری تخت می‌شود. در پایانِ گذار rotateX صفر است، پس ورودیِ
-            // متن هرگز کج نمی‌ماند.
-            initial={deep ? { opacity: 0, y: 14, rotateX: -7, transformPerspective: 1000 } : { opacity: 0, y: 14 }}
-            animate={deep ? { opacity: 1, y: 0, rotateX: 0, transformPerspective: 1000 } : { opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="mt-8 w-full max-w-xs space-y-3"
           >
@@ -201,12 +170,8 @@ export function Lock() {
           <motion.form
             key="forgot"
             onSubmit={submitAnswer}
-            // بازِ شدنِ سه‌بعدیِ فرم. ``transformPerspective`` روی خودِ عنصر
-            // است نه روی یک والد، چون والدِ preserve-3d با ``overflow`` در
-            // سافاری تخت می‌شود. در پایانِ گذار rotateX صفر است، پس ورودیِ
-            // متن هرگز کج نمی‌ماند.
-            initial={deep ? { opacity: 0, y: 14, rotateX: -7, transformPerspective: 1000 } : { opacity: 0, y: 14 }}
-            animate={deep ? { opacity: 1, y: 0, rotateX: 0, transformPerspective: 1000 } : { opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="mt-8 w-full max-w-xs space-y-3"
           >

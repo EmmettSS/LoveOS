@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playClick } from '../shared/sound'
 import { ApiStatus, Empty, useApi } from '../shared/ui'
@@ -17,10 +16,6 @@ interface Chapter { id: number; key: string; title: string; body: string; order:
 
 export default function Tutorial({ focus }: { focus?: string }) {
   const { t } = useTranslation()
-  // ⚠️ بالایِ **دو** ``return`` زودهنگام (loading/error و فهرستِ خالی)
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const dz = allowed && tier !== 'lite' ? 1 : 0
   const { data, loading, error } = useApi<{ items: Chapter[] }>('/tutorial')
   const [open, setOpen] = useState<number | null>(null)
 
@@ -41,23 +36,17 @@ export default function Tutorial({ focus }: { focus?: string }) {
       {items.map((c, i) => (
         <motion.div
           key={c.id}
-          initial={{ opacity: 0, y: 8, rotateX: -6 * dz, z: -26 * dz }}
-          animate={{ opacity: 1, y: 0, rotateX: 0, z: 0 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.03 }}
-          className="os-card os-tilt-card overflow-hidden"
-          style={{ borderColor: open === c.id ? 'var(--os-accent)' : undefined, transformPerspective: 1000 }}
+          className="os-card overflow-hidden"
+          style={{ borderColor: open === c.id ? 'var(--os-accent)' : undefined }}
         >
           <button
             className="flex w-full items-center gap-3 p-3 text-start"
             onClick={() => { playClick(); setOpen(open === c.id ? null : c.id) }}
           >
-            {/* شماره‌ی درس یک کاشیِ کوچکِ «جسم» است، پس پخِ توپُر و تیلتِ
-                زیاد می‌گیرد (``.os-tilt-medal`` = ۱۵ درجه) تا از متنِ کنارش
-                جدا شود. خودِ عنوانِ درس تخت می‌ماند. */}
-            <span
-              className="os-slab os-tilt-medal flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs"
-              style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}
-            >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
               {digits(i + 1)}
             </span>
             <span className="flex-1 text-sm font-semibold">{c.title}</span>

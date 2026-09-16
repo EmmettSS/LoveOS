@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playClick } from '../shared/sound'
 import { ApiStatus, AudioPlayer, Chips, Empty, Loading, useApi } from '../shared/ui'
@@ -29,10 +28,6 @@ type Cat = (typeof CATEGORIES)[number]
 
 export default function VoiceVault() {
   const { t } = useTranslation()
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const deep = allowed && tier !== 'lite'
-  const dz = deep ? 1 : 0
   const [cat, setCat] = useState<Cat>('random')
   const { data, loading, error } = useApi<{ items: Voice[] }>(`/voices?category=${cat}`, [cat])
   const [picked, setPicked] = useState<Voice | null>(null)
@@ -62,32 +57,7 @@ export default function VoiceVault() {
       </button>
 
       {picked && picked.audio && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, rotateX: -10 * dz }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          className="os-card p-3"
-          style={{ borderColor: 'var(--os-accent)', transformPerspective: 900 }}
-        >
-          {/* نوارِ کاست: لحظه‌ی امضاییِ این اپ. دو قرقره‌ی چرخان و یک
-              پنجره‌ی نوار.
-
-              ⚠️ فرضِ صادقانه: قرقره‌ها تا وقتی کارت باز است می‌چرخند، چون
-              ``AudioPlayer`` اینجا ``autoPlay`` دارد یعنی عملاً در حالِ
-              پخش است. وضعیتِ play/pause از بیرونِ AudioPlayer در دسترس
-              نیست، پس اگر ویس تمام شود و کارت باز بماند قرقره‌ها هم
-              می‌چرخند. یک نوارِ کاستِ تزئینی است نه نمایشگرِ وضعیت.
-
-              ⚠️ قرقره‌ها عنصرِ **جدا** از کارت‌اند چون ``.os-disc`` یک
-              ``animation`` دارد که ``transform`` می‌نویسد؛ اگر همان عنصر
-              ``rotateX`` درون‌خطی هم می‌گرفت، انیمیشنِ CSS در آبشار
-              می‌برد و عمق بی‌صدا حذف می‌شد. */}
-          {deep && (
-            <div className="os-cassette" aria-hidden>
-              <span className="os-disc" style={{ width: 26, height: 26, ['--disc-label' as string]: 'var(--os-accent)' }} />
-              <span className="os-cassette-window" />
-              <span className="os-disc" style={{ width: 26, height: 26, animationDelay: '-2.6s', ['--disc-label' as string]: 'var(--os-accent)' }} />
-            </div>
-          )}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card p-3" style={{ borderColor: 'var(--os-accent)' }}>
           <AudioPlayer
             src={picked.audio}
             title={picked.title}
@@ -112,10 +82,9 @@ export default function VoiceVault() {
             {data.items.map((v, i) => (
               <motion.div
                 key={v.id}
-                initial={{ opacity: 0, y: 8, rotateX: -8 * dz, z: -34 * dz }}
-                animate={{ opacity: 1, y: 0, rotateX: 0, z: 0 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                style={{ transformPerspective: 900 }}
               >
                 {v.audio ? (
                   <AudioPlayer

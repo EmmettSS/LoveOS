@@ -8,12 +8,10 @@ import { useTranslation } from 'react-i18next'
 import { Icon } from '../shared/Icon'
 import { playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { useDepthFactor } from '../shared/depth'
 import { APPS } from './appRegistry'
 
 export function StartMenu() {
   const { t } = useTranslation()
-  const dz = useDepthFactor()
   const open = useOS((s) => s.startMenuOpen)
   const toggle = useOS((s) => s.toggleStartMenu)
   const openApp = useOS((s) => s.openApp)
@@ -52,17 +50,11 @@ export function StartMenu() {
               خراب می‌شد (ترنسفورمِ inline موشن جای کلاس می‌نشیند و در RTL پنل
               نصفه از صفحه بیرون می‌زد)؛ پس کارت واقعی یک لایه تودرتوست. */}
           <motion.div
-            // ورقِ «شروع» مثلِ یک طلقِ فیزیکی از پایین **باز** می‌شود،
-            // نه اینکه فقط بالا بیاید. همان زبانی که صفحه‌های بوت و قفل
-            // و ترمینال دارند، پس پوسته‌ی OS یک‌دست می‌ماند.
-            initial={{ y: 40, opacity: 0, scale: 0.97, rotateX: -7 * dz }}
-            animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0 }}
-            exit={{ y: 30, opacity: 0, scale: 0.97, rotateX: -5 * dz }}
+            initial={{ y: 40, opacity: 0, scale: 0.97 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 30, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
             className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center"
-            // بدونِ پرسپکتیو rotateX فقط ارتفاع را له می‌کند. روی خودِ عنصر
-            // است نه روی جد، چون جد لایه‌ی fixed با backdrop-blur است.
-            style={{ transformPerspective: 1100 }}
           >
             <div className="os-card pointer-events-auto mx-3 max-h-[65vh] w-full max-w-[620px] overflow-hidden p-4">
             <div className="mb-3 flex items-center gap-2">

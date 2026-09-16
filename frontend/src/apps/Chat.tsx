@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { formatTime } from '../shared/format'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -26,11 +25,6 @@ interface Msg {
 
 export default function Chat() {
   const { t } = useTranslation()
-  // ⚠️ بالایِ ``if (loading) return`` — وگرنه نقضِ Rules-of-Hooks
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const deep = allowed && tier !== 'lite'
-  const dz = deep ? 1 : 0
   const config = useOS((s) => s.config)
   const showEgg = useOS((s) => s.showEgg)
   const [items, setItems] = useState<Msg[]>([])
@@ -94,16 +88,8 @@ export default function Chat() {
           return (
             <motion.div
               key={m.id}
-              // حباب از عمق بیرون می‌آید و در ``z: 0`` **کاملاً تخت**
-              // می‌نشیند. این عمدی است: حبابِ چت متنِ خالص است و قانونِ
-              // سختِ پروژه می‌گوید متن هرگز کج نماند. عمق فقط در لحظه‌ی
-              // ورود هست، نه در حالتِ پایدار.
-              initial={{ opacity: 0, y: 8, scale: 0.98, z: -44 * dz }}
-              animate={{ opacity: 1, y: 0, scale: 1, z: 0 }}
-              // ``transformPerspective`` روی خودِ حباب، چون ظرفِ اسکرولِ
-              // بالا ``overflow-y-auto`` دارد و گذاشتنِ ``perspective``
-              // رویش در سافاری عمق را تخت می‌کند (تله‌ی R-C).
-              style={{ transformPerspective: 820 }}
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
             >
               <div
@@ -114,12 +100,6 @@ export default function Chat() {
                   border: mine ? 'none' : '1px solid var(--os-border)',
                   borderBottomRightRadius: mine ? 8 : undefined,
                   borderBottomLeftRadius: mine ? undefined : 8,
-                  // حباب هم «ضخامت» می‌گیرد: لبه‌ی پایینیِ توپُر + سایه‌ی
-                  // نرم زیرش. این در هر سه لایه فعال است چون حرکت ندارد
-                  // (عمقِ نقاشی‌شده = دقیقاً تعریفِ لایه‌ی مهتاب).
-                  boxShadow: mine
-                    ? 'inset 0 var(--edge-1) 0 rgba(255,255,255,.42), 0 var(--edge-2) 0 rgba(150,70,140,.34), 0 calc(3 * var(--edge-2)) calc(7 * var(--edge-2)) calc(-3 * var(--edge-2)) rgba(120,50,110,.45)'
-                    : 'var(--rim-light), var(--ao-shadow)',
                 }}
               >
                 <p className="whitespace-pre-line text-sm leading-6">{m.text}</p>
@@ -143,8 +123,8 @@ export default function Chat() {
         />
         <button
           type="submit"
-          className="os-slab flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition active:scale-90"
-          style={{ background: 'var(--btn-face)', boxShadow: 'inset 0 var(--edge-1) 0 rgba(255,255,255,.5), 0 var(--edge-3) 0 var(--btn-edge)' }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition active:scale-90"
+          style={{ background: 'var(--os-accent)' }}
           disabled={sending}
           aria-label={t('os.send')}
         >

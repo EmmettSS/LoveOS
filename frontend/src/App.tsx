@@ -3,7 +3,7 @@
  * boot → lock → desktop، به‌علاوه‌ی پرده‌ی رازها، توست، کد کونامی و تم روز/شب.
  */
 import { AnimatePresence } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Boot } from './os/Boot'
@@ -14,7 +14,6 @@ import { useNightMode } from './os/daynight'
 import { post, tokenStore } from './shared/api'
 import { refreshLocationIfStale } from './shared/geo'
 import { applyLocalPrefs, syncSettings } from './shared/prefs'
-import { normalizeChoice, type QualityChoice } from './shared/quality'
 import { setSoundEnabled } from './shared/sound'
 import { useOS } from './shared/store'
 
@@ -57,39 +56,6 @@ export default function App() {
     if (phase !== 'desktop') return
     void syncSettings()
   }, [phase])
-
-  /**
-   * لایه‌ی کیفیتِ سه‌بعدی.
-   *
-   * انتخابِ مؤثر = مقدارِ سرور **با اولویتِ نسخه‌ی محلیِ همین دستگاه**.
-   * این عمداً این‌طور است: کیفیت خاصِ دستگاه است، نه خاصِ کاربر. گوشیِ
-   * دخترم و لپ‌تاپِ بابا هر دو به همان رکوردِ سرور نگاه می‌کنند ولی هرکدام
-   * لایه‌ی خودش را نگه می‌دارد.
-   *
-   * effect فقط وقتی دوباره اجرا می‌شود که «انتخاب» عوض شود، نه با هر تغییرِ
-   * config. وگرنه هر ذخیره‌ی تنظیمات یک بار سنجه‌ی توان (و گاهی سنجشِ فریمِ
-   * ۶۵۰ms) را دوباره راه می‌انداخت.
-   */
-  const qualityChoice = useMemo<QualityChoice>(
-    () => (config ? normalizeChoice(applyLocalPrefs(config).ui_quality) : 'auto'),
-    [config],
-  )
-  const initQuality = useOS((s) => s.initQuality)
-  useEffect(() => {
-    void initQuality(qualityChoice)
-  }, [qualityChoice, initQuality])
-
-  // تنزلِ خودکارِ لایه باید «بی‌صدا ولی صادقانه» باشد: یک پیامِ ملایم، فقط
-  // یک بار. بی‌صدا نباشد چون اگر ناگهان کیفیت کم شود و او نداند چرا، فکر
-  // می‌کند اپ خراب شده است.
-  const autoDowngraded = useOS((s) => s.qualityAutoDowngraded)
-  const showToast = useOS((s) => s.showToast)
-  const downgradedNotified = useRef(false)
-  useEffect(() => {
-    if (!autoDowngraded || downgradedNotified.current) return
-    downgradedNotified.current = true
-    showToast(i18n.t('os.qualityDowngraded'), 'info')
-  }, [autoDowngraded, showToast, i18n])
 
   // موقعیت واقعی دخترم: تازه‌سازی محترمانه (بدون پنجره‌ی اجازه اگر قبلاً داده نشده)
   useEffect(() => {

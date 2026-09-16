@@ -72,13 +72,8 @@ class FlowerMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Constellation)
 class ConstellationAdmin(admin.ModelAdmin):
-    # kind اضافه شد تا بابا بتواند حرف‌های اسم را از «شکل‌های آسمان» (♥ و ∞)
-    # جدا ببیند و فیلتر کند؛ پیامِ هر دو از همین‌جا قابلِ ویرایش است.
-    list_display = ("order", "letter", "kind", "is_active")
-    list_filter = ("kind", "is_active")
-    list_editable = ("is_active",)
+    list_display = ("order", "letter", "is_active")
     ordering = ("order",)
-    search_fields = ("letter", "message")
 
 
 @admin.register(CinemaItem)

@@ -11,7 +11,6 @@ import { get, post } from '../shared/api'
 import { formatDate, formatTime } from '../shared/format'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
-import { useDepthFactor } from '../shared/depth'
 
 interface Notif {
   id: number
@@ -49,7 +48,6 @@ const KIND_ICON: Record<string, Parameters<typeof Icon>[0]['name']> = {
 
 export function NotificationCenter() {
   const { t } = useTranslation()
-  const dz = useDepthFactor()
   const open = useOS((s) => s.notificationsOpen)
   const toggle = useOS((s) => s.toggleNotifications)
   const setUnread = useOS((s) => s.setUnread)
@@ -117,18 +115,11 @@ export function NotificationCenter() {
             onClick={() => toggle(false)}
           />
           <motion.div
-            // کشویِ اعلان‌ها مثلِ یک کشویِ واقعی باز می‌شود: کمی از بالا
-            // به سمتِ بیننده برمی‌گردد و بعد سرِ جایش می‌نشیند.
-            initial={{ y: 40, opacity: 0, rotateX: -7 * dz }}
-            animate={{ y: 0, opacity: 1, rotateX: 0 }}
-            exit={{ y: 30, opacity: 0, rotateX: -5 * dz }}
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 30, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
             className="os-card fixed inset-x-3 bottom-24 z-50 flex max-h-[68vh] flex-col overflow-hidden md:inset-x-auto md:end-6 md:w-[420px]"
-            // ⚠️ این عنصر ``overflow-hidden`` دارد. این‌جا امن است چون
-            //    چرخش روی **خودِ** همین عنصر است و هیچ فرزندی
-            //    preserve-3d نمی‌گیرد. تله‌ی R-C وقتی عمل می‌کند که ظرفِ
-            //    بریده **جدِ** یک فضایِ preserve-3d باشد.
-            style={{ transformPerspective: 1100 }}
           >
             <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--os-border)' }}>
               <Icon name="bell" size={18} />

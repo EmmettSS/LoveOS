@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { post, upload } from '../shared/api'
-import { Tilt, useMotionAllowed, useQualityTier } from '../shared/depth'
 import { playError, playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { ApiStatus, AudioPlayer, Empty, useApi } from '../shared/ui'
@@ -21,50 +20,12 @@ interface VItem {
   text: string
 }
 
-/**
- * درِ گاوصندوق.
- *
- * یک قرصِ فلزیِ پخ‌خورده با یک حلقه‌ی چرخانِ خط‌چین (دستگیره‌ی صندوق) که
- * آرام می‌چرخد. در لایه‌ی مهتاب حلقه خاموش است و فقط قرصِ تخت می‌ماند.
- *
- * رمزِ اشتباه → در **در عمق** تکان می‌خورد (rotateY)، نه فقط جابه‌جاییِ
- * تخت. یک درِ سنگینِ فلزی که اشتباه بزنید باید حولِ لولایش بلرزد؛ لرزشِ
- * چپ-راستِ تخت برای این استعاره غلط است.
- *
- * ⚠️ ``rotateY`` روی خودِ در است و تیلت روی ظرفِ ``Tilt`` بیرونش: دو عنصرِ
- *    جدا، پس دو transform با هم ترکیب می‌شوند. اگر روی یک عنصر بودند،
- *    انیمیشنِ framer و متغیرِ تیلت یکی دیگری را پاک می‌کردند.
- */
-function SafeDoor({ shake, deep }: { shake: boolean; deep: boolean }) {
-  return (
-    <motion.div
-      className="os-vault-door"
-      style={{ transformPerspective: 700 }}
-      initial={false}
-      animate={deep && shake ? { rotateY: [0, -10, 8, -4, 0] } : { rotateY: 0 }}
-      transition={{ duration: 0.5, ease: 'easeInOut' }}
-      aria-hidden
-    >
-      <span className="os-vault-dial" aria-hidden />
-      <Icon name="vault" size={64} />
-    </motion.div>
-  )
-}
-
 export default function Vault() {
   const { t } = useTranslation()
   const { data, loading, error: apiError, reload } = useApi<{ locked: boolean; items: VItem[] }>('/vault')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
-  // ⚠️ هر دو هوک **بدونِ شرط** صدا زده می‌شوند و ترکیبشان بعداً انجام
-  //    می‌شود. نوشتنِ ``useQualityTier() !== 'lite' && useMotionAllowed()``
-  //    یک نقضِ Rules-of-Hooks است: ``&&`` وقتی سمتِ چپ false شود
-  //    short-circuit می‌کند و هوکِ دوم اصلاً اجرا نمی‌شود، پس ترتیبِ
-  //    هوک‌ها بینِ رندرها عوض می‌شود.
-  const tier = useQualityTier()
-  const motionAllowed = useMotionAllowed()
-  const deep = tier !== 'lite' && motionAllowed
 
   const unlock = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,27 +45,12 @@ export default function Vault() {
 
   if (loading || apiError) return <ApiStatus loading={loading} error={apiError} onRetry={() => void reload()} />
 
-  // در یک متغیر است تا شاخه‌ی تیلت و شاخه‌ی تخت بدنه‌اش را دو بار ننویسند
-  const door = <SafeDoor shake={shake} deep={deep} />
-
   if (data?.locked) {
     return (
       <div className="flex flex-col items-center gap-4 py-10">
-        {/*
-          ظرفِ بیرونی همان شناور/لرزشِ قدیمی را نگه داشته و درِ سه‌بعدی
-          **داخلش** است. علتش همان است که در صفحه‌ی قفل هم آمد: ``animate-float``
-          یک انیمیشنِ CSS با transform است و در آبشار بر style درون‌خطی
-          اولویت دارد، پس اگر تیلت روی همان عنصر می‌نشست بی‌صدا بلعیده
-          می‌شد.
-
-          ظرف از ``span`` به ``div`` عوض شد چون ``Tilt`` یک ``div`` می‌سازد و
-          ``div`` داخلِ ``span`` از نظرِ HTML نامعتبر است (span محتوای
-          phrasing است). در یک چیدمانِ flex با items-center، div دقیقاً همان
-          رفتار را دارد.
-        */}
-        <motion.div className={shake ? 'animate-shake' : 'animate-float'} style={{ color: 'var(--os-accent)' }}>
-          {deep ? <Tilt maxDeg={12}>{door}</Tilt> : door}
-        </motion.div>
+        <motion.span className={shake ? 'animate-shake' : 'animate-float'} style={{ color: 'var(--os-accent)' }}>
+          <Icon name="vault" size={64} />
+        </motion.span>
         <p className="text-center text-sm">{t('vault.locked')}</p>
         <form onSubmit={unlock} className="w-full max-w-xs space-y-2">
           <input

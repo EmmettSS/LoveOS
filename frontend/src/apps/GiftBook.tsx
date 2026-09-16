@@ -259,28 +259,16 @@ function GiftCard({ gift, index, onChange }: { gift: Gift; index: number; onChan
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.03, 0.3) }}
-      className="os-card os-gift-card overflow-hidden"
+      className="os-card overflow-hidden"
     >
       <button className="flex w-full items-center gap-3 p-3 text-start" onClick={() => setOpen((v) => !v)}>
-        {/*
-          بندانگشتیِ هدیه به یک **جعبه‌ی کادویِ برجسته** تبدیل می‌شود:
-          پخِ روشن از بالا و تیره از پایین، یک روبانِ عمودی و یک روبانِ
-          افقی، و هنگامِ هاور کمی در عمق بیرون می‌آید و دورِ خودش می‌چرخد.
-          همه با ``--q3d`` گیت شده‌اند پس در مهتاب تخت است و هیچ شاخه‌ی JS
-          لازم نشد.
-        */}
-        <span className="os-gift-stage shrink-0">
-          {gift.photo ? (
-            <img src={gift.photo} alt={gift.name} className="os-gift-box h-12 w-12 rounded-xl object-cover" />
-          ) : (
-            <span
-              className="os-gift-box flex h-12 w-12 items-center justify-center rounded-xl text-xl"
-              style={{ background: 'var(--os-accent-soft)' }}
-            >
-              {gift.occasion_icon || '🎁'}
-            </span>
-          )}
-        </span>
+        {gift.photo ? (
+          <img src={gift.photo} alt={gift.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: 'var(--os-accent-soft)' }}>
+            {gift.occasion_icon || '🎁'}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="break-words text-sm font-semibold">
             {gift.is_favorite && '⭐ '}

@@ -16,19 +16,14 @@ import { patch, upload } from '../shared/api'
 import { getStoredSettings, setStoredSetting, syncSettings } from '../shared/prefs'
 import { setLanguage } from '../shared/i18n'
 import { digits } from '../shared/format'
-import type { QualityReason } from '../shared/quality'
 import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../shared/geo'
 import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
 import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  // ⚠️ عمداً ``os-tilt-card`` **نگرفت**: هر Row یک برچسب و یک راهنمای
-  //    متنی دارد و قانونِ سختِ پروژه «متن هرگز کج نمی‌شود» است. چیزی که
-  //    می‌گیرد ``os-slab`` است — لبه‌ی توپُرِ فیزیکی، بدونِ هیچ چرخش. این
-  //    «عمقِ نقاشی‌شده» در هر سه لایه (حتی مهتاب) فعال است چون حرکت ندارد.
   return (
-    <div className="os-card os-slab flex flex-wrap items-center gap-3 p-3">
+    <div className="os-card flex flex-wrap items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <span className="block text-sm">{label}</span>
         {hint && <span className="mt-0.5 block text-[11px] leading-5 os-muted">{hint}</span>}
@@ -47,42 +42,6 @@ export default function Settings() {
   const logout = useOS((s) => s.logout)
   const openApp = useOS((s) => s.openApp)
   const showToast = useOS((s) => s.showToast)
-
-  /* --------------------------------------------------- کیفیتِ سه‌بعدی --- */
-  const uiQuality = useOS((s) => s.uiQuality)
-  const uiQualityChoice = useOS((s) => s.uiQualityChoice)
-  const qualityReasons = useOS((s) => s.qualityReasons)
-
-  /**
-   * دلیل‌هایِ لایه را **این‌جا** ترجمه می‌کند، نه در موتورِ کیفیت.
-   *
-   * ``quality.ts`` ماژولِ خالصِ بیرونِ React است و هوکِ ترجمه ندارد؛ اگر
-   * رشته‌ی نهایی را همان‌جا می‌ساخت، زبانِ دلیل در لحظه‌ی محاسبه یخ می‌زد و
-   * با عوض‌شدنِ زبان، فهرستِ «چرا این لایه؟» فارسی می‌ماند در حالی که
-   * بقیه‌ی صفحه انگلیسی بود — یک باگِ دوزبانه‌ی واقعی که این تابع
-   * بستش.
-   *
-   * دو کار می‌کند:
-   *   • آرگومان‌هایی که در ``tierArgs`` نام برده شده‌اند نامِ لایه‌اند، پس
-   *     با ``settings.tier_*`` ترجمه می‌شوند (وگرنه کاربر به‌جای «کهکشان»
-   *     رشته‌ی فنیِ ``dream`` را می‌دید).
-   *   • بقیه‌ی عددها از ``digits()`` رد می‌شوند تا در فارسی رقمِ فارسی
-   *     بگیرند — دقیقاً همان کاری که پنلِ مشخصاتِ دستگاه پایین‌تر می‌کند.
-   */
-  const reasonText = (r: QualityReason): string => {
-    const args: Record<string, string | number> = {}
-    for (const [k, v] of Object.entries(r.args ?? {})) {
-      if ((r.tierArgs ?? []).includes(k)) args[k] = t(`settings.tier_${v}`)
-      else args[k] = typeof v === 'number' ? digits(v) : v
-    }
-    return t(`settings.${r.key}`, args)
-  }
-  const qualityReport = useOS((s) => s.qualityReport)
-  const qualityFps = useOS((s) => s.qualityFps)
-  const qualityAutoDowngraded = useOS((s) => s.qualityAutoDowngraded)
-  const setQualityChoice = useOS((s) => s.setQualityChoice)
-  const initQuality = useOS((s) => s.initQuality)
-  const [measuring, setMeasuring] = useState(false)
 
   const [installEvent, setInstallEvent] = useState<any>(null)
   const [vibrationOn, setVibrationOn] = useState(() => localStorage.getItem('loveos_vibration') !== 'off')
@@ -145,11 +104,7 @@ export default function Settings() {
   const cached = readCachedLocation()
 
   return (
-    /* هیچ ``motion.*`` در این فایل نیست، پس بچه‌ها transform درون‌خطی
-       نمی‌گیرند و ``.os-depth-list`` بدونِ دعوا کار می‌کند: بخش‌ها یکی‌یکی
-       از عمق بالا می‌آیند. انیمیشن ``backwards`` است، پس بعد از ورود هیچ
-       transformی روی عنصر نمی‌ماند. */
-    <div className="os-depth-list space-y-3">
+    <div className="space-y-3">
       <Row label={t('settings.language')} hint={t('settings.languageHint')}>
         {(['fa', 'en'] as const).map((l) => (
           <button
@@ -206,119 +161,6 @@ export default function Settings() {
           <button className="os-chip" onClick={() => void save({ font_scale: Math.min(1.4, (config.font_scale || 1) + 0.05) }, { silent: true })}>+</button>
         </div>
       </Row>
-
-      {/* ------------------------------------------------ کیفیتِ سه‌بعدی --- */}
-      {/*
-        نام‌های فارسیِ لایه‌ها عمداً شاعرانه‌اند (مهتاب/بلور/کهکشان) چون این
-        تنظیمات را یک بچه می‌خواند، نه یک مهندس. ولی **مقدارِ ذخیره‌شده**
-        همان ``lite|balanced|dream`` باقی می‌ماند تا منطقِ موتور و بک‌اند به
-        زبانِ نمایش گره نخورد.
-
-        نکته‌ی مهمِ رفتار: اگر دخترم «کهکشان» را بزند ولی دستگاهش توانش را
-        نداشته باشد، موتور انتخابش را به سقفِ ممکن **گیره** می‌کند. پس این‌جا
-        هم صریح می‌گوییم «الان چه لایه‌ای فعال است» و چرا — وگرنه او
-        «کهکشان» را انتخاب کرده ولی «بلور» می‌بیند و فکر می‌کند اپ خراب است.
-      */}
-      <Row label={t('settings.quality')} hint={t('settings.qualityHint')}>
-        <div className="flex w-full flex-wrap gap-1.5">
-          {(['auto', 'lite', 'balanced', 'dream'] as const).map((q) => (
-            <button
-              key={q}
-              className={`os-chip flex-1 justify-center whitespace-nowrap ${
-                uiQualityChoice === q ? 'os-chip-active' : ''
-              }`}
-              style={{ minWidth: 72, minHeight: 44 }}
-              aria-pressed={uiQualityChoice === q}
-              onClick={() => {
-                playClick()
-                // ۱) موتورِ کیفیت بی‌درنگ تصمیمِ تازه می‌گیرد (و حافظه‌ی
-                //    تنزلِ خودکار پاک می‌شود، چون کاربر صریحاً خواسته)
-                void setQualityChoice(q)
-                // ۲) روی سرور و localStorage ذخیره می‌شود. ترتیب عمدی است:
-                //    اعمالِ بصری باید پیش از شبکه باشد تا «زدم و هیچی نشد»
-                //    پیش نیاید.
-                void save({ ui_quality: q }, { silent: true })
-              }}
-            >
-              {t(`settings.tier_${q}`)}
-            </button>
-          ))}
-        </div>
-      </Row>
-
-      <div className="os-card os-slab space-y-2 p-3" data-quality-panel>
-        <p className="text-sm">
-          <span className="os-muted">{t('settings.qualityNow')}</span>{' '}
-          <b style={{ color: 'var(--os-accent)' }}>{t(`settings.tier_${uiQuality}`)}</b>
-          {qualityFps != null && (
-            <span className="os-muted text-xs"> — {t('settings.qualityFps', { n: digits(Math.round(qualityFps)) })}</span>
-          )}
-        </p>
-
-        {/* توضیحِ یک‌خطیِ لایه‌ی فعال: می‌گوید چه چیزی می‌بیند */}
-        <p className="text-[11px] leading-5 os-muted">{t(`settings.qualityDesc_${uiQuality}`)}</p>
-
-        {/* دلیل‌ها از خودِ موتور می‌آیند، نه از یک متنِ ثابت. این مهم است:
-            اگر موتور تنزل داد، دلیلِ واقعی‌اش هم نشان داده می‌شود. */}
-        {qualityReasons.length > 0 && (
-          <details className="text-[11px] leading-5">
-            <summary className="cursor-pointer os-muted select-none">{t('settings.qualityWhy')}</summary>
-            <ul className="mt-1.5 space-y-0.5 list-inside list-disc os-muted">
-              {qualityReasons.map((r, i) => (
-                <li key={i}>{reasonText(r)}</li>
-              ))}
-            </ul>
-          </details>
-        )}
-
-        {qualityAutoDowngraded && (
-          <p className="text-[11px] leading-5 rounded-xl px-2.5 py-1.5" style={{ background: 'var(--os-warn-bg, rgba(255,193,94,.14))' }}>
-            {t('settings.qualityAutoDowngradedNote')}
-          </p>
-        )}
-
-        {/* اطلاعاتِ دستگاه — برای بابا، تا بداند چرا لایه این است */}
-        {qualityReport && (
-          <details className="text-[11px] leading-5">
-            <summary className="cursor-pointer os-muted select-none">{t('settings.qualityDevice')}</summary>
-            <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 os-muted">
-              <span>{t('settings.qualityCores', { n: digits(qualityReport.cores) })}</span>
-              <span>
-                {qualityReport.webgl === 0
-                  ? t('settings.qualityNoWebgl')
-                  : t('settings.qualityWebgl', { v: digits(qualityReport.webgl) })}
-              </span>
-              <span>DPR {qualityReport.dpr.toFixed(1)}</span>
-              <span>
-                {qualityReport.memoryGB != null
-                  ? t('settings.qualityMemory', { n: qualityReport.memoryGB.toFixed(1) })
-                  : t('settings.qualityMemoryUnknown')}
-              </span>
-              {/* رشته‌ی رندررِ GPU عمداً دو ستون کامل می‌گیرد: اسمِ GPUها طولانی
-                  است و نصفه‌نیمه بریدنش بی‌فایده‌ترین اطلاعاتِ ممکن است. */}
-              <span className="col-span-2 break-all" dir="ltr" style={{ textAlign: 'left' }}>
-                {qualityReport.renderer || t('settings.qualityGpuUnknown')}
-              </span>
-            </div>
-          </details>
-        )}
-
-        <button
-          className="os-chip mt-1"
-          style={{ minHeight: 44 }}
-          disabled={measuring}
-          onClick={() => {
-            playClick()
-            setMeasuring(true)
-            // force=true → سنجه‌ی فریم از کش خوانده نمی‌شود و واقعاً دوباره
-            // اندازه می‌گیرد. برای وقتی خوب است که گوشی داغ کرده یا برنامه‌ی
-            // دیگری سنگین بوده و لایه بی‌دلیل پایین افتاده.
-            void initQuality(uiQualityChoice, true).finally(() => setMeasuring(false))
-          }}
-        >
-          {measuring ? t('settings.qualityMeasuring') : t('settings.qualityRemeasure')}
-        </button>
-      </div>
 
       {/* ---------------------------------------------------- پس‌زمینه‌ها --- */}
       <Row label={t('settings.backgrounds')} hint={t('settings.backgroundsHint')}>
@@ -406,7 +248,7 @@ export default function Settings() {
         </Row>
       )}
 
-      <div className="os-card os-slab p-3 text-[11px] leading-6 os-muted">{t('settings.privacy')}</div>
+      <div className="os-card p-3 text-[11px] leading-6 os-muted">{t('settings.privacy')}</div>
 
       <button className="os-btn w-full" onClick={() => openApp('about')}>
         <span className="inline-flex items-center justify-center gap-2"><Icon name="about" size={15} /> {t('settings.about')}</span>
@@ -457,7 +299,7 @@ function BackgroundPicker({
   }
 
   return (
-    <div className="os-card os-slab flex flex-wrap items-center gap-3 p-3">
+    <div className="os-card flex flex-wrap items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <span className="block text-sm">{label}</span>
         {current && (
