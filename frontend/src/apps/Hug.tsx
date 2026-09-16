@@ -6,7 +6,7 @@
  * راز ⑫: سه بار بغل پشت‌سرهم.
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
@@ -15,9 +15,6 @@ import { digits } from '../shared/format'
 import { playHeartbeat, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { ApiStatus, useApi } from '../shared/ui'
-import type { HugMode } from '../three/scenes/hug'
-
-const HugSceneView = lazy(() => import('../three/components/HugScene'))
 
 interface HugState {
   received: number
@@ -140,8 +137,6 @@ export default function Hug() {
   const { data, loading, error, reload } = useApi<HugState>('/hug')
   const [warm, setWarm] = useState(false)
   const [burst, setBurst] = useState(0)
-  const [sceneMode, setSceneMode] = useState<HugMode>('idle')
-  const [modeToken, setModeToken] = useState(0)
   const [hugOpen, setHugOpen] = useState(false) // حالت «فشرده شدن» بزرگ
   const [incoming, setIncoming] = useState<{ id: number; text: string } | null>(null)
   const [opened, setOpened] = useState<string | null>(null)
@@ -172,8 +167,6 @@ export default function Hug() {
     playHeartbeat(2)
     flashWarm(2400)
     setBurst((b) => b + 1)
-    setSceneMode('burst')
-    setModeToken((n) => n + 1)
     showToast(t('hug.sentToast'), 'love')
     if (res.egg) showEgg({ title: res.egg.title, message: res.egg.message })
     await reload()
@@ -190,8 +183,6 @@ export default function Hug() {
       playHeartbeat(3)
     }
     setHugOpen(true)
-    setSceneMode('embrace')
-    setModeToken((n) => n + 1)
     flashWarm(3400)
     setOpened(res.message)
     setIncoming(null)
@@ -214,12 +205,7 @@ export default function Hug() {
   const warmColor = settings.warm_color || '#ffd6a5'
 
   return (
-    <div className="relative flex h-full min-h-[420px] flex-col items-center gap-5 overflow-hidden py-4">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <Suspense fallback={null}>
-          <HugSceneView mode={sceneMode} modeToken={modeToken} fallback={<AmbientHearts />} />
-        </Suspense>
-      </div>
+    <div className="relative flex flex-col items-center gap-5 overflow-hidden py-4">
       <AmbientHearts />
 
       {/* هاله‌ی گرم هنگام بغل */}

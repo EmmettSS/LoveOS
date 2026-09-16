@@ -21,6 +21,9 @@ backend/media/*
 !backend/media/.gitkeep
 !backend/media/puzzles/
 !backend/media/books/
+# test runs upload throw-away puzzle images; only the seeded one is tracked
+backend/media/puzzles/*
+!backend/media/puzzles/heart-puzzle-1.jpg
 
 # ------------------------------------------------------------------ Node ---
 node_modules/
@@ -42,3 +45,8 @@ celerybeat-schedule
 
 # خروجی موقت آزمون‌های رابط کاربری (با npm run test:ui ساخته می‌شود)
 frontend/tests/.build/
+
+# deployment artefacts
+loveos-release.tar.gz
+backups/
+tmp/

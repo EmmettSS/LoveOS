@@ -11,7 +11,6 @@ from content.models import (
     Letter,
     Memory,
     MoodLog,
-    CustomMood,
     MoodMessage,
     QuizQuestion,
     QuizResult,
@@ -131,9 +130,3 @@ class TutorialChapterAdmin(admin.ModelAdmin):
 @admin.register(TerminalCommand)
 class TerminalCommandAdmin(admin.ModelAdmin):
     list_display = ("command", "help_text", "hidden", "is_active")
-
-
-@admin.register(CustomMood)
-class CustomMoodAdmin(admin.ModelAdmin):
-    list_display = ("emoji", "label", "created_by", "is_active", "created_at")
-    list_filter = ("is_active",)

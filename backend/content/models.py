@@ -277,39 +277,12 @@ class MoodMessage(TimeStamped):
 
 
 class MoodLog(TimeStamped):
-    mood = models.CharField("حال", max_length=40)
-    note = models.CharField("یادداشت دل", max_length=200, blank=True)
-    custom = models.ForeignKey(
-        "CustomMood",
-        verbose_name="حال سفارشی",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="logs",
-    )
+    mood = models.CharField("حال", max_length=12)
 
     class Meta:
         verbose_name = "ثبت حال"
         verbose_name_plural = "ثبت حال‌ها"
         ordering = ["-created_at"]
-
-
-class CustomMood(TimeStamped):
-    """حال دلخواهِ دختر با ایموجی — آزاد بدون تأیید بابا."""
-
-    label = models.CharField("برچسب", max_length=40)
-    emoji = models.CharField("ایموجی", max_length=8, default="💖")
-    color = models.CharField("رنگ", max_length=20, default="#f687b3")
-    created_by = models.CharField("سازنده", max_length=10, default="daughter")
-    is_active = models.BooleanField("فعال", default=True)
-
-    class Meta:
-        verbose_name = "حال دلخواه"
-        verbose_name_plural = "حال‌های دلخواه"
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return f"{self.emoji} {self.label}"
 
 
 # ------------------------------------------------------------ صندوقچه -----

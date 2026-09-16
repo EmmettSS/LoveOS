@@ -1,0 +1,22 @@
+# LoveOS — Gunicorn systemd unit
+# Installed by scripts/deploy.sh vps (placeholders are replaced automatically).
+[Unit]
+Description=LoveOS backend (Gunicorn)
+After=network.target
+
+[Service]
+User=__USER__
+Group=__USER__
+WorkingDirectory=__APP_DIR__/backend
+EnvironmentFile=__APP_DIR__/backend/.env
+ExecStart=__APP_DIR__/backend/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:__PORT__ \
+    --workers __WORKERS__ \
+    --timeout 90 \
+    --access-logfile - \
+    --error-logfile -
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

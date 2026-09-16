@@ -30,8 +30,6 @@ export interface Config {
   theme: Theme
   sound_enabled: boolean
   font_scale: number
-  /** کیفیت سه‌بعدی: auto | lite | balanced | dream */
-  ui_quality?: 'auto' | 'lite' | 'balanced' | 'dream'
   logo: string | null
   boot_background: string | null
   lock_background: string | null

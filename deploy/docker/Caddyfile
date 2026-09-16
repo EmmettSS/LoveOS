@@ -1,0 +1,7 @@
+# LoveOS — Caddy reverse proxy with automatic Let's Encrypt certificates
+{$CADDY_DOMAIN} {
+    encode gzip
+    header X-Robots-Tag "noindex, nofollow, noarchive"
+    request_body { max_size 80MB }
+    reverse_proxy web:8000
+}
