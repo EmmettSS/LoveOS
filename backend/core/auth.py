@@ -2,6 +2,8 @@
 core.auth — احراز هویت ساده‌ی LoveOS
 یک کاربر (دخترم) + توکن نشست. هیچ سیستم ثبت‌نامی وجود ندارد.
 """
+from __future__ import annotations
+
 from functools import wraps
 
 from django.http import JsonResponse

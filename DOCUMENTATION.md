@@ -86,7 +86,7 @@ QR code  →  secret domain
 
 | Layer | Technology | Why |
 |---|---|---|
-| Backend | Python 3.11+, **Django 5.2**, Django REST Framework | Batteries included: ORM, admin panel, migrations, sessions. The admin *is* my content management system. |
+| Backend | Python 3.10+, **Django 5.2**, Django REST Framework | Batteries included: ORM, admin panel, migrations, sessions. The admin *is* my content management system. |
 | Database | **SQLite** in development, **MySQL 8 (utf8mb4)** in production | Zero-setup locally; MySQL is what shared hosts offer. |
 | Frontend | **React 19**, TypeScript, **Vite 8**, Tailwind CSS, Zustand, framer-motion, i18next, MapLibre GL, three.js, Howler | A fast SPA with a real window manager, animations, maps and a star sky. |
 | PWA | `vite-plugin-pwa` (Workbox) | Installable on her phone; shell works offline. |
@@ -213,7 +213,7 @@ LoveOS/
 
 | Tool | Version |
 |---|---|
-| Python | 3.11 or newer |
+| Python | 3.10 or newer |
 | Node.js | 20 or newer (I use 22) |
 | npm | ships with Node |
 | git | any recent version |
@@ -711,14 +711,14 @@ upload `loveos-release.tar.gz` there and extract it.
 
 | Field | Value |
 |---|---|
-| Python version | 3.11 or newer |
+| Python version | 3.10 or newer |
 | Application root | `loveos` |
 | Application URL | the domain / subdomain |
 | Application startup file | `passenger_wsgi.py` |
 | Application Entry point | `application` |
 
 After creating, cPanel shows a line like
-`source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos` —
+`source /home/USER/virtualenv/loveos/3.10/bin/activate && cd /home/USER/loveos` —
 **every terminal command below starts with that line.**
 
 **Step 5 — `.env`.** Create `/home/USER/loveos/backend/.env` with the production values from
@@ -736,7 +736,7 @@ DB_HOST=localhost
 **Step 6 — install and migrate** (cPanel → Terminal, or SSH):
 
 ```bash
-source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos
+source /home/USER/virtualenv/loveos/3.10/bin/activate && cd /home/USER/loveos
 SKIP_FRONTEND=1 ./scripts/deploy.sh cpanel
 python backend/manage.py createsuperuser
 python backend/manage.py seed_loveos --passcode 2468 --vault 1357
@@ -756,7 +756,7 @@ does the same).
 **Step 9 — cron.** cPanel → **Cron Jobs**, every minute, full paths:
 
 ```
-* * * * * /home/USER/virtualenv/loveos/3.11/bin/python /home/USER/loveos/backend/manage.py sweep >> /home/USER/loveos/logs/sweep.log 2>&1
+* * * * * /home/USER/virtualenv/loveos/3.10/bin/python /home/USER/loveos/backend/manage.py sweep >> /home/USER/loveos/logs/sweep.log 2>&1
 ```
 
 (create `/home/USER/loveos/logs/` first).

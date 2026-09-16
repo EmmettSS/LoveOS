@@ -10,8 +10,8 @@ RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
-# ---- stage 2: backend
-FROM python:3.12-slim
+# ---- stage 2: backend — Python 3.10+ compatible (was 3.12, now 3.10 for cPanel/hosts parity)
+FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
         default-libmysqlclient-dev build-essential pkg-config curl cron \

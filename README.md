@@ -35,7 +35,7 @@ cd LoveOS
 | Daddy Panel | http://localhost:8000/daddy-panel-9x7k/ |
 | Passcode / vault | `1234` / `0000` |
 
-Requirements: Python 3.11+, Node.js 20+. No database server needed locally.
+Requirements: Python 3.10+, Node.js 20+. No database server needed locally.
 
 ## Deploy it
 

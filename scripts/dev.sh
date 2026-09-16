@@ -44,8 +44,8 @@ preflight() {
   local pyv nodev
   pyv="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')"
   nodev="$(node -p 'process.versions.node.split(".")[0]')"
-  "$PYTHON_BIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
-    || die "Python 3.11+ is required (found $pyv)."
+  "$PYTHON_BIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' \
+    || die "Python 3.10+ is required (found $pyv)."
   [ "$nodev" -ge 20 ] || die "Node.js 20+ is required (found $nodev)."
 }
 
