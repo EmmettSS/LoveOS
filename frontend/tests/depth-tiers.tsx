@@ -360,6 +360,29 @@ for (const tier of TIERS) {
   await unmount(m)
 }
 
+/* ==========================================================================
+   ۴) گاردِ کره‌ی نقشه — پرریسک‌ترین تصمیمِ فیچر
+   --------------------------------------------------------------------------
+   ``canUseGlobe`` عمداً یک تابعِ خالص در ماژولِ مشترک است تا بتوان بدونِ
+   بالا‌آوردنِ maplibre و WebGL آزمودش. مهم‌ترین حالت، Mali است: maplibre یک
+   باگِ دقتِ عرضِ جغرافیایی در projection کره‌ای دارد و تهران/استانبول نزدیکِ
+   نوارِ خطرند، پس روی Mali کره باید **هرگز** روشن نشود.
+   ========================================================================== */
+{
+  const { canUseGlobe } = await import('../src/shared/quality')
+  const cap = (over: Record<string, unknown> = {}) =>
+    ({ mali: false, webgl: 2, softwareRenderer: false, ...over }) as any
+
+  console.log('\n  ── گاردِ کره‌ی نقشه ──')
+  check('کهکشان + GPU سالم → کره روشن', canUseGlobe('dream', cap()) === true)
+  check('بلور + GPU سالم → کره خاموش (سقفِ لایه)', canUseGlobe('balanced', cap()) === false)
+  check('مهتاب + GPU سالم → کره خاموش', canUseGlobe('lite', cap()) === false)
+  check('کهکشان + Mali → کره خاموش (باگِ دقتِ عرضِ جغرافیایی)', canUseGlobe('dream', cap({ mali: true })) === false)
+  check('کهکشان + بدونِ WebGL → کره خاموش', canUseGlobe('dream', cap({ webgl: 0 })) === false)
+  check('کهکشان + رندررِ نرم‌افزاری → کره خاموش', canUseGlobe('dream', cap({ softwareRenderer: true })) === false)
+  check('کهکشان + WebGL1 (نه ۲) → کره روشن', canUseGlobe('dream', cap({ webgl: 1 })) === true)
+}
+
 console.log('')
 // ⚠️ ``process.exit`` این‌جا **ضروری** است، نه تشریفاتی.
 // اپِ ضربان یک زنجیره‌ی ``setTimeout`` برای هر تپش دارد و انیمیشن‌های

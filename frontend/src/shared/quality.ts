@@ -531,6 +531,34 @@ function clampToCeiling(tier: QualityTier, ceiling: QualityTier): QualityTier {
   return TIER_ORDER.indexOf(tier) > TIER_ORDER.indexOf(ceiling) ? ceiling : tier
 }
 
+/**
+ * آیا projection کره‌ایِ نقشه روی این دستگاه امن و مجاز است؟
+ *
+ * این یک تابعِ **خالص** است و عمداً در ماژولِ مشترک نشسته، نه داخلِ
+ * MapOfUs: چون مهم‌ترین تصمیمِ پرریسکِ کلِ فیچرِ کره است و باید بتوان
+ * بدونِ بالا‌آوردنِ maplibre و WebGL آزمودش.
+ *
+ * سه شرط:
+ *
+ * ۱) لایه‌ی «کهکشان». کره یک projection سه‌بعدیِ کامل است و هزینه‌ی GPU
+ *    دارد؛ روی لایه‌های سبک‌تر عمداً خاموش است.
+ * ۲) **نه روی GPU از خانواده‌ی Mali.** maplibre یک باگِ شناخته‌شده‌ی دقتِ
+ *    عرضِ جغرافیایی در projection کره‌ای دارد (issue #7419: زومِ ~۱۱ و
+ *    عرضِ ~۳۰٫۹°N). شهرهای ما — تهران ۳۵٫۷°N و استانبول ۴۱°N — هر دو
+ *    نزدیکِ همان نوارند، پس روی Mali نقطه‌ها جابه‌جا دیده می‌شدند. یک خطایِ
+ *    بی‌صدا که فقط با نگاهِ دقیق به جایِ شهر کشف می‌شود و کاربر فکر می‌کند
+ *    بابا جایِ دیگری است. Mali روی گوشی‌های میان‌رده بسیار رایج است، پس
+ *    این گارد عملی است نه نظری.
+ * ۳) WebGL واقعی و غیرِنرم‌افزاری. با رندررِ نرم‌افزاری (SwiftShader) کره
+ *    آن‌قدر کند می‌شود که عملاً غیرِقابلِ استفاده است.
+ *
+ * ⚠️ این گارد **فقط کره را** خاموش می‌کند، نه کلِ لایه‌ی کیفیت را. نقشه‌ی
+ *    مسطح کاملاً سالم می‌ماند و بقیه‌ی افکت‌های سه‌بعدی سرِ جایشان‌اند.
+ */
+export function canUseGlobe(tier: QualityTier, report: CapabilityReport = probeCapability()): boolean {
+  return tier === 'dream' && !report.mali && report.webgl > 0 && !report.softwareRenderer
+}
+
 /** یک پله پایین‌تر (و اگر پایین‌تر نبود، همان) */
 export function lowerTier(tier: QualityTier): QualityTier {
   const i = TIER_ORDER.indexOf(tier)
