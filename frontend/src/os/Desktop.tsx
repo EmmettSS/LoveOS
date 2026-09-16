@@ -71,7 +71,7 @@ export function Desktop() {
   const deep = useMotionAllowed()
   // تیلتِ ملایمِ همه‌ی کارت‌های .os-tilt-card در هر اپی، با یک listenerِ
   // سراسری. یک بار این‌جا نصب می‌شود چون دسکتاپ همیشه زنده است.
-  useCardTilt(4, () => dragKey !== null)
+  useCardTilt(1, () => dragKey !== null)
 
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)

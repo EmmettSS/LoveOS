@@ -135,10 +135,11 @@ export function Tilt({
  *
  * ⚠️ ``.os-tilt-card`` را روی ظرفِ **اسکرول** و روی ظرفِ **متنِ بلند**
  *    نگذار. همان دو قانونِ سختِ ``<Tilt>`` این‌جا هم برقرار است؛ تنها
- *    تفاوتش این است که زاویه‌اش کوچک‌تر است (۴ درجه) چون روی ۱۱۳ کارت
- *    هم‌زمان اعمال می‌شود و زاویه‌ی بزرگ کلِ رابط را شلوغ می‌کرد.
+ *    تفاوتش این است که زاویه‌اش را CSS تعیین می‌کند (``--tilt-max``) و
+ *    برای کارتِ بزرگِ متنی عمداً کوچک است (۴ درجه) چون روی ده‌ها کارت
+ *    هم‌زمان اعمال می‌شود.
  */
-export function useCardTilt(maxDeg = 4, disabled?: () => boolean): void {
+export function useCardTilt(sensitivity = 1, disabled?: () => boolean): void {
   const tier = useQualityTier()
   const allowed = useMotionAllowed()
   const active = allowed && tier !== 'lite'
@@ -148,8 +149,8 @@ export function useCardTilt(maxDeg = 4, disabled?: () => boolean): void {
 
   useEffect(() => {
     if (!active) return
-    return attachCardTilt({ maxDeg, disabled: () => disabledRef.current?.() ?? false })
-  }, [active, maxDeg])
+    return attachCardTilt({ maxDeg: sensitivity, disabled: () => disabledRef.current?.() ?? false })
+  }, [active, sensitivity])
 }
 
 /* --------------------------------------------------------- برجسته‌سازی --- */

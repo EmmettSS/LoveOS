@@ -14,6 +14,7 @@ import { digits } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { ApiStatus, AudioPlayer, Empty, SectionTitle, useApi } from '../shared/ui'
 
 interface Song {
@@ -33,6 +34,29 @@ const TIMERS = [0, 10, 20, 30, 45]
 
 export default function Music() {
   const { t } = useTranslation()
+  // ⚠️ هوک‌ها بالایِ ``if (loading || error) return`` نشسته‌اند
+  const tier = useQualityTier()
+  const allowed = useMotionAllowed()
+  const deep = allowed && tier !== 'lite'
+  const dz = deep ? 1 : 0
+  // آیا **همین حالا** صدایی پخش می‌شود؟ رویدادهای play/pause/ended بالا
+  // نمی‌روند (bubble نمی‌شوند) ولی در فازِ **capture** روی document
+  // گرفته می‌شوند — پس بدونِ اینکه AudioPlayer را دست بزنیم می‌فهمیم کی
+  // واقعاً در حالِ پخش است. بدونِ این، دیسکِ گرامافون وقتی چیزی پخش
+  // نمی‌شد هم می‌چرخید و دروغ می‌گفت.
+  const [spinning, setSpinning] = useState(false)
+  useEffect(() => {
+    const on = () => setSpinning(true)
+    const off = () => setSpinning(false)
+    document.addEventListener('play', on, true)
+    document.addEventListener('pause', off, true)
+    document.addEventListener('ended', off, true)
+    return () => {
+      document.removeEventListener('play', on, true)
+      document.removeEventListener('pause', off, true)
+      document.removeEventListener('ended', off, true)
+    }
+  }, [])
   const config = useOS((s) => s.config)
   const showEgg = useOS((s) => s.showEgg)
   const showToast = useOS((s) => s.showToast)
@@ -113,15 +137,34 @@ export default function Music() {
   return (
     <div className="space-y-3">
       {main && main.audio && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 10, rotateX: -8 * dz }}
+          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          style={{ transformPerspective: 1000 }}
+          className="os-card overflow-hidden"
+        >
           <div className="flex items-center gap-3 p-3">
-            {main.cover ? (
-              <img src={main.cover} alt={main.title} className="h-20 w-20 rounded-2xl object-cover" />
-            ) : (
-              <span className="flex h-20 w-20 items-center justify-center rounded-2xl animate-float" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
-                <Icon name="music" size={30} />
-              </span>
-            )}
+            {/* صفحه‌ی گرامافون: دیسکِ شیاردار که از پشتِ کاور بیرون می‌زند و
+                **فقط وقتی واقعاً چیزی پخش می‌شود** می‌چرخد.
+                ⚠️ دیسک عنصرِ جدا از کاور است چون ``.os-disc`` انیمیشنی دارد
+                که ``transform`` می‌نویسد و اگر روی همان عنصرِ کاور می‌نشست
+                انیمیشنِ CSS در آبشار بر ``transform`` درون‌خطی می‌برد. */}
+            <div className="relative h-20 w-20 shrink-0">
+              {deep && (
+                <span
+                  className={`os-disc pointer-events-none absolute ${spinning ? '' : 'os-disc-still'}`}
+                  style={{ inset: -9, ['--disc-label' as string]: 'var(--os-accent-soft)' }}
+                  aria-hidden
+                />
+              )}
+              {main.cover ? (
+                <img src={main.cover} alt={main.title} className="relative h-20 w-20 rounded-2xl object-cover" style={{ boxShadow: '0 var(--edge-2) calc(3 * var(--edge-2)) calc(-1 * var(--edge-2)) rgba(0,0,0,.45), inset 0 var(--edge-1) 0 rgba(255,255,255,.35)' }} />
+              ) : (
+                <span className="relative flex h-20 w-20 items-center justify-center rounded-2xl animate-float" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)', boxShadow: 'var(--rim-light), var(--ao-shadow)' }}>
+                  <Icon name="music" size={30} />
+                </span>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] os-muted">{t('music.mainSong')}</p>
               <p className="os-title truncate text-lg">{main.title}</p>
@@ -153,7 +196,7 @@ export default function Music() {
       )}
 
       {/* تایمر خواب */}
-      <div className="os-card flex flex-wrap items-center gap-2 p-3">
+      <div className="os-card os-tilt-card flex flex-wrap items-center gap-2 p-3">
         <span className="flex items-center gap-1.5 text-sm">
           <Icon name="moon" size={16} /> {t('music.sleepTimer')}
         </span>
@@ -172,7 +215,11 @@ export default function Music() {
       {rest.length === 0 ? (
         <Empty />
       ) : (
-        <div className="space-y-2">
+        /* بچه‌های این فهرست ``transform`` درون‌خطی ندارند (motion در کار
+           نیست)، پس ``.os-depth-list`` امن است و ورودِ پلکانی از عمق
+           می‌گیرند. اگر روزی framer به همین بچه‌ها اضافه شد، این کلاس را
+           بردار — انیمیشنِ CSS با transform درون‌خطی دعوا می‌کند. */
+        <div className="os-depth-list space-y-2">
           {rest.map((s) => (
             <div key={s.id} className="os-card p-3">
               {s.audio && (

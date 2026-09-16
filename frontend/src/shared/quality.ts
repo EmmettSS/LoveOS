@@ -792,6 +792,19 @@ let cardTiltUsers = 0
 let cardTiltOff: (() => void) | null = null
 
 /**
+ * همه‌ی واریانت‌های تیلتِ CSS-driven.
+ *
+ * چرا JS فقط **عددِ بی‌واحد** (‎-1..1) می‌نویسد و نه زاویه:
+ *   چون زاویه‌ی مناسب برای یک کارتِ بزرگِ متنی (۴ درجه) با زاویه‌ی مناسب
+ *   برای یک مدالِ ۴۴ پیکسلی (۱۵ درجه) فرق دارد. اگر JS زاویه می‌نوشت،
+ *   برای هر واریانت یک تنظیمِ جدا لازم بود. حالا JS یک کار می‌کند
+ *   (پیداکردنِ عنصر زیرِ مکان‌نما و نرمال‌سازیِ جایِ نشانگر) و **CSS**
+ *   مالکِ زاویه و پرسپکتیوِ هر واریانت است. افزودنِ واریانتِ تازه = یک
+ *   کلاسِ CSS، بدونِ دست‌زدن به جاوااسکریپت.
+ */
+const TILT_SELECTOR = '.os-tilt-card, .os-tilt-medal, .os-tilt-tile'
+
+/**
  * تیلتِ **همه‌ی** کارت‌های ``.os-tilt-card`` با یک listenerِ سراسری.
  *
  * --------------------------------------------------------------------------
@@ -815,7 +828,9 @@ let cardTiltOff: (() => void) | null = null
 export function attachCardTilt(
   opts: { maxDeg?: number; disabled?: () => boolean } = {},
 ): () => void {
-  const maxDeg = opts.maxDeg ?? 4
+  // ضریبِ بی‌واحد (پیش‌فرض ۱). زاویه‌ی واقعی را CSS با --tilt-max تعیین
+  // می‌کند؛ این عدد فقط «حساسیت» است، مثلاً برای دسکتاپ ۱٫۲.
+  const maxDeg = opts.maxDeg ?? 1
   const disabled = opts.disabled ?? (() => false)
 
   const release = () => {
@@ -834,8 +849,8 @@ export function attachCardTilt(
 
   const reset = (el: HTMLElement | null) => {
     if (!el) return
-    el.style.setProperty('--tilt-x', '0deg')
-    el.style.setProperty('--tilt-y', '0deg')
+    el.style.setProperty('--tilt-nx', '0')
+    el.style.setProperty('--tilt-ny', '0')
   }
 
   const onMove = (e: PointerEvent) => {
@@ -855,7 +870,7 @@ export function attachCardTilt(
     const target = e.target as HTMLElement | null
     raf = window.requestAnimationFrame(() => {
       raf = 0
-      const el = (target?.closest?.('.os-tilt-card') as HTMLElement | null) ?? null
+      const el = (target?.closest?.(TILT_SELECTOR) as HTMLElement | null) ?? null
       if (el !== last) {
         reset(last)
         last = el
@@ -865,11 +880,11 @@ export function attachCardTilt(
       if (r.width === 0 || r.height === 0) return
       const nx = ((cx - r.left) / r.width) * 2 - 1
       const ny = ((cy - r.top) / r.height) * 2 - 1
-      // RTL: همان قراردادِ attachPointerTilt تا جهتِ نور بینِ کارت‌ها و
-      // قهرمان‌های سه‌بعدی یکی بماند.
+      // RTL: همان قراردادِ attachPointerTilt تا جهتِ برجستگی با جهتِ
+      // خواندن یکی بماند (rotateY فیزیکی است و با dir آینه نمی‌شود).
       const rtl = document.documentElement.dir === 'rtl'
-      el.style.setProperty('--tilt-x', `${(rtl ? nx : -nx) * maxDeg}deg`)
-      el.style.setProperty('--tilt-y', `${-ny * maxDeg}deg`)
+      el.style.setProperty('--tilt-nx', ((rtl ? nx : -nx) * maxDeg).toFixed(3))
+      el.style.setProperty('--tilt-ny', (-ny * maxDeg).toFixed(3))
     })
   }
 
