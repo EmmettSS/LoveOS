@@ -97,17 +97,22 @@ export function Tilt({
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const allowed = useMotionAllowed()
+  const tier = useQualityTier()
 
   useEffect(() => {
     const el = ref.current
-    if (!el || !allowed) return
+    // در لایه‌ی مهتاب ``--q3d`` صفر است، پس تیلت **اثرِ بصری** ندارد. ولی
+    // بدونِ این شرط، listenerها وصل می‌ماندند و هر حرکتِ موس یک نوشتن روی
+    // style انجام می‌داد — کارِ بیهوده‌ی خالص روی دستگاهی که عمداً انتخاب
+    // شده سبک بماند. پس اصلاً وصلشان نمی‌کنیم.
+    if (!el || !allowed || tier === 'lite') return
     const offPointer = attachPointerTilt(el, { maxDeg })
     const offGyro = attachGyroTilt(el, { maxDeg: Math.min(maxDeg, 4) })
     return () => {
       offPointer()
       offGyro?.()
     }
-  }, [allowed, maxDeg])
+  }, [allowed, maxDeg, tier])
 
   const inner = (
     <Tag ref={ref} className={`os-depth ${className}`} style={style}>
@@ -203,7 +208,17 @@ export function Extrude({
   const backLayers = useMemo(() => Array.from({ length: layers }, (_, i) => i + 1), [layers])
 
   return (
-    <div className={`os-stage-3d ${className}`} style={{ width: size, height: size }} aria-label={ariaLabel} role={ariaLabel ? 'img' : undefined}>
+    // ``position: relative`` عمداً این‌جاست نه در کلاسِ ``.os-stage-3d``:
+    // آن کلاس در دسکتاپ و داک هم استفاده می‌شود و relative‌کردنِ سراسری‌اش
+    // می‌توانست جایِ فرزندانِ absoluteِ آن‌ها را عوض کند. این‌جا فقط ظرفِ
+    // Extrude را «لنگر» می‌کنیم تا هاله‌ی نورانی نسبتِ خودش اندازه بگیرد،
+    // نه نسبتِ یک جدِ دورترِ تصادفی.
+    <div
+      className={`os-stage-3d ${className}`}
+      style={{ width: size, height: size, position: 'relative' }}
+      aria-label={ariaLabel}
+      role={ariaLabel ? 'img' : undefined}
+    >
       {/* هاله‌ی نورانی پشتِ جسم — در لایه‌ی مهتاب با opacity صفر محو می‌شود */}
       {glow && (
         <span

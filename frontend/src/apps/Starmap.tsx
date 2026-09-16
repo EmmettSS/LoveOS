@@ -340,7 +340,23 @@ export default function Starmap() {
                   ])
                   const lit = allLit || active?.id === c.id
                   return (
-                    <g key={c.id} onClick={() => void tapStar(c)} style={{ cursor: 'pointer' }}>
+                    <g
+                      key={c.id}
+                      onClick={() => void tapStar(c)}
+                      style={{ cursor: 'pointer' }}
+                      // دسترسی‌پذیری: یک <g>ِ SVG بدونِ role/tabIndex با
+                      // کیبورد هرگز قابلِ رسیدن نبود. حالا هم با Tab انتخاب
+                      // می‌شود هم با Enter/Space.
+                      role="button"
+                      tabIndex={0}
+                      aria-label={c.letter}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          void tapStar(c)
+                        }
+                      }}
+                    >
                       <polyline
                         points={pts.map((p) => p.join(',')).join(' ')}
                         fill="none"
@@ -406,28 +422,32 @@ export default function Starmap() {
                       strokeLinecap="round"
                       opacity={lit ? 0.95 : 0.45}
                     />
-                    {c.stars.map(([x, y], i) => (
-                      <motion.circle
-                        key={i}
-                        cx={x * 100}
-                        cy={toCanvasY(y) * 100}
-                        r={lit ? 3.4 : 2.2}
-                        fill={lit ? '#fff6d6' : '#e7eaff'}
-                        animate={
-                          motionAllowed
-                            ? lit
-                              ? { opacity: [1, 0.45, 1] }
-                              : { opacity: [0.6, 0.9, 0.6] }
-                            : { opacity: lit ? 1 : 0.75 }
-                        }
-                        transition={
-                          motionAllowed
-                            ? { duration: lit ? 1.9 : 2.6, delay: i * 0.07, repeat: Infinity }
-                            : { duration: 0 }
-                        }
-                        style={{ filter: lit ? `drop-shadow(0 0 5px ${heart ? '#ff9ecb' : '#ffd98a'})` : undefined }}
-                      />
-                    ))}
+                    {c.stars.map(([x, y], i) => {
+                      const cx = x * 100
+                      const cy = toCanvasY(y) * 100
+                      const fill = lit ? '#fff6d6' : '#e7eaff'
+                      const style = { filter: lit ? `drop-shadow(0 0 5px ${heart ? '#ff9ecb' : '#ffd98a'})` : undefined }
+                      // وقتی حرکت مجاز نیست، اصلاً عنصرِ انیمیشنی نمی‌سازیم.
+                      // پیش‌تر animate را به {opacity:0.75} تغییر می‌دادیم که
+                      // framer را وادار می‌کرد از «undefined» به آن مقدار
+                      // انیمیت کند → هشدارِ کنسول و کارِ بیهوده.
+                      if (!motionAllowed) {
+                        return <circle key={i} cx={cx} cy={cy} r={lit ? 3.4 : 2.2} fill={fill} opacity={lit ? 1 : 0.75} style={style} />
+                      }
+                      return (
+                        <motion.circle
+                          key={i}
+                          cx={cx}
+                          cy={cy}
+                          r={lit ? 3.4 : 2.2}
+                          fill={fill}
+                          initial={false}
+                          animate={lit ? { opacity: [1, 0.45, 1] } : { opacity: [0.6, 0.9, 0.6] }}
+                          transition={{ duration: lit ? 1.9 : 2.6, delay: i * 0.07, repeat: Infinity }}
+                          style={style}
+                        />
+                      )
+                    })}
                   </svg>
                   <span className="os-sky-shape-glyph" aria-hidden>
                     {c.letter}

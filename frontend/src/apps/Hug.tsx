@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { post } from '../shared/api'
+import { Tilt, useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playHeartbeat, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -64,7 +65,18 @@ function AmbientHearts() {
 }
 
 /* ---------------------------------------------- انفجار هنگام ارسال ---- */
-function HugBurst({ seed }: { seed: number }) {
+/**
+ * انفجارِ قلب‌ها هنگامِ ارسالِ بغل.
+ *
+ * در لایه‌های عمیق، ذره‌ها فقط در صفحه‌ی x/y پخش نمی‌شوند: نیمی‌شان به
+ * سمتِ بیننده می‌آیند (z مثبت) و نیمی به عمق می‌روند (z منفی). نتیجه یک
+ * انفجارِ **کروی** است نه یک ستاره‌ی تختِ دو‌بعدی — همان تفاوتی که بینِ
+ * «برچسب‌هایی که پخش می‌شوند» و «چیزی که واقعاً منفجر می‌شود» است.
+ *
+ * ``perspective`` روی خودِ ظرفِ انفجار است نه روی یک جد، چون جدِ این ظرف
+ * ``overflow-hidden`` دارد و در سافاری عمق را تخت می‌کند (تله‌ی R-C).
+ */
+function HugBurst({ seed, deep }: { seed: number; deep: boolean }) {
   const parts = useMemo(
     () =>
       Array.from({ length: 18 }).map((_, i) => {
@@ -74,6 +86,9 @@ function HugBurst({ seed }: { seed: number }) {
           id: i,
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
+          // یک‌درمیان به سمتِ بیننده و به عمق؛ دامنه عمداً نامتقارن است تا
+          // ذره‌ها خیلی از صفحه بیرون نزنند و از قابِ پنجره رد نشوند.
+          z: i % 2 === 0 ? 40 + ((seed + i * 7) % 60) : -(30 + ((seed + i * 11) % 45)),
           emoji: ['❤', '💖', '✨', '💫', '💕'][i % 5],
           size: 12 + ((seed + i) % 4) * 5,
         }
@@ -81,14 +96,22 @@ function HugBurst({ seed }: { seed: number }) {
     [seed],
   )
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+    <div
+      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      style={deep ? { perspective: '760px' } : undefined}
+      aria-hidden
+    >
       {parts.map((p) => (
         <motion.span
           key={p.id}
           className="absolute"
           style={{ fontSize: p.size }}
-          initial={{ x: 0, y: 0, opacity: 1, scale: 0.3 }}
-          animate={{ x: p.x, y: p.y, opacity: 0, scale: 1.2, rotate: 200 }}
+          initial={deep ? { x: 0, y: 0, z: 0, opacity: 1, scale: 0.3 } : { x: 0, y: 0, opacity: 1, scale: 0.3 }}
+          animate={
+            deep
+              ? { x: p.x, y: p.y, z: p.z, opacity: 0, scale: 1.2, rotate: 200, rotateY: p.z > 0 ? 24 : -24 }
+              : { x: p.x, y: p.y, opacity: 0, scale: 1.2, rotate: 200 }
+          }
           transition={{ duration: 1.1, ease: 'easeOut' }}
         >
           {p.emoji}
@@ -134,6 +157,11 @@ export default function Hug() {
   const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
   const showToast = useOS((s) => s.showToast)
+  const tier = useQualityTier()
+  const motionAllowed = useMotionAllowed()
+  /** لایه‌ی مهتاب همان نسخه‌ی تختِ همیشگی است؛ عمق فقط در بلور و کهکشان */
+  const deep = tier !== 'lite'
+  const dream = tier === 'dream'
   const { data, loading, error, reload } = useApi<HugState>('/hug')
   const [warm, setWarm] = useState(false)
   const [burst, setBurst] = useState(0)
@@ -204,6 +232,83 @@ export default function Hug() {
   const sent = Number.isFinite(data.sent) ? data.sent : 0
   const warmColor = settings.warm_color || '#ffd6a5'
 
+  /**
+   * دکمه‌ی بغل کردن بابا — با حلقه‌ی درخشان و نبض.
+   *
+   * در لایه‌های عمیق داخلِ ``Tilt`` می‌نشیند و آیکنِ بغل **بالایِ** سطحِ
+   * دکمه شناور است، پس با کج‌شدنِ دکمه آیکن واقعاً جابه‌جا می‌شود
+   * (پارالاکسِ عمقی) و دکمه از یک دایره‌ی رنگی به یک قرصِ برجسته تبدیل
+   * می‌شود.
+   *
+   * ⚠️ تیلت روی ظرفِ بیرونیِ Tilt است و نبض روی خودِ دکمه: اگر هر دو روی
+   *    یک عنصر بودند، انیمیشنِ CSS نبض را می‌بلعید.
+   * ⚠️ دکمه یک متغیر است نه JSXِ درون‌خطی، تا در مهتاب بدونِ Tilt و در
+   *    لایه‌های عمیق با Tilt رندر شود **بدونِ این‌که بدنه‌ی دکمه دو بار
+   *    نوشته شود** — دو نسخه‌ی کپی‌شده اولین باری که کسی رنگِ دکمه را عوض
+   *    می‌کرد از هم واگرا می‌شدند.
+   * ⚠️ در مهتاب عمداً Tilt نمی‌گذاریم: خودِ کلاسِ ``.os-depth`` یک
+   *    ``preserve-3d`` و یک ``transition`` به صفحه تحمیل می‌کند و روی
+   *    دستگاهی که عمداً سبک انتخاب شده، کارِ بیهوده‌ی خالص است (هرچند با
+   *    ``--q3d: 0`` هیچ اثرِ بصری ندارد).
+   */
+  const hugButton = (
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      animate={{ scale: [1, 1.05, 1] }}
+      transition={{ duration: 2.4, repeat: Infinity }}
+      onClick={() => void sendHug()}
+      className="relative flex h-44 w-44 items-center justify-center rounded-full text-white"
+      style={{
+        background: 'radial-gradient(circle at 40% 30%, #ffb3d4, #f767a8 65%, #d6467f)',
+        // دو سایه‌ی داخلی اضافه شد: یکی روشن از بالا و یکی تیره از پایین.
+        // همین دو خط، قرص را از «دایره‌ی تختِ رنگی» به «گنبدِ برجسته»
+        // تبدیل می‌کند — ارزان‌ترین عمقِ ممکن، بدونِ هیچ transform.
+        boxShadow: `0 20px 50px -18px ${warmColor}, 0 0 0 6px ${warmColor}33, inset 0 7px 16px -9px rgba(255,255,255,.7), inset 0 -10px 22px -12px rgba(120,20,60,.6)`,
+        transformStyle: deep ? 'preserve-3d' : undefined,
+      }}
+    >
+      {/* جاروی نور — فقط در کهکشان. ظرفِ بیرونیِ آن ``rounded-full
+          overflow-hidden`` است تا نور دقیقاً به شکلِ دایره‌ی دکمه برش
+          بخورد؛ بدونِ این برش، یک مستطیلِ روشنِ زننده روی قرصِ گرد
+          دیده می‌شد. */}
+      {dream && motionAllowed && (
+        <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full" aria-hidden>
+          <span className="os-specular" />
+        </span>
+      )}
+      {/* حلقه‌ی موجی دور دکمه */}
+      <motion.span
+        className="absolute inset-0 rounded-full"
+        style={{ border: `2px solid ${warmColor}` }}
+        animate={{ scale: [1, 1.35], opacity: [0.7, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+      />
+      <motion.span
+        className="absolute inset-[-10px] rounded-full"
+        style={{ border: `1.5px dashed ${warmColor}88` }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+      />
+      {/*
+        ⚠️ دو عنصرِ تودرتو، نه یکی: ``translateZ`` باید روی style درون‌خطی
+        بنشیند و نبضِ ``scale`` توسط framer روی inline transform نوشته
+        می‌شود. روی یک عنصر، یکی دیگری را بی‌صدا پاک می‌کرد.
+      */}
+      <span
+        className="relative"
+        style={deep ? { transform: 'translateZ(30px)', transformStyle: 'preserve-3d' } : undefined}
+      >
+        <motion.span
+          className="block"
+          animate={{ scale: [1, 1.12, 1] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        >
+          <Icon name="hug" size={72} />
+        </motion.span>
+      </span>
+    </motion.button>
+  )
+
   return (
     <div className="relative flex flex-col items-center gap-5 overflow-hidden py-4">
       <AmbientHearts />
@@ -223,7 +328,7 @@ export default function Hug() {
       </AnimatePresence>
 
       {/* انفجار قلب‌ها هنگام ارسال */}
-      {burst > 0 && <HugBurst key={burst} seed={burst} />}
+      {burst > 0 && <HugBurst key={burst} seed={burst} deep={deep} />}
 
       {/* بارش عشق هنگام باز شدن بغل */}
       {hugOpen && <HugRain />}
@@ -237,10 +342,27 @@ export default function Hug() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
+            {/*
+              در لایه‌های عمیق، بغل از **دور** شروع می‌شود و به سمتِ بیننده
+              می‌آید (z از ۴۲۰− به ۶۰+). این همان حسِ «بغل کردن» است: چیزی
+              که به سمتت می‌آید و دورت را می‌گیرد، نه چیزی که روی صفحه بزرگ
+              می‌شود. ``transformPerspective`` روی خودِ عنصر است چون ظرفِ جد
+              ``fixed inset-0`` است و perspective گذاشتن رویش بی‌فایده بود.
+            */}
             <motion.span
               className="text-[120px]"
-              initial={{ scale: 2.6, opacity: 0 }}
-              animate={{ scale: [2.6, 0.85, 1.15, 1], opacity: 1 }}
+              initial={deep ? { scale: 2.6, opacity: 0, z: -420, rotateY: -18 } : { scale: 2.6, opacity: 0 }}
+              animate={
+                deep
+                  ? {
+                      scale: [2.6, 0.85, 1.15, 1],
+                      opacity: 1,
+                      z: [-420, 40, 90, 60],
+                      rotateY: [-18, 8, -4, 0],
+                      transformPerspective: 900,
+                    }
+                  : { scale: [2.6, 0.85, 1.15, 1], opacity: 1 }
+              }
               transition={{ duration: 1.6, times: [0, 0.4, 0.7, 1], ease: 'easeInOut' }}
             >
               🤗
@@ -285,39 +407,8 @@ export default function Hug() {
         </motion.p>
       )}
 
-      {/* دکمه‌ی بغل کردن بابا — با حلقه‌ی درخشان و نبض */}
-      <motion.button
-        whileTap={{ scale: 0.88 }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 2.4, repeat: Infinity }}
-        onClick={() => void sendHug()}
-        className="relative flex h-44 w-44 items-center justify-center rounded-full text-white"
-        style={{
-          background: 'radial-gradient(circle at 40% 30%, #ffb3d4, #f767a8 65%, #d6467f)',
-          boxShadow: `0 20px 50px -18px ${warmColor}, 0 0 0 6px ${warmColor}33`,
-        }}
-      >
-        {/* حلقه‌ی موجی دور دکمه */}
-        <motion.span
-          className="absolute inset-0 rounded-full"
-          style={{ border: `2px solid ${warmColor}` }}
-          animate={{ scale: [1, 1.35], opacity: [0.7, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
-        />
-        <motion.span
-          className="absolute inset-[-10px] rounded-full"
-          style={{ border: `1.5px dashed ${warmColor}88` }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.span
-          className="relative"
-          animate={{ scale: [1, 1.12, 1] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-        >
-          <Icon name="hug" size={72} />
-        </motion.span>
-      </motion.button>
+      {/* تیلت فقط در لایه‌های عمیق؛ در مهتاب خودِ دکمه بی‌واسطه می‌آید */}
+      {deep ? <Tilt maxDeg={11}>{hugButton}</Tilt> : hugButton}
       <p className="os-title text-base">{t('hug.hugDaddy')}</p>
       <p className="-mt-3 text-xs os-muted">{t('hug.squeeze')}</p>
 
