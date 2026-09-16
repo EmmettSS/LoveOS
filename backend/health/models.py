@@ -3,6 +3,8 @@ health.models — چرخه و مراقبت (Cycle & Care)
 پریود، علائم روزانه، داروها (بحرانی‌ترین بخش) و یادآورهای مراقبتی.
 Disclaimer shown in UI: this app is not a substitute for a doctor.
 """
+from __future__ import annotations
+
 from django.db import models
 from datetime import timedelta
 

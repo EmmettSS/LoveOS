@@ -86,7 +86,7 @@ QR کد  →  دامنه‌ی مخفی
 
 | لایه | فناوری | چرا |
 |---|---|---|
-| بک‌اند | Python 3.11+، **Django 5.2**، Django REST Framework | همه‌چیز آماده: ORM، پنل ادمین، مهاجرت، نشست. خودِ ادمین سیستم مدیریت محتوای من است. |
+| بک‌اند | Python 3.10+، **Django 5.2**، Django REST Framework | همه‌چیز آماده: ORM، پنل ادمین، مهاجرت، نشست. خودِ ادمین سیستم مدیریت محتوای من است. |
 | پایگاه‌داده | **SQLite** در توسعه، **MySQL 8 (utf8mb4)** در پروداکشن | محلی بدون نصب؛ MySQL همان چیزی است که هاست‌های اشتراکی می‌دهند. |
 | فرانت‌اند | **React 19**، TypeScript، **Vite 8**، Tailwind، Zustand، framer-motion، i18next، MapLibre GL، three.js، Howler | یک SPA سریع با مدیر پنجره‌ی واقعی، انیمیشن، نقشه و آسمان ستاره. |
 | PWA | `vite-plugin-pwa` (Workbox) | روی گوشی‌اش نصب می‌شود؛ پوسته آفلاین کار می‌کند. |
@@ -211,7 +211,7 @@ LoveOS/
 
 | ابزار | نسخه |
 |---|---|
-| Python | ۳٫۱۱ یا بالاتر |
+| Python | ۳٫۱۰ یا بالاتر |
 | Node.js | ۲۰ یا بالاتر (من ۲۲ دارم) |
 | npm | همراه Node |
 | git | هر نسخه‌ی جدید |
@@ -709,14 +709,14 @@ tail -f /srv/loveos/logs/sweep.log # زمان‌بند
 
 | فیلد | مقدار |
 |---|---|
-| Python version | ۳٫۱۱ یا بالاتر |
+| Python version | ۳٫۱۰ یا بالاتر |
 | Application root | `loveos` |
 | Application URL | دامنه / ساب‌دامنه |
 | Application startup file | `passenger_wsgi.py` |
 | Application Entry point | `application` |
 
 بعد از ساخت، cPanel خطی مثل
-`source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos` نشان می‌دهد —
+`source /home/USER/virtualenv/loveos/3.10/bin/activate && cd /home/USER/loveos` نشان می‌دهد —
 **هر دستور ترمینال پایین با همین خط شروع می‌شود.**
 
 **قدم ۵ — `.env`.** فایل `/home/USER/loveos/backend/.env` را با مقادیر پروداکشن ۱۰.۱ بساز به‌علاوه:
@@ -733,7 +733,7 @@ DB_HOST=localhost
 **قدم ۶ — نصب و مهاجرت** (cPanel → Terminal، یا SSH):
 
 ```bash
-source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos
+source /home/USER/virtualenv/loveos/3.10/bin/activate && cd /home/USER/loveos
 SKIP_FRONTEND=1 ./scripts/deploy.sh cpanel
 python backend/manage.py createsuperuser
 python backend/manage.py seed_loveos --passcode 2468 --vault 1357
@@ -752,7 +752,7 @@ python backend/manage.py seed_loveos --passcode 2468 --vault 1357
 **قدم ۹ — کرون.** cPanel → **Cron Jobs**، هر دقیقه، با مسیر کامل:
 
 ```
-* * * * * /home/USER/virtualenv/loveos/3.11/bin/python /home/USER/loveos/backend/manage.py sweep >> /home/USER/loveos/logs/sweep.log 2>&1
+* * * * * /home/USER/virtualenv/loveos/3.10/bin/python /home/USER/loveos/backend/manage.py sweep >> /home/USER/loveos/logs/sweep.log 2>&1
 ```
 
 (اول `/home/USER/loveos/logs/` را بساز).

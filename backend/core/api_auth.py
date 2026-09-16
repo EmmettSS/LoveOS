@@ -2,6 +2,8 @@
 API — قفل، باز کردن قفل، نشست، پیکربندی عمومی
 Endpoints: /api/boot, /api/auth/unlock, /api/auth/forgot, /api/auth/help, /api/auth/logout
 """
+from __future__ import annotations
+
 from datetime import timedelta
 
 from django.conf import settings

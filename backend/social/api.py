@@ -1,6 +1,8 @@
 """
 API اجتماعی: چت، بغل (با ویبره)، یادآورهای مهربان، مرکز اعلان، ترمینال، رازها، دستاوردها، آب‌وهوا.
 """
+from __future__ import annotations
+
 import json
 import random
 from datetime import timedelta
