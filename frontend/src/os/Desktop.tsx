@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
-import { AmbientDepth, useMotionAllowed } from '../shared/depth'
+import { AmbientDepth, useCardTilt, useMotionAllowed } from '../shared/depth'
 import { digits, formatDate, formatTime, weekdayName } from '../shared/format'
 import { playClick, playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -69,6 +69,9 @@ export function Desktop() {
   const appOrder = useOS((s) => s.appOrder)
   const setAppOrder = useOS((s) => s.setAppOrder)
   const deep = useMotionAllowed()
+  // تیلتِ ملایمِ همه‌ی کارت‌های .os-tilt-card در هر اپی، با یک listenerِ
+  // سراسری. یک بار این‌جا نصب می‌شود چون دسکتاپ همیشه زنده است.
+  useCardTilt(4, () => dragKey !== null)
 
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)

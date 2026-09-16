@@ -479,6 +479,16 @@ body {
   pointer-events: none;
   opacity: calc(0.55 * var(--q3d) + 0.25);
 }
+/* ظرفِ داخلیِ پرسپکتیو — عمداً ``overflow`` ندارد. توضیحِ تله‌ی R-C در
+   ``AmbientDepth`` (shared/depth.tsx): بُرش و پرسپکتیو روی یک عنصر = عمقِ
+   تخت در سافاری. */
+.os-ambient-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: calc(900px * var(--q3d) + 100000px * (1 - var(--q3d)));
+  perspective-origin: 50% 50%;
+}
 
 /* کاغذ کهنه برای نامه و کتاب */
 .paper {
@@ -635,7 +645,8 @@ html[data-theme='night'] {
 /* در مهتاب انیمیشن کاملاً خاموش می‌شود، نه این‌که «با دامنه‌ی صفر» اجرا شود.
    اجرای یک حلقه‌ی بی‌اثر هم کامپوزیت و هم باتری مصرف می‌کند. */
 html[data-quality='lite'] .os-anim-float-3d,
-html[data-quality='lite'] .os-anim-turntable { animation: none; }
+html[data-quality='lite'] .os-anim-turntable,
+html[data-quality='lite'] .os-disc { animation: none; }
 html[data-quality='lite'] .os-specular { display: none; }
 .os-anim-unfold { animation: loveos-unfold 0.42s cubic-bezier(0.22, 0.68, 0.36, 1) both; }
 .os-anim-turntable {
@@ -712,8 +723,12 @@ html[data-quality='lite'] .os-specular { display: none; }
   }
   /* تیلت و عمقِ متحرک کاملاً خاموش؛ عمقِ «نقاشی‌شده» (سایه) باقی می‌ماند
      چون حرکت ندارد و آزاردهنده نیست. */
-  .os-depth, .os-anim-float-3d, .os-anim-turntable { transform: none !important; }
+  .os-depth, .os-anim-float-3d, .os-anim-turntable,
+  .os-tilt-card, .os-parallax-far, .os-parallax-mid, .os-parallax-near,
+  .os-disc { transform: none !important; }
   .os-specular { opacity: 0 !important; }
+  /* بازتابِ شیشه‌ی CRT هم حرکت ندارد ولی با reduced-motion بهتر است ساده شود */
+  .os-crt::after { display: none; }
 }
 
 /* ==========================================================================
@@ -1123,4 +1138,177 @@ html[data-quality='lite'] .os-vault-dial {
 .os-gift-card:focus-within .os-gift-box {
   transform: rotateY(calc(-13deg * var(--q3d))) rotateX(calc(7deg * var(--q3d)))
     translateZ(calc(10px * var(--q3d)));
+}
+
+/* ==========================================================================
+   موجِ ۰ — ابزارِ مشترکِ عمق برای همه‌ی اپ‌ها
+   --------------------------------------------------------------------------
+   این قطعه‌ها عمداً «کوچک و بی‌خطر» طراحی شده‌اند تا بشود به ۳۰ اپ اضافه‌شان
+   کرد بدونِ اینکه منطقِ هیچ اپی دست بخورد. سه اصل در همه‌شان رعایت شده:
+
+   ۱) هر مقدارِ سه‌بعدی در ``--q3d`` **ضرب** می‌شود. در لایه‌ی مهتاب
+      ``--q3d`` صفر است، پس چرخش صفر و پرسپکتیو عملاً بی‌نهایت می‌شود —
+      بدونِ یک شاخه‌ی ``if`` در جاوااسکریپت و بدونِ رندرِ دوباره‌ی ری‌اکت.
+
+   ۲) پرسپکتیو با **تابعِ** ``perspective()`` داخلِ خودِ ``transform``
+      می‌آید نه با صفتِ ``perspective`` روی جد. این عمداً است: صفتِ پدری
+      وقتی پدر ``overflow`` غیرِ ``visible`` داشته باشد در سافاری عمق را
+      تخت می‌کند (تله‌ی R-C)، و تقریباً هر لیستی در LoveOS یک ظرفِ
+      اسکرول است. تابعِ ``perspective()`` به هیچ جدی نیاز ندارد.
+
+   ۳) هیچ ``will-change`` و هیچ listener تازه‌ای به ازای هر کارت. تیلتِ
+      کارت‌ها با **یک** listenerِ سراسری در ``attachCardTilt`` انجام می‌شود.
+   ========================================================================== */
+
+/* ---------------------------------------------------- کارتِ کج‌شونده --- */
+/* با attachCardTilt() کار می‌کند که --tilt-x/--tilt-y را می‌نویسد.
+   زاویه عمداً کوچک است (۴ درجه) چون روی ده‌ها کارت هم‌زمان اعمال می‌شود.
+   ⚠️ روی ظرفِ اسکرول و روی متنِ بلند نگذار. */
+.os-tilt-card {
+  transform: perspective(1100px)
+    rotateY(calc(var(--tilt-x, 0deg) * var(--q3d)))
+    rotateX(calc(var(--tilt-y, 0deg) * var(--q3d)));
+  transition: transform 0.22s cubic-bezier(0.22, 0.68, 0.36, 1);
+}
+
+/* --------------------------------------- فهرستِ با ورودِ پلکانی در عمق --- */
+/* فقط یک کلاس روی ظرفِ موجودِ list/map اضافه کن؛ بچه‌ها خودشان پلکانی از
+   عمق بیرون می‌آیند. ``nth-child`` عمداً در CSS است نه در JS تا برای
+   فهرست‌های ۸۰۰ خطی هم رایگان بماند و هیچ ``style`` درون‌خطی ننویسد. */
+.os-depth-list > * {
+  /* ⚠️ ``backwards`` و نه ``both``. با ``both``، مقدارِ کلیدِ **پایانیِ**
+     انیمیشن برای همیشه روی عنصر می‌ماند و چون انیمیشنِ CSS در آبشار بر
+     ``transform``ِ کلاس‌های دیگر می‌بَرَد، اگر همان بچه ``.os-tilt-card``
+     هم داشته باشد تیلتش بی‌صدا خورده می‌شود (تله‌ی «دو منبعِ transform»).
+     ``backwards`` فقط کلیدِ **نخست** را در دوره‌ی تأخیر اعمال می‌کند — که
+     دقیقاً همان چیزی است که برای پلکانی‌شدن لازم است — و بعد از پایانِ
+     انیمیشن، عنصر به سبکِ طبیعیِ خودش برمی‌گردد. */
+  animation: loveos-depth-in 0.42s cubic-bezier(0.22, 0.8, 0.28, 1) backwards;
+}
+.os-depth-list > *:nth-child(1)  { animation-delay: 0ms; }
+.os-depth-list > *:nth-child(2)  { animation-delay: 26ms; }
+.os-depth-list > *:nth-child(3)  { animation-delay: 52ms; }
+.os-depth-list > *:nth-child(4)  { animation-delay: 78ms; }
+.os-depth-list > *:nth-child(5)  { animation-delay: 104ms; }
+.os-depth-list > *:nth-child(6)  { animation-delay: 130ms; }
+.os-depth-list > *:nth-child(7)  { animation-delay: 156ms; }
+.os-depth-list > *:nth-child(8)  { animation-delay: 182ms; }
+.os-depth-list > *:nth-child(9)  { animation-delay: 208ms; }
+.os-depth-list > *:nth-child(10) { animation-delay: 234ms; }
+.os-depth-list > *:nth-child(11) { animation-delay: 260ms; }
+.os-depth-list > *:nth-child(12) { animation-delay: 286ms; }
+/* از دوازده به بعد همه یک تأخیرِ ثابت می‌گیرند: فهرستِ صدتایی نباید سه
+   ثانیه طول بکشد تا کامل دیده شود. */
+.os-depth-list > *:nth-child(n + 13) { animation-delay: 300ms; }
+
+@keyframes loveos-depth-in {
+  from {
+    opacity: 0;
+    /* ``perspective()`` داخلِ خودِ transform → بدونِ نیاز به جدِ سه‌بعدی */
+    transform: perspective(760px) translateZ(calc(-88px * var(--q3d)))
+      translateY(calc(9px * var(--q3d)));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(760px) translateZ(0) translateY(0);
+  }
+}
+
+/* --------------------------------------------------- لایه‌های پارالاکس --- */
+/* برخلافِ دو کلاسِ بالا، این‌ها **نیاز به یک جدِ دارای پرسپکتیو** دارند
+   (``.os-stage-3d`` یا ``.os-depth-hero``). برای عنصرِ تزئینیِ سربرگ است،
+   نه برای متنِ بدنه — چون translateZ بزرگ متن را نرم (blurry) می‌کند. */
+.os-parallax-far  { transform: translateZ(calc(-64px * var(--q3d))); }
+.os-parallax-mid  { transform: translateZ(calc(-30px * var(--q3d))); }
+.os-parallax-near { transform: translateZ(calc(22px * var(--q3d))); }
+
+/* سربرگِ عمق‌دار: لنگرِ ذره‌های محیطی + پرسپکتیو برای .os-parallax-* */
+.os-depth-hero {
+  position: relative;
+  perspective: calc(1000px * var(--q3d) + 100000px * (1 - var(--q3d)));
+  perspective-origin: 50% 45%;
+}
+
+/* ------------------------------------------------------------- گویِ کُره --- */
+/* یک کره‌ی باورپذیر از گرادیان، بدونِ WebGL. برای «حالِ دل»، مدال‌ها و
+   قرقره‌های صندوقِ صدا. رنگ‌ها با --orb-core / --orb-edge از بیرون ست
+   می‌شوند تا همان کلاس با تمِ روز و شب و با هر اپی کار کند. */
+.os-orb {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 62% 74%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 46%),
+    radial-gradient(circle at 50% 46%, var(--orb-core, var(--os-accent)), var(--orb-edge, #a83a70) 78%);
+  box-shadow:
+    inset 0 calc(-1 * var(--edge-2)) calc(3 * var(--edge-2)) rgba(0, 0, 0, 0.30),
+    inset 0 var(--edge-1) calc(2 * var(--edge-2)) rgba(255, 255, 255, 0.34),
+    0 calc(3 * var(--edge-2)) calc(6 * var(--edge-2)) calc(-3 * var(--edge-2)) rgba(0, 0, 0, 0.42),
+    0 0 calc(14 * var(--edge-2)) calc(-6 * var(--edge-2)) var(--glow-color);
+}
+
+/* ------------------------------------------------------- صفحه‌ی چرخان --- */
+/* دیسکِ گرامافون/قرقره. ⚠️ این کلاس یک ``animation`` دارد که ``transform``
+   می‌نویسد، پس **نمی‌تواند** هم‌زمان translateZ درون‌خطی بگیرد (انیمیشنِ
+   CSS در آبشار می‌بَرَد). اگر عمق می‌خواهی، این را داخلِ یک ظرفِ بیرونی
+   بگذار و translateZ را به آن ظرف بده. */
+.os-disc {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, var(--disc-label, #f7a8c4) 0 15%, transparent 15.5%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(20, 16, 30, 0.92) 0 2px, rgba(46, 38, 62, 0.92) 2px 4px);
+  box-shadow:
+    inset 0 0 calc(3 * var(--edge-2)) rgba(0, 0, 0, 0.6),
+    0 calc(2 * var(--edge-2)) calc(5 * var(--edge-2)) calc(-2 * var(--edge-2)) rgba(0, 0, 0, 0.45);
+  animation: loveos-spin 5.2s linear infinite;
+}
+.os-disc-still { animation-play-state: paused; }
+
+@keyframes loveos-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------- ترمینال --- */
+/* ⚠️ این یک استثنایِ **عمدیِ** بصری است: ترمینال یک کنسولِ رترو است و
+   زبانِ «رزینِ پاستلی / بلورِ شب‌تاب» بقیه‌ی اپ‌ها به آن نمی‌آید. پس به‌جای
+   پخِ صورتی، شیشه‌ی CRT می‌گیرد.
+
+   صادقانه: انحنای واقعیِ لامپِ پرتوی کاتدی با CSS ممکن نیست (نیاز به warp
+   مش دارد). این‌جا همان چیزی ساخته شده که چشم قبول می‌کند: وینیتِ تیره‌ی
+   دورِ لبه + اسکن‌لاین + درخششِ فسفریِ متن. */
+.os-crt {
+  position: relative;
+  border-radius: 16px;
+  background-color: #07100c;
+  background-image:
+    radial-gradient(ellipse at 50% 50%, rgba(52, 255, 158, 0.10), transparent 62%),
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, rgba(0, 0, 0, 0) 1px 3px);
+  box-shadow:
+    inset 0 0 calc(9 * var(--edge-2)) rgba(0, 0, 0, 0.85),
+    inset 0 0 calc(3 * var(--edge-2)) rgba(88, 255, 176, 0.16),
+    0 calc(2 * var(--edge-2)) calc(6 * var(--edge-2)) calc(-3 * var(--edge-2)) rgba(0, 0, 0, 0.6);
+}
+.os-crt::after {
+  /* بازتابِ شیشه: یک نوارِ موربِ کم‌رنگ که حسِ «پشتِ شیشه بودن» می‌دهد */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: calc(0.7 * var(--q3d) + 0.3);
+}
+.os-crt-glow {
+  color: #7dffb8;
+  text-shadow: 0 0 calc(2 * var(--edge-2)) rgba(100, 255, 175, calc(0.75 * var(--q3d) + 0.25));
+}
+
+/* ---------------------------------------------------- لبه‌ی توپُرِ عمومی --- */
+/* برای عنصرهایی که os-card نیستند ولی باید همان «ضخامتِ فیزیکی» را داشته
+   باشند (کاشی، مدال، جلدِ کتاب). */
+.os-slab {
+  box-shadow:
+    var(--rim-light),
+    0 var(--edge-2) 0 var(--chip-edge),
+    0 calc(3 * var(--edge-2)) calc(6 * var(--edge-2)) calc(-3 * var(--edge-2)) rgba(150, 70, 130, 0.32);
 }

@@ -35,7 +35,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { attachGyroTilt, attachPointerTilt, atLeast, probeCapability, type QualityTier } from './quality'
+import { attachCardTilt, attachGyroTilt, attachPointerTilt, atLeast, probeCapability, type QualityTier } from './quality'
 import { useOS } from './store'
 
 /** لایه‌ی مؤثرِ کیفیتِ سه‌بعدی (واکنشی) */
@@ -121,6 +121,35 @@ export function Tilt({
   )
   if (!stage) return inner
   return <div className="os-stage-3d">{inner}</div>
+}
+
+/* ------------------------------------------- تیلتِ کارت‌ها (سراسری) --- */
+
+/**
+ * تیلتِ ملایمِ همه‌ی کارت‌های ``.os-tilt-card`` در سند، با **یک** listener.
+ *
+ * یک بار در پوسته‌ی OS (دسکتاپ) صدا زده می‌شود نه در هر اپ — چون listener
+ * سراسری است، اگر هر اپ جداگانه نصبش کند تعدادِ نصب/لغو بی‌دلیل زیاد
+ * می‌شود. در لایه‌ی مهتاب و با ``prefers-reduced-motion`` اصلاً نصب نمی‌شود،
+ * پس روی دستگاهی که عمداً سبک انتخاب شده هیچ رویدادی مصرف نمی‌شود.
+ *
+ * ⚠️ ``.os-tilt-card`` را روی ظرفِ **اسکرول** و روی ظرفِ **متنِ بلند**
+ *    نگذار. همان دو قانونِ سختِ ``<Tilt>`` این‌جا هم برقرار است؛ تنها
+ *    تفاوتش این است که زاویه‌اش کوچک‌تر است (۴ درجه) چون روی ۱۱۳ کارت
+ *    هم‌زمان اعمال می‌شود و زاویه‌ی بزرگ کلِ رابط را شلوغ می‌کرد.
+ */
+export function useCardTilt(maxDeg = 4, disabled?: () => boolean): void {
+  const tier = useQualityTier()
+  const allowed = useMotionAllowed()
+  const active = allowed && tier !== 'lite'
+  // در ref تا تغییرِ هویتِ تابع هر رندر، listener را نصب/لغو نکند
+  const disabledRef = useRef(disabled)
+  disabledRef.current = disabled
+
+  useEffect(() => {
+    if (!active) return
+    return attachCardTilt({ maxDeg, disabled: () => disabledRef.current?.() ?? false })
+  }, [active, maxDeg])
 }
 
 /* --------------------------------------------------------- برجسته‌سازی --- */
@@ -344,26 +373,73 @@ export function AmbientDepth({ count = 22, colors }: { count?: number; colors?: 
   if (motes.length === 0) return null
 
   return (
-    <div className="os-ambient-depth os-stage-3d" aria-hidden>
-      <div className="os-extrude h-full w-full">
-        {motes.map((m) => (
-          <span
-            key={m.id}
-            className="absolute rounded-full"
-            style={{
-              left: `${m.x}%`,
-              top: `${m.y}%`,
-              width: m.size,
-              height: m.size,
-              background: m.hue,
-              opacity: 0.34,
-              transform: `translateZ(${m.z}px)`,
-              animation: `loveos-float-3d ${m.dur}s ease-in-out ${m.delay}s infinite`,
-              boxShadow: `0 0 ${m.size * 3}px ${m.hue}`,
-            }}
-          />
-        ))}
+    // ⚠️ دو ظرف، نه یکی — و این یک اصلاحِ باگ است نه سلیقه:
+    // ``overflow: hidden`` و ``perspective`` روی **یک** عنصر، وقتی فرزندش
+    // ``preserve-3d`` باشد، در سافاری عمق را تخت می‌کند (تله‌ی R-C). ذره‌ها
+    // آن‌وقت به‌جایِ «دور و نزدیک» فقط نقطه‌های تختِ هم‌اندازه می‌شدند.
+    // پس بُرش (clip) را ظرفِ بیرونی می‌گیرد و پرسپکتیو را ظرفِ داخلیِ
+    // بدونِ overflow — همان الگویی که برای آسمانِ آب‌وهوا جواب داد.
+    <div className="os-ambient-depth" aria-hidden>
+      <div className="os-ambient-stage">
+        <div className="os-extrude h-full w-full">
+          {motes.map((m) => (
+            <span
+              key={m.id}
+              className="absolute rounded-full"
+              style={{
+                left: `${m.x}%`,
+                top: `${m.y}%`,
+                width: m.size,
+                height: m.size,
+                background: m.hue,
+                opacity: 0.34,
+                transform: `translateZ(${m.z}px)`,
+                animation: `loveos-float-3d ${m.dur}s ease-in-out ${m.delay}s infinite`,
+                boxShadow: `0 0 ${m.size * 3}px ${m.hue}`,
+              }}
+            />
+          ))}
+        </div>
       </div>
+    </div>
+  )
+}
+
+/* --------------------------------------------------- سربرگِ عمق‌دار --- */
+
+/**
+ * سربرگِ استانداردِ سه‌بعدی برای هر اپ.
+ *
+ * یک پوششِ نازک است که سه کار را یک‌جا و **یکدست** انجام می‌دهد تا هر اپ
+ * نسخه‌ی خودش را نسازد:
+ *   ۱) ظرفِ ``position: relative`` که ذره‌های محیطی بتوانند داخلش بنشینند
+ *   ۲) میدانِ ذره‌ی شناور در پس‌زمینه (اختیاری، با ``motes``)
+ *   ۳) پرسپکتیو برای فرزندانِ ``.os-parallax-*``
+ *
+ * ⚠️ خودِ سربرگ **کج نمی‌شود**. متنِ عنوان باید خوانا بماند؛ عمق این‌جا از
+ *    لایه‌بندیِ Z می‌آید نه از چرخش. اگر عنصرِ بصریِ قهرمان داری (یک شکل،
+ *    یک آیکون، یک عکس) آن را داخلِ ``<Tilt>`` بگذار، نه کلِ سربرگ را.
+ */
+export function DepthHero({
+  children,
+  className = '',
+  motes = 0,
+  style,
+}: {
+  children: React.ReactNode
+  className?: string
+  /** تعدادِ ذره‌های محیطی؛ صفر یعنی بدونِ ذره (پیش‌فرض) */
+  motes?: number
+  style?: React.CSSProperties
+}) {
+  const tier = useQualityTier()
+  const allowed = useMotionAllowed()
+  const deep = allowed && tier !== 'lite'
+
+  return (
+    <div className={`os-depth-hero ${className}`} style={style}>
+      {deep && motes > 0 ? <AmbientDepth count={motes} /> : null}
+      {children}
     </div>
   )
 }

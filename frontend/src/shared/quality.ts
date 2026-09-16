@@ -786,6 +786,114 @@ export function attachPointerTilt(
   }
 }
 
+/* --------------------------------------- تیلتِ کارت با یک listenerِ کلّی --- */
+
+let cardTiltUsers = 0
+let cardTiltOff: (() => void) | null = null
+
+/**
+ * تیلتِ **همه‌ی** کارت‌های ``.os-tilt-card`` با یک listenerِ سراسری.
+ *
+ * --------------------------------------------------------------------------
+ * چرا delegate و نه یک ``<Tilt>`` دورِ هر کارت
+ * --------------------------------------------------------------------------
+ * ``os-card`` در پروژه ۱۱۳ بار استفاده شده. اگر به هرکدام یک ``<Tilt>``
+ * می‌دادم یعنی ۱۱۳ کامپوننتِ اضافه، ۱۱۳ ``ref``، ۲۲۶ listener
+ * (pointermove + pointerleave) و ۱۱۳ ``useEffect``. روی گوشی این هزینه‌ی
+ * خالص است برای افکتی که فقط با موس دیده می‌شود.
+ *
+ * این نسخه **یک** listener روی ``document`` دارد و با ``closest()`` کارتِ
+ * زیرِ مکان‌نما را پیدا می‌کند. پشتِ ``requestAnimationFrame`` هم
+ * همگام‌سازی شده، پس حداکثر یک نوشتنِ CSS در هر فریم انجام می‌شود — نه یکی
+ * به ازای هر رویدادِ pointermove (که در دسکتاپ تا ۲۴۰ بار در ثانیه می‌آید).
+ *
+ * نکته‌ی مهم: هیچ state ری‌اکتی ست نمی‌کند. فقط متغیرِ CSS می‌نویسد، پس
+ * حرکتِ موس **هیچ** رندرِ دوباره‌ی ری‌اکتی در هیچ اپی تولید نمی‌کند.
+ *
+ * @returns تابعِ لغو. چند مصرف‌کننده می‌توانند هم‌زمان بگیرند (refcount).
+ */
+export function attachCardTilt(
+  opts: { maxDeg?: number; disabled?: () => boolean } = {},
+): () => void {
+  const maxDeg = opts.maxDeg ?? 4
+  const disabled = opts.disabled ?? (() => false)
+
+  const release = () => {
+    cardTiltUsers -= 1
+    if (cardTiltUsers > 0) return
+    cardTiltUsers = 0
+    cardTiltOff?.()
+    cardTiltOff = null
+  }
+
+  cardTiltUsers += 1
+  if (cardTiltOff) return release
+
+  let last: HTMLElement | null = null
+  let raf = 0
+
+  const reset = (el: HTMLElement | null) => {
+    if (!el) return
+    el.style.setProperty('--tilt-x', '0deg')
+    el.style.setProperty('--tilt-y', '0deg')
+  }
+
+  const onMove = (e: PointerEvent) => {
+    // همان دلیلِ attachPointerTilt: روی لمس، pointermove هنگامِ اسکرول هم
+    // شلیک می‌شود و کج‌شدنِ کارت‌ها موقعِ اسکرول حالتِ تهوع می‌دهد.
+    if (e.pointerType !== 'mouse') return
+    // حینِ درگ‌اند‌دراپِ کاشی‌های دسکتاپ خاموش است: هم حواس را از خودِ
+    // درگ می‌دزدد هم هر فریم یک getBoundingClientRectِ بی‌فایده می‌گیرد.
+    if (disabled()) {
+      if (raf) return
+      raf = window.requestAnimationFrame(() => { raf = 0; reset(last); last = null })
+      return
+    }
+    if (raf) return
+    const cx = e.clientX
+    const cy = e.clientY
+    const target = e.target as HTMLElement | null
+    raf = window.requestAnimationFrame(() => {
+      raf = 0
+      const el = (target?.closest?.('.os-tilt-card') as HTMLElement | null) ?? null
+      if (el !== last) {
+        reset(last)
+        last = el
+      }
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return
+      const nx = ((cx - r.left) / r.width) * 2 - 1
+      const ny = ((cy - r.top) / r.height) * 2 - 1
+      // RTL: همان قراردادِ attachPointerTilt تا جهتِ نور بینِ کارت‌ها و
+      // قهرمان‌های سه‌بعدی یکی بماند.
+      const rtl = document.documentElement.dir === 'rtl'
+      el.style.setProperty('--tilt-x', `${(rtl ? nx : -nx) * maxDeg}deg`)
+      el.style.setProperty('--tilt-y', `${-ny * maxDeg}deg`)
+    })
+  }
+
+  // اگر مکان‌نما از پنجره بیرون برود، آخرین رویدادِ pointermove دیگر نمی‌آید
+  // و کارت کج می‌ماند. پس صریح صفرش می‌کنیم.
+  const onLeave = () => {
+    reset(last)
+    last = null
+  }
+
+  document.addEventListener('pointermove', onMove, { passive: true })
+  document.documentElement.addEventListener('pointerleave', onLeave, { passive: true })
+  window.addEventListener('blur', onLeave)
+
+  cardTiltOff = () => {
+    if (raf) window.cancelAnimationFrame(raf)
+    document.removeEventListener('pointermove', onMove)
+    document.documentElement.removeEventListener('pointerleave', onLeave)
+    window.removeEventListener('blur', onLeave)
+    onLeave()
+  }
+  return release
+}
+
 /* ------------------------------------------------ تیلتِ ژیروسکوپی --- */
 
 /**
