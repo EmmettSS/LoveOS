@@ -786,3 +786,25 @@ from core.services import clear_app_cache; print(clear_app_cache())"
 </div>
 
 </div>
+
+---
+
+## ۱۴) لایه‌ی سه‌بعدی (WebGL)
+
+شش اپِ احساسی با three.js زنده‌تر شده‌اند: **آسمانِ ستاره‌ها**، **باغچه**، **خونه‌ی رویایی (نقشه)**، **صندوقچه**، **بغل**، **ضربان** و **حالِ دل**.
+
+### معماری
+- `frontend/src/shared/quality.ts` — لایه‌های `lite | balanced | dream | auto` + تشخیص دستگاه
+- `frontend/src/three/useThreeScene.ts` — تنها سازنده‌ی `WebGLRenderer` (سقف context، dispose، pause تب)
+- `frontend/src/three/scenes/*.ts` — منطق خالص صحنه (قابل‌تست در jsdom)
+- `frontend/src/three/components/*` — پوسته‌ی React + `lazy()`
+
+### کیفیت
+در **تنظیمات** می‌توان لایه را دستی انتخاب کرد (`ui_quality`). مقدار محلی در `prefs` و روی سرور در `UserConfig.ui_quality` ذخیره می‌شود. بدون WebGL یا در jsdom، همان UI دوبعدی قبلی به‌عنوان fallback می‌آید.
+
+### حالِ دلخواه
+مدل `CustomMood` + endpointهای `GET/POST /api/moods`، `POST /api/moods/custom`، `POST /api/moods/set` با `note` و `custom_id`. دختر آزادانه حال تازه می‌سازد؛ بابا با اعلان مطلع می‌شود.
+
+### باندل
+چانک `loveos-3d` فقط وقتی اپ سه‌بعدی باز شود و لایه کهکشان باشد بارگذاری می‌شود (~۱۶۰KB gzip).
+

@@ -78,6 +78,13 @@ class UserConfig(TimeStamped):
     )
     sound_enabled = models.BooleanField("صدا", default=True)
     font_scale = models.FloatField("اندازه فونت", default=1.0)
+    UI_QUALITY = [
+        ("auto", "خودکار"),
+        ("lite", "مهتاب"),
+        ("balanced", "بلور"),
+        ("dream", "کهکشان"),
+    ]
+    ui_quality = models.CharField("کیفیت سه‌بعدی", max_length=12, choices=UI_QUALITY, default="auto")
     allow_daughter_music_upload = models.BooleanField("اجازه آپلود موسیقی به دخترم", default=True)
 
     class Meta:
