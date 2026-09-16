@@ -158,8 +158,15 @@ function NextCallHero({ next, stats, reminderMinutes, onGo }: { next: Appointmen
 
   if (!next) {
     return (
-      <div className="os-card space-y-2 p-4 text-center">
-        <p className="text-3xl">📞</p>
+      <div className="os-card os-slab space-y-2 p-4 text-center">
+        <p className="relative text-3xl">
+          <span
+            className="os-orb pointer-events-none absolute"
+            style={{ width: 54, height: 54, top: -12, left: '50%', marginLeft: -27, opacity: 0.34, ['--orb-core' as string]: 'var(--os-accent-soft)', ['--orb-edge' as string]: 'var(--os-accent)' }}
+            aria-hidden
+          />
+          📞
+        </p>
         <p className="text-sm">{t('calls.noNext')}</p>
         <button className="os-btn-primary mx-auto !px-4 !py-2 text-xs" onClick={onGo}>
           {t('calls.proposeNow')}
@@ -171,11 +178,14 @@ function NextCallHero({ next, stats, reminderMinutes, onGo }: { next: Appointmen
   const sides = Object.values(next.sides_time || {})
   return (
     <div
-      className="os-card space-y-3 p-4"
+      className="os-card os-slab space-y-3 p-4"
       style={{ background: 'linear-gradient(140deg, var(--os-accent-soft), transparent)' }}
     >
       <div className="flex items-center gap-2">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl text-white" style={{ background: 'var(--os-accent)' }}>
+        {/* کاشیِ آیکون یک جسمِ بصری است نه متن، پس تیلتِ زیاد می‌گیرد
+            (``os-tilt-medal`` = ۱۵ درجه) و از عنوانِ کنارش جدا می‌شود.
+            listenerش سراسری است، پس این‌جا صفر listenerِ اضافه شد. */}
+        <span className="os-slab os-tilt-medal flex h-10 w-10 items-center justify-center rounded-2xl text-white" style={{ background: 'var(--btn-face)' }}>
           <Icon name="call" size={20} />
         </span>
         <div className="min-w-0 flex-1">
@@ -187,7 +197,7 @@ function NextCallHero({ next, stats, reminderMinutes, onGo }: { next: Appointmen
         <span className="os-chip os-chip-active shrink-0">{next.status_label}</span>
       </div>
 
-      <div className="rounded-2xl p-3 text-center" style={{ background: 'var(--os-card, rgba(255,255,255,.55))' }}>
+      <div className="rounded-2xl p-3 text-center" style={{ background: 'var(--well-face)', boxShadow: 'var(--well-inner)' }}>
         <p className="os-title text-3xl tabular-nums" style={{ color: 'var(--os-accent)' }}>
           {humanSeconds(left, t('os.hours'), t('os.minutes'))}
         </p>

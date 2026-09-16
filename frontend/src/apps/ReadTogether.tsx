@@ -114,14 +114,18 @@ export default function ReadTogether() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-2 text-center">
+      /* بچه‌های این گرید divِ ساده‌اند (motion در کار نیست)، پس
+         ``.os-depth-list`` امن است: چهار آمار یکی‌یکی از عمق بالا می‌آیند.
+         کاشی‌ها ``os-slab`` گرفتند و نه ``os-tilt-*`` — این‌ها عدد و
+         برچسب‌اند و قانونِ «متن کج نمی‌شود» اینجا هم برقرار است. */
+      <div className="os-depth-list os-stage-3d grid grid-cols-4 gap-2 text-center">
         {[
           { label: t('reading.stat.books'), value: digits(data.stats.books_total) },
           { label: t('reading.stat.finishedBoth'), value: digits(data.stats.both_finished.length) },
           { label: t('reading.stat.notes'), value: digits(data.stats.notes_total) },
           { label: t('reading.stat.quotes'), value: digits(data.stats.quotes_total) },
         ].map((c) => (
-          <div key={c.label} className="os-card p-2.5">
+          <div key={c.label} className="os-card os-slab p-2.5">
             <p className="text-[10px] os-muted">{c.label}</p>
             <p className="mt-0.5 text-base font-bold">{c.value}</p>
           </div>
@@ -183,7 +187,7 @@ function ShelfRow({ books, onOpen }: { books: Book[]; onOpen: (b: Book) => void 
   const { t } = useTranslation()
   if (books.length === 0) return <Empty text={t('reading.emptyShelf')} />
   return (
-    <div className="space-y-2">
+    <div className="os-stage-3d space-y-2">
       {books.map((b, i) => (
         <motion.button
           key={b.id}
@@ -191,12 +195,15 @@ function ShelfRow({ books, onOpen }: { books: Book[]; onOpen: (b: Book) => void 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.03 }}
           onClick={() => onOpen(b)}
-          className="os-card flex w-full items-center gap-3 p-3 text-start"
+          className="os-card os-slab os-tilt-card flex w-full items-center gap-3 p-3 text-start"
         >
+          {/* جلدِ کتاب «جسم» است نه متن، پس تیلتِ زیاد می‌گیرد و از عنوانِ
+              کنارش جدا می‌شود — همان کاری که در کتابخونه کردیم تا قفسه
+              واقعاً قفسه به نظر برسد. */}
           {b.cover ? (
-            <img src={b.cover} alt={b.title} className="h-14 w-11 shrink-0 rounded-lg object-cover" />
+            <img src={b.cover} alt={b.title} className="os-tilt-medal relative h-14 w-11 shrink-0 rounded-lg object-cover" style={{ boxShadow: '0 var(--edge-2) calc(3 * var(--edge-2)) calc(-2 * var(--edge-2)) rgba(0,0,0,.5), inset 0 var(--edge-1) 0 rgba(255,255,255,.3)' }} />
           ) : (
-            <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded-lg text-xl" style={{ background: 'var(--os-accent-soft)' }}>
+            <span className="os-tilt-medal relative flex h-14 w-11 shrink-0 items-center justify-center rounded-lg text-xl os-slab" style={{ background: 'var(--os-accent-soft)' }}>
               📕
             </span>
           )}
