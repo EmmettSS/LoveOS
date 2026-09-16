@@ -668,7 +668,7 @@ pending notifications, **fires approved-call reminders** and flushes the Soroush
 # backend: 97 tests (models, APIs, search, location, panel, constellations, UI quality)
 cd backend && .venv/bin/python manage.py test
 
-# frontend: type-check, lint, build and 9 UI suites (281 checks)
+# frontend: type-check, lint, build and 9 UI suites (285 checks)
 cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
 ```
 
@@ -778,7 +778,7 @@ from core.services import clear_app_cache; print(clear_app_cache())"
 * **16 new badges and 6 new tutorial chapters** for the new apps.
 * **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
 * **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
-* **97 backend tests** plus 9 frontend suites (`npm run test:ui`, 281 checks) covering the window
+* **97 backend tests** plus 9 frontend suites (`npm run test:ui`, 285 checks) covering the window
   manager, settings (language/theme), global search, the rendering of every new app against real
   backend responses, and the 3D depth tiers.
 
@@ -816,7 +816,7 @@ never couple to display language.
 | `frontend/src/three/scenes/starmap.ts` | The star-field sky scene |
 | `frontend/src/three/scenes/cinema.ts` + `CinemaHall.tsx` | The cinema-hall scene + its `lazy` shell with a CSS fallback |
 | `frontend/src/three/scenes/room.ts` + `DreamRoom.tsx` | The 3D dream-home maquette + its `lazy` shell with a CSS fallback |
-| `frontend/tests/three-hygiene.ts` | 25 static checks over the source text, for rules jsdom can never see |
+| `frontend/tests/three-hygiene.ts` | 29 static checks over the source text, for rules jsdom can never see |
 | `backend/content/models.py` | `Constellation.kind` (letter or shape) |
 | `backend/accounts/models.py` | `UserConfig.ui_quality` |
 
@@ -936,13 +936,39 @@ cases, and the newly 3D-ified apps (badges, mood, cinema, terminal) across
 black canvas when WebGL is missing, and that the CRT glass never sits on the
 scroll container.
 
-**`frontend/tests/three-hygiene.ts`** (25 static checks) works on the **source
+**`frontend/tests/three-hygiene.ts`** (29 static checks) works on the **source
 text** — no jsdom, no React, under a second. It exists because most bugs in
 this phase were not render-time bugs: they only appear in a real browser
 (Safari flattens `preserve-3d` inside an `overflow-hidden` parent), only at
 build time (the `three.js` chunk silently joins the PWA precache), or only on
-a real device (frame drops). Every one of the 25 checks corresponds to a bug
-that **actually happened** in this project, not a speculative rule.
+a real device (frame drops). Every check in sections 1–5 corresponds to a bug
+that **actually happened** in this project, not a speculative rule. Section 6
+is a different animal: a **coverage guard**. This phase promised "the whole
+project is 3D", and while that was measured by an ad-hoc shell loop it was not
+trustworthy; now every app in `src/apps/*.tsx` must carry at least one depth
+marker, so a flat thirty-first app breaks the build. The single exception is
+explicit and justified (`DreamHome`, which delegates its depth to the 3D
+maquette in `three/DreamRoom.tsx`), and the check **verifies the target too**,
+so that exception list cannot become an escape hatch for a lazy app.
+
+⚠️ An intermittent failure was also found and root-caused in this phase. The
+`window-manager-settings` fixture dispatched events with
+`new MouseEvent(...)`, and jsdom puts no `pointerType` on a `MouseEvent`.
+Desktop's condition is `e.pointerType !== 'mouse'`, so `undefined !== 'mouse'`
+meant a plain mouse click was read as **touch**, which arms a 320 ms
+(`ARM_DELAY_MS`) drag-preparation timer that `pointerup` normally clears.
+Under heavy CPU load that gap exceeded 320 ms, the timer fired,
+`suppressClickRef` was set, and the click was **swallowed** — the second window
+never opened and the "two windows are open" check failed. The fixture now sets
+`pointerType: 'mouse'` explicitly, removing the race at its root. (It did not
+reproduce in six subsequent runs without the fix, so this root cause was
+confirmed by reading the code rather than by reproduction; but the timer-arming
+path is real and removing it is correct.)
+
+⚠️ One smaller trap in that same fix: `button` on a `MouseEvent` is
+**getter-only**, so `Object.assign(e, { button: 0 })` throws a `TypeError`.
+`desktop-drag.tsx` gets away with setting `button` because it builds its event
+from a raw `Event`, not a `MouseEvent`.
 
 ⚠️ The first version of that suite reported six failures, and **all six were
 false positives**: the text of our own comments matched the patterns. In

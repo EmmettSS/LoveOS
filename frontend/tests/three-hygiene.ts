@@ -142,7 +142,6 @@ const rel = (p: string) => relative(root, p)
    ========================================================================== */
 console.log('\n  ── بخشِ ۱: Rules-of-Hooks ──')
 
-const HOOK_CALL = /\buse[A-Z][A-Za-z0-9]*\s*\(/
 const SHORT_CIRCUIT_HOOK = /use[A-Z][A-Za-z0-9]*\([^()]*\)\s*(?:!==|===|&&|\|\|)\s*[^()\n]*&&\s*use[A-Z][A-Za-z0-9]*\(/
 
 let shortCircuitHits = 0
@@ -351,6 +350,73 @@ for (const n of sceneWrappers) {
   const t = read(join(threeDir, n))
   ok(`${n} مسیرِ تنزل (onUnavailable) دارد`, /onUnavailable/.test(t))
 }
+
+/* ==========================================================================
+   بخشِ ۶: پوشش — هیچ اپی تخت نماند
+   --------------------------------------------------------------------------
+   وعده‌ی این فاز این بود که «کلِ پروژه سه‌بعدی شود»، نه «بیست‌وهشت اپ از
+   سی‌تا». این وعده تا وقتی یک حلقه‌ی دستیِ shell بود قابلِ اتکا نبود؛ حالا
+   ماشینی سنجه می‌شود و اپِ سی‌ویکمِ تخت، build را می‌شکند.
+
+   ⚠️ الگویِ نشانگرها عمداً **صریح** است و نه «هر کلاسِ os-*». چون نیمی از
+   کلاس‌های os-* عمق نیستند (os-card، os-chip، os-input، os-btn) و اگر
+   الگو را واژگونه می‌کردیم — «نباید کلاسِ بدونِ عمق داشته باشد» — هر اپی که
+   اصلاً سه‌بعدی نشده بود هم پاس می‌شد.
+   ========================================================================== */
+console.log('\n  ── بخشِ ۶: پوششِ همه‌ی اپ‌ها ──')
+
+/**
+ * نشانگرهایِ «این فایل عمق دارد». هر سه خانواده:
+ * کلاس‌های CSSِ عمق، هوک‌های لایه، و کلیدهایِ سه‌بعدیِ framer.
+ */
+const DEPTH_MARKER =
+  /os-(?:slab|glass-slab|tilt-card|tilt-medal|tilt-tile|depth|depth-hero|depth-list|orb|disc|disc-still|medal|medal-locked|crt|crt-glow|parallax-(?:far|mid|near)|stage-3d|cinema-hall|cinema-seats|house-stage|house-room|gift-stage|gift-box|sky-stack|sky-depth|sky-3d|extrude|extrude-layer|specular|ambient-stage|ambient-depth|flip-viewport|flip-hinge|shelf-board|shelf-book|vault-door|vault-dial|cassette|glow-ring|hand|screen|anim-float-3d|anim-turntable|anim-unfold)\b|useDepthFactor|useQualityTier|DepthHero|<Tilt[\s>]|<Extrude|<Specular|AmbientDepth|rotate[XYZ]|translateZ|transformPerspective/
+
+/**
+ * اپ‌هایی که عمقشان را به یک صحنه‌ی WebGL **واگذار** می‌کنند و خودشان کلاسِ
+ * عمق ندارند. استثنا باید صریح و دلیل‌دار باشد، نه ضمنی — وگرنه همین
+ * فهرست می‌شود راهِ فرارِ هر اپِ تنبلی.
+ */
+const DELEGATES_DEPTH: Record<string, string> = {
+  // عمقِ خانه‌ی رؤیا در ماکتِ سه‌بعدی و پوسته‌ی تنزلِ CSSِ آن است
+  'DreamHome.tsx': 'three/DreamRoom.tsx',
+}
+
+/**
+ * هر کلاسی که در الگویِ بالا اسم برده‌ایم باید واقعاً در CSS تعریف شده
+ * باشد. بدونِ این بررسی، یک غلطِ املایی در الگو بی‌صدا «هرگز مطابقت
+ * نمی‌کند» می‌شود و اپ‌هایِ واقعیِ سه‌بعدی را شکست‌خورده نشان می‌دهد.
+ */
+{
+  const named = [...DEPTH_MARKER.source.matchAll(/os-(?:[a-z0-9]+|-)+/g)].map((m) => m[0])
+  const ghosts = [...new Set(named)].filter((c) => !cssText.includes(`.${c}`))
+  ok('همه‌ی کلاس‌هایِ عمقِ الگو در CSS تعریف شده‌اند', ghosts.length === 0, ghosts.join('، '))
+}
+
+const flatApps: string[] = []
+for (const f of appFiles) {
+  const name = relative(join(srcDir, 'apps'), f)
+  const delegate = DELEGATES_DEPTH[name]
+  if (delegate) {
+    const target = join(srcDir, delegate)
+    // واگذاری فقط وقتی معتبر است که مقصد واقعاً عمق داشته باشد
+    ok(`${name} عمق را به ${delegate} واگذار می‌کند و آن مقصد عمق دارد`,
+      existsSync(target) && (DEPTH_MARKER.test(read(target)) || /useThreeScene/.test(read(target))))
+    continue
+  }
+  if (!DEPTH_MARKER.test(read(f))) flatApps.push(name)
+}
+ok(`هر ${appFiles.length - Object.keys(DELEGATES_DEPTH).length} اپِ باقی‌مانده دستِ‌کم یک نشانگرِ عمق دارد`,
+  flatApps.length === 0, flatApps.join('، '))
+
+// هیچ اپی نباید **فقط** با importِ بی‌استفاده عمق گرفته باشد: اگر
+// useQualityTier صدا زده شده باید مصرف هم بشود.
+const unusedTier = appFiles.filter((f) => {
+  const t = read(f)
+  return /const\s+tier\s*=\s*useQualityTier\(\)/.test(t) && !/\btier\b(?![^(]*=\s*useQualityTier)/.test(t.replace(/const\s+tier\s*=\s*useQualityTier\(\)/, ''))
+})
+ok('هیچ اپی useQualityTier را وارد کرده و دور نریخته است', unusedTier.length === 0,
+  unusedTier.map((f) => relative(root, f)).join('، '))
 
 /* ---------------------------------------------------------------- نتیجه --- */
 console.log(`\n  جمع: ${pass} پاس · ${fail} شکست`)
