@@ -43,6 +43,17 @@ export default function Settings() {
   const openApp = useOS((s) => s.openApp)
   const showToast = useOS((s) => s.showToast)
 
+  /* --------------------------------------------------- کیفیتِ سه‌بعدی --- */
+  const uiQuality = useOS((s) => s.uiQuality)
+  const uiQualityChoice = useOS((s) => s.uiQualityChoice)
+  const qualityReasons = useOS((s) => s.qualityReasons)
+  const qualityReport = useOS((s) => s.qualityReport)
+  const qualityFps = useOS((s) => s.qualityFps)
+  const qualityAutoDowngraded = useOS((s) => s.qualityAutoDowngraded)
+  const setQualityChoice = useOS((s) => s.setQualityChoice)
+  const initQuality = useOS((s) => s.initQuality)
+  const [measuring, setMeasuring] = useState(false)
+
   const [installEvent, setInstallEvent] = useState<any>(null)
   const [vibrationOn, setVibrationOn] = useState(() => localStorage.getItem('loveos_vibration') !== 'off')
   const [locating, setLocating] = useState(false)
@@ -161,6 +172,119 @@ export default function Settings() {
           <button className="os-chip" onClick={() => void save({ font_scale: Math.min(1.4, (config.font_scale || 1) + 0.05) }, { silent: true })}>+</button>
         </div>
       </Row>
+
+      {/* ------------------------------------------------ کیفیتِ سه‌بعدی --- */}
+      {/*
+        نام‌های فارسیِ لایه‌ها عمداً شاعرانه‌اند (مهتاب/بلور/کهکشان) چون این
+        تنظیمات را یک بچه می‌خواند، نه یک مهندس. ولی **مقدارِ ذخیره‌شده**
+        همان ``lite|balanced|dream`` باقی می‌ماند تا منطقِ موتور و بک‌اند به
+        زبانِ نمایش گره نخورد.
+
+        نکته‌ی مهمِ رفتار: اگر دخترم «کهکشان» را بزند ولی دستگاهش توانش را
+        نداشته باشد، موتور انتخابش را به سقفِ ممکن **گیره** می‌کند. پس این‌جا
+        هم صریح می‌گوییم «الان چه لایه‌ای فعال است» و چرا — وگرنه او
+        «کهکشان» را انتخاب کرده ولی «بلور» می‌بیند و فکر می‌کند اپ خراب است.
+      */}
+      <Row label={t('settings.quality')} hint={t('settings.qualityHint')}>
+        <div className="flex w-full flex-wrap gap-1.5">
+          {(['auto', 'lite', 'balanced', 'dream'] as const).map((q) => (
+            <button
+              key={q}
+              className={`os-chip flex-1 justify-center whitespace-nowrap ${
+                uiQualityChoice === q ? 'os-chip-active' : ''
+              }`}
+              style={{ minWidth: 72, minHeight: 44 }}
+              aria-pressed={uiQualityChoice === q}
+              onClick={() => {
+                playClick()
+                // ۱) موتورِ کیفیت بی‌درنگ تصمیمِ تازه می‌گیرد (و حافظه‌ی
+                //    تنزلِ خودکار پاک می‌شود، چون کاربر صریحاً خواسته)
+                void setQualityChoice(q)
+                // ۲) روی سرور و localStorage ذخیره می‌شود. ترتیب عمدی است:
+                //    اعمالِ بصری باید پیش از شبکه باشد تا «زدم و هیچی نشد»
+                //    پیش نیاید.
+                void save({ ui_quality: q }, { silent: true })
+              }}
+            >
+              {t(`settings.tier_${q}`)}
+            </button>
+          ))}
+        </div>
+      </Row>
+
+      <div className="os-card space-y-2 p-3" data-quality-panel>
+        <p className="text-sm">
+          <span className="os-muted">{t('settings.qualityNow')}</span>{' '}
+          <b style={{ color: 'var(--os-accent)' }}>{t(`settings.tier_${uiQuality}`)}</b>
+          {qualityFps != null && (
+            <span className="os-muted text-xs"> — {t('settings.qualityFps', { n: digits(Math.round(qualityFps)) })}</span>
+          )}
+        </p>
+
+        {/* توضیحِ یک‌خطیِ لایه‌ی فعال: می‌گوید چه چیزی می‌بیند */}
+        <p className="text-[11px] leading-5 os-muted">{t(`settings.qualityDesc_${uiQuality}`)}</p>
+
+        {/* دلیل‌ها از خودِ موتور می‌آیند، نه از یک متنِ ثابت. این مهم است:
+            اگر موتور تنزل داد، دلیلِ واقعی‌اش هم نشان داده می‌شود. */}
+        {qualityReasons.length > 0 && (
+          <details className="text-[11px] leading-5">
+            <summary className="cursor-pointer os-muted select-none">{t('settings.qualityWhy')}</summary>
+            <ul className="mt-1.5 space-y-0.5 list-inside list-disc os-muted">
+              {qualityReasons.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        {qualityAutoDowngraded && (
+          <p className="text-[11px] leading-5 rounded-xl px-2.5 py-1.5" style={{ background: 'var(--os-warn-bg, rgba(255,193,94,.14))' }}>
+            {t('settings.qualityAutoDowngradedNote')}
+          </p>
+        )}
+
+        {/* اطلاعاتِ دستگاه — برای بابا، تا بداند چرا لایه این است */}
+        {qualityReport && (
+          <details className="text-[11px] leading-5">
+            <summary className="cursor-pointer os-muted select-none">{t('settings.qualityDevice')}</summary>
+            <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 os-muted">
+              <span>{t('settings.qualityCores', { n: digits(qualityReport.cores) })}</span>
+              <span>
+                {qualityReport.webgl === 0
+                  ? t('settings.qualityNoWebgl')
+                  : t('settings.qualityWebgl', { v: digits(qualityReport.webgl) })}
+              </span>
+              <span>DPR {qualityReport.dpr.toFixed(1)}</span>
+              <span>
+                {qualityReport.memoryGB != null
+                  ? t('settings.qualityMemory', { n: qualityReport.memoryGB.toFixed(1) })
+                  : t('settings.qualityMemoryUnknown')}
+              </span>
+              {/* رشته‌ی رندررِ GPU عمداً دو ستون کامل می‌گیرد: اسمِ GPUها طولانی
+                  است و نصفه‌نیمه بریدنش بی‌فایده‌ترین اطلاعاتِ ممکن است. */}
+              <span className="col-span-2 break-all" dir="ltr" style={{ textAlign: 'left' }}>
+                {qualityReport.renderer || t('settings.qualityGpuUnknown')}
+              </span>
+            </div>
+          </details>
+        )}
+
+        <button
+          className="os-chip mt-1"
+          style={{ minHeight: 44 }}
+          disabled={measuring}
+          onClick={() => {
+            playClick()
+            setMeasuring(true)
+            // force=true → سنجه‌ی فریم از کش خوانده نمی‌شود و واقعاً دوباره
+            // اندازه می‌گیرد. برای وقتی خوب است که گوشی داغ کرده یا برنامه‌ی
+            // دیگری سنگین بوده و لایه بی‌دلیل پایین افتاده.
+            void initQuality(uiQualityChoice, true).finally(() => setMeasuring(false))
+          }}
+        >
+          {measuring ? t('settings.qualityMeasuring') : t('settings.qualityRemeasure')}
+        </button>
+      </div>
 
       {/* ---------------------------------------------------- پس‌زمینه‌ها --- */}
       <Row label={t('settings.backgrounds')} hint={t('settings.backgroundsHint')}>
