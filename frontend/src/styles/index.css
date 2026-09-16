@@ -1461,3 +1461,89 @@ html[data-quality='lite'] .os-vault-dial {
   opacity: calc(0.7 * var(--q3d));
   animation: loveos-drift 11s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   ماکتِ خونه‌ی رویایی — نسخه‌ی CSS-سه‌بعدی (مهتاب/بلور، و fallbackِ کهکشان)
+   --------------------------------------------------------------------------
+   ⚠️ سه ظرف، نه یکی. بُرش (``overflow: hidden``) روی ``.os-house-clip`` است
+   و پرسپکتیو روی ``.os-house-stage`` که **برش ندارد**. این تفکیک عمدی است:
+   ``.os-house-tilt`` یک فضایِ ``preserve-3d`` می‌سازد و در سافاری اگر جدِ
+   چنین فضایی ``overflow`` غیرِ ``visible`` داشته باشد، عمق تخت می‌شود
+   (تله‌ی R-C) و ماکت بی‌صدا به یک نقشه‌ی دوبعدیِ معمولی تبدیل می‌شود.
+   ========================================================================== */
+.os-house-clip {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(120, 96, 200, 0.30), rgba(0, 0, 0, 0) 62%),
+    linear-gradient(180deg, #1b1235 0%, #0d0a1c 62%, #150e28 100%);
+  box-shadow: var(--ao-shadow), inset 0 var(--edge-1) 0 rgba(255, 255, 255, 0.10);
+}
+.os-house-stage {
+  position: absolute;
+  inset: 0;
+  perspective: calc(760px * var(--q3d) + 100000px * (1 - var(--q3d)));
+  perspective-origin: 50% 26%;
+}
+.os-house-tilt {
+  position: absolute;
+  inset: 16% 9% 24%;
+  transform-style: preserve-3d;
+  transform: rotateX(calc(54deg * var(--q3d))) rotateZ(calc(-7deg * var(--q3d)));
+  /* نقشه‌ی راهنما، همان شطرنجیِ نسخه‌ی WebGL */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0 1px, rgba(0, 0, 0, 0) 1px 10%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.09) 0 1px, rgba(0, 0, 0, 0) 1px 10%);
+  border-radius: 8px;
+}
+.os-house-room {
+  position: absolute;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  opacity: 0.82;
+  /* طبقه‌ی بالا واقعاً بالا می‌نشیند؛ حیاط عمداً کوتاه‌تر است تا از زمین
+     جدا نشود. ``--hh`` همان ضریبِ ارتفاعِ floorSpec در صحنه‌ی WebGL است. */
+  transform: translateZ(calc((var(--lvl, 0) * 24px + var(--hh, 1) * 7px) * var(--q3d)));
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.30),
+    0 calc(9px * var(--q3d)) calc(13px * var(--q3d)) calc(-5px * var(--q3d)) rgba(0, 0, 0, 0.62);
+}
+/* برچسبِ اتاقِ انتخاب‌شده — عنصرِ DOMِ تخت روی canvas */
+.os-house-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 86%;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--os-text);
+  background: var(--surface-card);
+  border: 1px solid var(--os-border);
+  box-shadow: var(--rim-light), var(--ao-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+.os-house-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  padding: 0 10px;
+  text-align: center;
+  color: var(--os-muted);
+}
+.os-house-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.35);
+  flex: none;
+}
