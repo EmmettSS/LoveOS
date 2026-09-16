@@ -10,7 +10,7 @@ import threading
 import time
 from datetime import timedelta
 
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from accounts.models import DeviceSession, LiveLocation, UserConfig
@@ -288,6 +288,7 @@ class SettingsApiTests(TestCase):
         self.assertIn("ui_quality", res.json()["config"])
 
 
+@override_settings(ADMIN_GATE_PASSCODE="")
 class AdminPanelTests(TestCase):
     """
     پنل بابا باید برای همه‌ی مدل‌های تازه هم باز شود.
@@ -295,6 +296,15 @@ class AdminPanelTests(TestCase):
     هر مدلی که در ادمین ثبت شده باشد، هم فهرست و هم صفحه‌ی «افزودن»ش باید
     ۲۰۰ بدهد؛ این تست جلوی خطاهای پنهان (fieldset اشتباه، inline بدون مدل و…)
     را می‌گیرد.
+
+    ⚠️ ``ADMIN_GATE_PASSCODE=""`` عمداً و در سطحِ کلاس override شده است.
+    موضوعِ این تست **درستیِ رندرِ ModelAdmin** است، نه کنترلِ دسترسی. اگر
+    این override نبود، نتیجه‌ی تست به متغیرِ محیطیِ استقرار گره می‌خورد:
+    هر کس ``.env.example`` را کپی می‌کرد و رمزِ دروازه را پر می‌کرد (که خودِ
+    فایلِ نمونه دعوتش می‌کند)، ``AdminGateMiddleware`` جلوی درخواست را با
+    ۴۰۱ می‌گرفت و دو تستِ بی‌ربط «قرمز» می‌شدند — دقیقاً همان اتفاقی که
+    افتاد. رفتارِ خودِ دروازه در ``AdminGateTests`` پایین‌تر و **جدا**
+    سنجه می‌شود.
     """
 
     def setUp(self):
@@ -425,3 +435,86 @@ class NotifyAsyncTests(TransactionTestCase):
     self._join_flush_threads()
     self.assertEqual(provider.send_message.call_count, 1)
     self.assertEqual(SoroushOutbox.objects.get(pk=msg.pk).status, "sent")
+
+
+class AdminGateTests(TestCase):
+    """
+    دروازه‌ی رمزدارِ پنل بابا (``core.middleware.AdminGateMiddleware``).
+
+    این میان‌افزار تا امروز **هیچ تستی نداشت** — و این یک شکافِ واقعی بود،
+    چون تنها لایه‌ی امنیتیِ جلوی پنلِ مدیر است که مسیرِ مخفی‌اش
+    (``ADMIN_PATH``) عملاً «امنیت با پنهانی» است. باگِ خاموش در این لایه
+    یعنی یا پنل برای همه باز می‌ماند یا برای خودِ بابا هم بسته می‌شود و
+    هیچ‌کدام در تست دیده نمی‌شد.
+
+    ⚠️ یک نکته‌ی فنی که طراحیِ تست را تعیین کرد: ``self.prefix`` در
+    ``__init__``ِ میان‌افزار از ``settings.ADMIN_PATH`` ساخته می‌شود، پس
+    ``override_settings(ADMIN_PATH=…)`` روی نمونه‌ی **ساخته‌شده** اثر ندارد.
+    ولی ``ADMIN_GATE_PASSCODE`` در هر درخواست داخلِ ``__call__`` خوانده
+    می‌شود، پس override کردنِ آن معتبر است. به همین دلیل تست‌ها رمز را
+    عوض می‌کنند نه مسیر را، و مسیر را از خودِ settings می‌خوانند.
+    """
+
+    PASSCODE = "gate-1234"
+
+    def admin_url(self, tail=""):
+        from django.conf import settings
+
+        return f"/{settings.ADMIN_PATH}/{tail}"
+
+    def test_gate_is_off_when_passcode_is_empty(self):
+        """رمزِ خالی = دروازه خاموش. باید به ادمینِ جنگو برسد، نه ۴۰۱."""
+        with override_settings(ADMIN_GATE_PASSCODE=""):
+            res = self.client.get(self.admin_url())
+        self.assertNotEqual(res.status_code, 401)
+        # یا لاگینِ جنگو (۳۰۲) یا خودِ پنل (۲۰۰)
+        self.assertIn(res.status_code, (200, 302))
+
+    def test_gate_blocks_anonymous_request(self):
+        """با رمزِ ست، درخواستِ بی‌دروازه باید ۴۰۱ و فرمِ دروازه بگیرد."""
+        with override_settings(ADMIN_GATE_PASSCODE=self.PASSCODE):
+            res = self.client.get(self.admin_url())
+        self.assertEqual(res.status_code, 401)
+        self.assertContains(res, "gate", status_code=401)
+
+    def test_gate_rejects_wrong_passcode(self):
+        """رمزِ غلط باید ۴۰۱ بماند و دروازه باز نشود."""
+        with override_settings(ADMIN_GATE_PASSCODE=self.PASSCODE):
+            res = self.client.post(self.admin_url(), {"gate": "wrong-pass"})
+            self.assertEqual(res.status_code, 401)
+            after = self.client.get(self.admin_url())
+        self.assertEqual(after.status_code, 401, "دروازه با رمزِ غلط باز ماند")
+
+    def test_correct_passcode_opens_gate_and_sticks(self):
+        """رمزِ درست: یک بار پاسخِ رفرش، و بعد از آن دروازه برای همان نشست باز است."""
+        with override_settings(ADMIN_GATE_PASSCODE=self.PASSCODE):
+            res = self.client.post(self.admin_url(), {"gate": self.PASSCODE})
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("http-equiv=\"refresh\"", res.content.decode("utf-8"))
+            # دروازه باید در نشست نشان خورده باشد
+            session = self.client.session
+            self.assertTrue(session.get("loveos_admin_gate"))
+            # و درخواستِ بعدی دیگر ۴۰۱ نگیرد
+            after = self.client.get(self.admin_url())
+        self.assertNotEqual(after.status_code, 401)
+
+    def test_gate_does_not_touch_other_paths(self):
+        """دروازه فقط جلوی مسیرِ پنل است؛ بقیه‌ی اپ نباید ۴۰۱ بگیرد."""
+        with override_settings(ADMIN_GATE_PASSCODE=self.PASSCODE):
+            res = self.client.get("/healthz")
+        self.assertNotEqual(res.status_code, 401)
+
+    def test_noindex_header_on_every_response(self):
+        """
+        «این دنیای کوچک هیچ‌وقت در موتورهای جست‌وجو پیدا نشود.»
+
+        هدر باید روی **همه‌ی** پاسخ‌ها باشد، نه فقط پنل — چون خاطره‌ها،
+        نامه‌ها و عکس‌ها از همه حساس‌ترند.
+        """
+        with override_settings(ADMIN_GATE_PASSCODE=""):
+            for path in ("/healthz", self.admin_url()):
+                res = self.client.get(path)
+                self.assertEqual(
+                    res.get("X-Robots-Tag"), "noindex, nofollow, noarchive",
+                    f"هدرِ noindex روی {path} نبود",
+                )
