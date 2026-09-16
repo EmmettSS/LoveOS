@@ -123,6 +123,30 @@ export function Tilt({
   return <div className="os-stage-3d">{inner}</div>
 }
 
+/* --------------------------------------------------- ضریبِ عمق --- */
+
+/**
+ * ضریبِ عمق: ``0`` در مهتاب (و با ``prefers-reduced-motion``)، ``1`` در بلور
+ * و کهکشان.
+ *
+ * برای ضرب‌کردن در مقادیرِ انیمیشنِ framer است، تا یک اپ در مهتاب دقیقاً
+ * همان انیمیشنِ **قبلیِ** خودش را اجرا کند بدونِ اینکه یک شاخه‌ی ``if``
+ * جدا داشته باشد:
+ *
+ * ```tsx
+ * const dz = useDepthFactor()
+ * initial={{ opacity: 0, y: 40, rotateX: -7 * dz }}
+ * ```
+ *
+ * ⚠️ مثلِ هر هوکِ دیگری باید **بالایِ** همه‌ی ``return``های زودهنگامِ
+ *    کامپوننت صدا زده شود.
+ */
+export function useDepthFactor(): number {
+  const tier = useQualityTier()
+  const allowed = useMotionAllowed()
+  return allowed && tier !== 'lite' ? 1 : 0
+}
+
 /* ------------------------------------------- تیلتِ کارت‌ها (سراسری) --- */
 
 /**

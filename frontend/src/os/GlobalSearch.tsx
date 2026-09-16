@@ -22,6 +22,7 @@ import { get } from '../shared/api'
 import { digits } from '../shared/format'
 import { playClick, playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { useDepthFactor } from '../shared/depth'
 import { APPS, appByKey } from './appRegistry'
 
 interface Hit {
@@ -97,6 +98,7 @@ function iconFor(name: string): IconName {
 
 export function GlobalSearch() {
   const { t } = useTranslation()
+  const dz = useDepthFactor()
   const open = useOS((s) => s.commandOpen)
   const toggle = useOS((s) => s.toggleCommand)
   const openApp = useOS((s) => s.openApp)
@@ -182,11 +184,16 @@ export function GlobalSearch() {
           {/* پوسته‌ی تمام‌عرضِ وسط‌چین: مثل منوی شروع، translate روی خودِ
               motion در RTL پنل را نصفه از صفحه بیرون می‌برد. */}
           <motion.div
-            initial={{ opacity: 0, y: -18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            // جستجوی سراسری از **بالا** می‌آید (مثلِ یک نورافکن که روی
+            // دسکتاپ می‌افتد)، پس لبه‌ی بالایی‌اش به سمتِ بیننده برمی‌گردد
+            // و بعد تخت می‌شود. علامتِ rotateX عمداً برعکسِ کشوهای پایینی
+            // است تا جهتِ چرخش با جهتِ ورود یکی بماند.
+            initial={{ opacity: 0, y: -18, scale: 0.98, rotateX: 8 * dz }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+            exit={{ opacity: 0, y: -12, scale: 0.98, rotateX: 6 * dz }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
             className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex justify-center md:top-16"
+            style={{ transformPerspective: 1100 }}
           >
             <div className="os-card pointer-events-auto mx-3 flex max-h-[82vh] w-full max-w-[620px] flex-col overflow-hidden p-0">
             {/* نوار جستجو */}
