@@ -35,7 +35,8 @@
         "saved": "Saved ✅",
         "minimize": "Minimize",
         "alwaysOnTop": "Bring to front",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "qualityDowngraded": "I softened the 3D effects a bit so everything stays smooth 💫"
     },
     "boot": {
         "version": "LoveOS v1.0",
@@ -271,7 +272,12 @@
         "tapLetter": "Tap each letter",
         "fullName": "Light up the whole name",
         "layoutRtl": "Layout: right to left",
-        "layoutLtr": "Layout: left to right"
+        "layoutLtr": "Layout: left to right",
+        "shapesTitle": "Sky Signs",
+        "shapeAria": "{{glyph}} sign",
+        "shapeActive": "{{glyph}} is lit",
+        "dragHint": "Drag to turn the sky ✨",
+        "allLit": "All the stars lit up together: {{name}}"
     },
     "chat": {
         "placeholder": "Tell Daddy something...",

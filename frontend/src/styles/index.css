@@ -597,6 +597,11 @@ html[data-theme='night'] {
   from { transform: perspective(1200px) rotateX(calc(-11deg * var(--q3d))) translateZ(-38px); opacity: 0; }
   to   { transform: perspective(1200px) rotateX(0deg) translateZ(0); opacity: 1; }
 }
+/* ورودِ کاشیِ آیکنِ دسکتاپ از عمق */
+@keyframes loveos-tile-in {
+  from { transform: translateZ(calc(-70px * var(--q3d))) rotateX(calc(26deg * var(--q3d))); }
+  to   { transform: translateZ(calc(14px * var(--q3d))) rotateX(0deg); }
+}
 /* ورق‌خوردنِ سه‌بعدی (ساعتِ شمارش معکوس، کاشیِ پازل) */
 @keyframes loveos-flip-in {
   from { transform: rotateX(-92deg); opacity: 0.2; }
@@ -646,6 +651,7 @@ html[data-quality='lite'] .os-specular { display: none; }
   box-shadow:
     var(--rim-light),
     var(--ao-shadow),
+    var(--inner-depth),
     calc(var(--shadow-x, 0px)) calc(14 * var(--edge-2)) calc(30 * var(--edge-2)) calc(-14 * var(--edge-2)) rgba(80, 30, 70, 0.45);
 }
 
@@ -671,6 +677,26 @@ html[data-quality='lite'] .os-specular { display: none; }
   transform: translateZ(calc(14px * var(--q3d)));
   transform-style: preserve-3d;
   transition: transform 0.24s cubic-bezier(0.22, 0.68, 0.36, 1), box-shadow 0.24s ease;
+  /* ورودِ سه‌بعدی: کاشی از عقب و کمی خوابیده به جلو می‌آید و سرِ جایش
+     می‌نشیند. ``backwards`` عمداً به‌جای ``both`` انتخاب شده — با ``both``
+     مقدارِ انیمیشن پس از پایان هم روی عنصر می‌ماند و در آبشارِ CSS بر
+     قاعده‌ی ``:active`` **غلبه** می‌کند، یعنی بازخوردِ فشار برای همیشه از
+     کار می‌افتاد. با ``backwards`` فقط در دوره‌ی تأخیر اعمال می‌شود و بعد
+     از پایان، عنصر به سبکِ معمولیِ خودش برمی‌گردد.
+     در لایه‌ی مهتاب --q3d صفر است پس هر دو کی‌فریم یکسان‌اند و انیمیشن
+     عملاً بی‌اثر است (صفر هزینه). */
+  animation: loveos-tile-in 0.52s cubic-bezier(0.22, 0.68, 0.36, 1) backwards;
+}
+
+/* بازخوردِ فشار: کاشی به‌جایِ «کوچک شدن»، در عمق **فرو می‌رود**.
+   سلکتور از خودِ دکمه شروع می‌شود چون ``:active`` فقط به عنصرِ فعال و
+   نیاکانش می‌خورد، نه به فرزندانش. */
+.os-app-icon:active .os-app-tile {
+  transform: translateZ(calc(-2px * var(--q3d))) scale(0.93);
+  box-shadow:
+    var(--rim-light),
+    0 0 0 rgba(0, 0, 0, 0.10),
+    0 calc(1 * var(--edge-2)) calc(3 * var(--edge-2)) calc(-2 * var(--edge-2)) rgba(120, 50, 100, 0.40);
 }
 
 /* --------------------------------------------------- دسترسی‌پذیری --- */
@@ -688,4 +714,124 @@ html[data-quality='lite'] .os-specular { display: none; }
      چون حرکت ندارد و آزاردهنده نیست. */
   .os-depth, .os-anim-float-3d, .os-anim-turntable { transform: none !important; }
   .os-specular { opacity: 0 !important; }
+}
+
+/* ==========================================================================
+   آسمانِ ستاره‌ها (Starmap)
+   --------------------------------------------------------------------------
+   ⚠️ نسبتِ ظرف و viewBox باید **دقیقاً** یکی باشد. لایه‌های SVG آسمان با
+   ``preserveAspectRatio="xMidYMid meet"`` رندر می‌شوند؛ اگر نسبتِ ظرف با
+   ``160×100`` فرق کند، یا حروف کشیده می‌شوند یا کناره‌های آسمان خالی
+   می‌ماند. ``min-height`` هم برای مرورگرِ بدونِ پشتیبانیِ ``aspect-ratio``
+   است تا ارتفاعِ صفر نگیرد.
+
+   ⚠️ ظرفِ preserve-3d (یعنی ``.os-sky-depth``) عمداً ``overflow: visible``
+   می‌ماند و **هیچ** ظرفِ اسکرولی جدِ مستقیمش نیست. در سافاری، ``overflow``
+   غیر از ``visible`` روی ظرفِ سه‌بعدی عمق را تخت می‌کند و کلِ پارالاکس
+   بی‌اثر می‌شود (تله‌ی R-C) — به همین دلیل لایه‌ی بلور برخلافِ لایه‌ی
+   مهتاب اسکرولِ افقی ندارد و بوم واکنش‌گراست.
+   ========================================================================== */
+
+.os-sky-stack,
+.os-sky-canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 190px;
+}
+
+.os-sky-depth {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* عمدی — توضیحِ بالا */
+}
+
+.os-sky-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ستاره‌های صورتِ فلکی همیشه روی غبار باشند */
+.os-sky-layer-sky {
+  z-index: 2;
+}
+
+.os-sky-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* درگ برای چرخاندنِ آسمان است، نه اسکرولِ صفحه */
+  touch-action: none;
+}
+
+.os-sky-drag-hint {
+  position: absolute;
+  bottom: 6px;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* -------------------------------------------------- شکل‌های آسمان ♥ و ∞ --- */
+.os-sky-shape {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* هدفِ لمسی: کلِ کارت بزرگ‌تر از ۴۴ پیکسل است */
+  min-height: 44px;
+  padding: 8px 6px 6px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(35, 42, 92, 0.92), rgba(11, 16, 38, 0.96));
+  box-shadow: var(--rim-light), var(--ao-shadow);
+  color: #e7eaff;
+  cursor: pointer;
+  /* رنگِ هر شکل از بیرون با --shape-color تزریق می‌شود تا ♥ صورتی و
+     ∞ طلایی باشد، بدونِ دو کلاسِ رنگیِ جدا. */
+  --shape-color: #ffd98a;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.os-sky-shape:active {
+  /* فرورفتنِ فیزیکیِ دکمه؛ scale هم باید صریح باشد وگرنه کلاسِ Tailwindِ
+     active:scale-* را بی‌اثر می‌کند (تله‌ای که قبلاً خورده‌ایم). */
+  transform: translateY(calc(var(--btn-edge, 2px) * 0.5)) scale(0.97);
+}
+
+.os-sky-shape-lit {
+  border-color: var(--shape-color);
+  box-shadow:
+    var(--rim-light),
+    0 0 24px -6px var(--shape-color),
+    var(--ao-shadow);
+}
+
+.os-sky-shape-svg {
+  width: 100%;
+  height: 88px;
+  display: block;
+}
+
+.os-sky-shape-glyph {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--shape-color);
+}
+
+/* شکلِ ♥ رنگش را از بیرون می‌گیرد */
+[data-shape='♥'] {
+  --shape-color: #ff9ecb;
 }

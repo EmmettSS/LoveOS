@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
+import { AmbientDepth, useMotionAllowed } from '../shared/depth'
 import { digits, formatDate, formatTime, weekdayName } from '../shared/format'
 import { playClick, playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -67,6 +68,7 @@ export function Desktop() {
   const isNight = useNightMode()
   const appOrder = useOS((s) => s.appOrder)
   const setAppOrder = useOS((s) => s.setAppOrder)
+  const deep = useMotionAllowed()
 
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState<WeatherPayload | null>(null)
@@ -276,6 +278,14 @@ export function Desktop() {
     >
       {midnight && <MidnightSky />}
 
+      {/* میدانِ ذره‌ی محیطی در عمقِ واقعی.
+          ⚠️ عمداً **قبلِ** ظرفِ اسکرول و با position:absolute نشسته، نه داخلِ
+          آن. اگر داخلِ ظرفِ ``overflow-y-auto`` بود، Safari به‌خاطرِ همان باگِ
+          «overflow باعثِ تخت‌شدنِ preserve-3d می‌شود» عمق را از بین می‌برد.
+          ضمناً ``pointer-events:none`` دارد تا هرگز با درگ‌اند‌دراپِ آیکن‌ها
+          تداخل نکند. */}
+      {deep && <AmbientDepth count={18} />}
+
       <div className="h-full overflow-y-auto px-4 pb-32 pt-5 no-scrollbar md:px-8">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="os-card p-4">
@@ -407,7 +417,14 @@ export function Desktop() {
                   playOpen()
                   openApp(app.key)
                 }}
-                className="flex flex-col items-center gap-1.5"
+                // ⚠️ os-stage-3d این‌جاست و os-app-tile روی **اسپانِ داخلی**.
+                // این تفکیک عمدی و حیاتی است: سیستمِ درگ‌اند‌دراپ هدفِ
+                // رهاکردن را با getBoundingClientRectِ خودِ نودِ
+                // [data-app-key] پیدا می‌کند. اگر تیلت/translateZ را روی همان
+                // نود می‌گذاشتم، rectِ واقعی‌اش کج می‌شد و آیکن‌ها در جایِ
+                // اشتباه رها می‌شدند — و این دقیقاً همان دسته باگی است که
+                // قبلاً با کلی زحمت در این فایل بسته شده.
+                className="os-app-icon os-stage-3d flex flex-col items-center gap-1.5"
                 style={{
                   outline: isOver ? '2px dashed var(--os-accent)' : 'none',
                   outlineOffset: 4,
@@ -422,10 +439,12 @@ export function Desktop() {
                 title={t(app.titleKey)}
               >
                 <span
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft md:cursor-grab active:md:cursor-grabbing"
+                  className="os-app-tile h-14 w-14 rounded-2xl md:cursor-grab active:md:cursor-grabbing"
                   style={{
                     background: `linear-gradient(145deg, ${app.color}44, ${app.color}22)`,
                     color: app.color,
+                    // ورودِ پله‌ایِ سه‌بعدی: هر کاشی کمی دیرتر از قبلی
+                    animationDelay: deep ? `${0.02 * i}s` : undefined,
                   }}
                 >
                   <Icon name={app.icon} size={26} />
@@ -450,7 +469,7 @@ export function Desktop() {
               <motion.div
                 key={`ghost-${ghost.key}`}
                 data-drag-ghost={ghost.key}
-                className="pointer-events-none fixed z-[95] flex h-14 w-14 items-center justify-center rounded-2xl shadow-soft"
+                className="pointer-events-none fixed z-[95] flex h-14 w-14 items-center justify-center rounded-2xl"
                 style={{
                   left: ghost.x,
                   top: ghost.y,
@@ -458,10 +477,14 @@ export function Desktop() {
                   y: '-50%',
                   background: `linear-gradient(145deg, ${gApp.color}66, ${gApp.color}33)`,
                   color: gApp.color,
+                  // سایه‌ی عمیق‌تر از حالتِ عادی، چون شیء از سطح «بلند شده»
+                  // و سایه باید از آن دورتر و نرم‌تر بیفتد.
+                  boxShadow:
+                    'var(--rim-light), 0 18px 34px -14px rgba(60,20,50,.55), 0 6px 14px -6px rgba(60,20,50,.35)',
                 }}
-                initial={{ scale: 0.85, opacity: 0.7 }}
-                animate={{ scale: 1.12, opacity: 1 }}
-                exit={{ scale: 0.85, opacity: 0 }}
+                initial={deep ? { scale: 0.85, opacity: 0.7, rotateX: -16, rotateY: 10, transformPerspective: 900 } : { scale: 0.85, opacity: 0.7 }}
+                animate={deep ? { scale: 1.12, opacity: 1, rotateX: -7, rotateY: 5, transformPerspective: 900 } : { scale: 1.12, opacity: 1 }}
+                exit={deep ? { scale: 0.85, opacity: 0, rotateX: 0, rotateY: 0, transformPerspective: 900 } : { scale: 0.85, opacity: 0 }}
               >
                 <Icon name={gApp.icon} size={26} />
               </motion.div>

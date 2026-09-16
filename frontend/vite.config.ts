@@ -32,6 +32,24 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        /**
+         * چانکِ three.jsِ آسمانِ ستاره‌ها از precache مستثناست.
+         *
+         * چرا: این چانک ~۵۴۳KB (۱۳۵KB gzip) است و **فقط** وقتی لایه‌ی کیفیت
+         * «کهکشان» باشد و اپِ ستاره‌ها باز شود دانلود می‌شود. اگر داخلِ
+         * precache می‌ماند، کاربرِ لایه‌ی «مهتاب» هم موقعِ نصب همان ۵۴۳KB را
+         * می‌گرفت و هرگز یک پیکسلش را نمی‌دید — یعنی هزینه‌ی خالص.
+         *
+         * به‌جایش پایین‌تر یک runtimeCaching از نوعِ CacheFirst گذاشته‌ایم، پس
+         * اولین بار که کسی واقعاً آسمانِ سه‌بعدی را باز کند کش می‌شود و
+         * **دفعاتِ بعد آفلاین هم کار می‌کند**. یعنی offline-first برای کسی
+         * که لازم دارد حفظ شده، بدونِ جریمه‌کردنِ بقیه.
+         *
+         * ⚠️ الگو به اسمِ ماژول گره خورده (``StarmapSky``) نه به هشِ فایل،
+         *    چون هش هر build عوض می‌شود. اگر این فایل تغییرِ اسم داد، این
+         *    الگو هم باید عوض شود وگرنه بی‌صدا از precache سر درمی‌آورد.
+         */
+        globIgnores: ['**/StarmapSky-*.js'],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
           {
@@ -40,6 +58,17 @@ export default defineConfig({
             urlPattern: /\/locales\/.*/,
             handler: 'NetworkFirst',
             options: { cacheName: 'loveos-locales', expiration: { maxEntries: 20 } },
+          },
+          {
+            // چانکِ three.js (توضیحِ globIgnores بالا). اسمِ فایل content-hash
+            // دارد پس محتوایش تغییرناپذیر است و CacheFirst امن‌ترین و
+            // ارزان‌ترین انتخاب است؛ کش هم سقف دارد تا تلنبار نشود.
+            urlPattern: /\/assets\/StarmapSky-.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'loveos-3d',
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 60 },
+            },
           },
         ],
       },

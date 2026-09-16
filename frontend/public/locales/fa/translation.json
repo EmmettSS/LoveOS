@@ -35,7 +35,8 @@
         "saved": "ذخیره شد ✅",
         "minimize": "کوچیک کن",
         "alwaysOnTop": "همیشه جلو",
-        "refresh": "تازه‌سازی"
+        "refresh": "تازه‌سازی",
+        "qualityDowngraded": "برای اینکه همه‌چی روان بمونه، جلوه‌های سه‌بعدی رو یه کم سبک‌تر کردم 💫"
     },
     "boot": {
         "version": "LoveOS v1.0",
@@ -260,7 +261,12 @@
         "tapLetter": "روی هر حرف بزن",
         "fullName": "کل اسم رو روشن کن",
         "layoutRtl": "چیدمان: راست به چپ",
-        "layoutLtr": "چیدمان: چپ به راست"
+        "layoutLtr": "چیدمان: چپ به راست",
+        "shapesTitle": "نشونه‌های آسمون",
+        "shapeAria": "نشانه‌ی {{glyph}}",
+        "shapeActive": "نشانه‌ی {{glyph}} روشن شد",
+        "dragHint": "انگشتت رو بکش تا آسمون بچرخه ✨",
+        "allLit": "همه‌ی ستاره‌ها با هم روشن شدن: {{name}}"
     },
     "chat": {
         "placeholder": "به بابا چی بگم...",
