@@ -389,10 +389,24 @@ def garden_water(request, pk: int):
 @api_view(["GET"])
 @require_session
 def starmap(request):
+    """
+    آسمانِ ستاره‌ها: حرف‌های اسم + «شکل‌های آسمان» (♥ و ∞).
+
+    ``kind`` تازه اضافه شده تا فرانت بتواند حرف‌ها را در یک ردیفِ فشرده و
+    شکل‌ها را بزرگ‌تر و درخشان‌تر، در منطقه‌ای جدا نشان دهد. ترتیب از
+    ``Meta.ordering`` مدل می‌آید (order صعودی)، پس حرف‌ها اول و شکل‌ها آخر.
+    """
     return Response(
         {
             "items": [
-                {"id": c.id, "letter": c.letter, "order": c.order, "message": c.message, "stars": c.stars}
+                {
+                    "id": c.id,
+                    "letter": c.letter,
+                    "kind": c.kind,
+                    "order": c.order,
+                    "message": c.message,
+                    "stars": c.stars,
+                }
                 for c in Constellation.objects.filter(is_active=True)
             ]
         }

@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
+import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { get, post } from '../shared/api'
 import { digits } from '../shared/format'
 import { exportBookPdf } from '../shared/printBook'
@@ -43,15 +44,25 @@ export default function Library() {
   const [bookId, setBookId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
   const { data: shelf, loading, error, reload } = useApi<{ items: BookCard[] }>('/books')
+  /*
+   * ⚠️ هوک‌ها **بالایِ** هر دو ``return`` زودهنگام هستند.
+   * اگر پایینِ آن‌ها می‌ماندند، ترتیبِ هوک‌ها بینِ رندرها عوض می‌شد (وقتی
+   * کتاب باز است یا داده لود نشده، آن دو هوک اصلاً اجرا نمی‌شدند) — یک نقضِ
+   * Rules-of-Hooks که React را به حالتِ تعریف‌نشده می‌برد.
+   */
+  const shelfTier = useQualityTier()
+  const shelfMotion = useMotionAllowed()
 
   if (bookId) return <BookReader id={bookId} onBack={() => setBookId(null)} />
   if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
   const items = shelf?.items || []
+  /** قفسه‌ی سه‌بعدی فقط در بلور/کهکشان و فقط وقتی حرکت مجاز باشد */
+  const shelf3d = shelfTier !== 'lite' && shelfMotion
 
   return (
     <div className="space-y-3">
       <SectionTitle>{t('library.shelf')}</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="os-shelf-grid grid grid-cols-2 gap-3 sm:grid-cols-3">
         {/* کارت «کتاب جدید» — دخترم خودش کتاب می‌سازد */}
         <motion.button
           initial={{ opacity: 0, y: 12 }}
@@ -70,14 +81,36 @@ export default function Library() {
         </motion.button>
 
         {items.map((b, i) => (
+          /* سلولِ قفسه: کتاب + تخته‌ی زیرش در دو عنصرِ **جدا**.
+             این تفکیک عمدی است تا با بیرون‌کشیدنِ کتاب، تخته سرِ جایش
+             بماند. اگر تخته را با box-shadow به خودِ کتاب می‌چسباندم،
+             همزمان با کتاب بالا می‌رفت و استعاره‌ی «قفسه» می‌شکست —
+             کتاب از قفسه جدا می‌شود، قفسه که با آن نمی‌رود. */
+          <div key={b.id} className="os-shelf-cell">
           <motion.button
-            key={b.id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.05 }}
-            whileHover={{ y: -5, rotate: -1 }}
+            /**
+             * «بیرون کشیدن از قفسه».
+             *
+             * در لایه‌های عمیق، هاور فقط کتاب را بالا نمی‌برد: کمی هم حولِ
+             * محورِ Y می‌چرخاند و در عمق جلو می‌آید. این همان حرکتِ دست است
+             * وقتی یک کتاب را از قفسه بیرون می‌کشید — عطفِ جلد به سمتِ شما
+             * می‌چرخد. در لایه‌ی مهتاب دقیقاً همان رفتارِ قدیمی می‌ماند.
+             *
+             * ``transformPerspective`` روی خودِ دکمه است نه روی ظرفِ گرید،
+             * چون گرید چندین فرزند دارد و پرسپکتیو روی والد همه‌شان را با
+             * یک نقطه‌ی گریز مشترک کج می‌کرد (کتابِ گوشه‌ها به‌شدت
+             * کج‌شده دیده می‌شد).
+             */
+            whileHover={
+              shelf3d
+                ? { y: -8, rotate: -1, rotateY: -9, z: 16, transformPerspective: 900 }
+                : { y: -5, rotate: -1 }
+            }
             onClick={() => { playPaper(); setBookId(b.id) }}
-            className="overflow-hidden rounded-2xl text-start shadow-soft"
+            className="os-shelf-book overflow-hidden rounded-2xl text-start shadow-soft"
             style={{ background: 'var(--os-card)', border: '1px solid var(--os-border)' }}
           >
             {b.cover ? (
@@ -93,6 +126,8 @@ export default function Library() {
               <p className="mt-0.5 text-[10px] os-muted">{digits(b.chapters)} {t('library.toc')}</p>
             </div>
           </motion.button>
+          <span className="os-shelf-board" aria-hidden />
+          </div>
         ))}
       </div>
 

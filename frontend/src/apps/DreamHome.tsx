@@ -8,13 +8,13 @@
  *   ۳) گالری الهام: عکس خانه‌های قشنگ + گفتگو زیر هر عکس
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { del, patch, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
-import { playError, playSuccess } from '../shared/sound'
+import { playClick, playError, playSuccess } from '../shared/sound'
 import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
@@ -95,6 +95,14 @@ const FLOORS: { key: string; label: string }[] = [
 ]
 
 const PALETTE = ['#f9a8d4', '#7dd3fc', '#86efac', '#fcd34d', '#c4b5fd', '#fdba74']
+
+/**
+ * ماکتِ سه‌بعدیِ خانه. ``lazy`` است تا ``three`` فقط برای کسی دانلود شود
+ * که لایه‌اش کهکشان است و واقعاً تبِ «نقشه» را باز کرده. خودِ ماژول هم از
+ * چانکِ مشترکِ ``loveos-3d`` می‌خواند، پس اگر کاربر پیش‌تر آسمانِ ستاره‌ها
+ * یا سینما را باز کرده باشد اینجا **هیچ** دانلودِ تازه‌ای رخ نمی‌دهد.
+ */
+const DreamRoom = lazy(() => import('../three/DreamRoom'))
 
 export default function DreamHome() {
   const { t } = useTranslation()
@@ -306,6 +314,15 @@ function PlanTab({
 /* --------------------------------------------------------------- نقشه --- */
 function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
   const { t } = useTranslation()
+  // ⚠️ لایه‌ی کیفیت عمداً **اینجا** سنجیده نمی‌شود: خودِ DreamRoom و زیرش
+  //    useThreeScene لایه و سقفِ context را می‌سنجند و در صورتِ نیاز به
+  //    نسخه‌ی CSS تنزل می‌کنند. دو جا سنجیدنِ یک شرط یعنی دو حقیقتِ
+  //    متفاوت که روزی با هم فرق می‌کنند.
+  // «نقشه» سطحِ **ویرایش** است (کشیدنِ اتاق)، «ماکت» سطحِ **تماشا**. این دو
+  // عمداً از هم جدا شدند: روی ماکتِ سه‌بعدی نمی‌شود اتاق را دقیق جابه‌جا
+  // کرد، و اگر هر دو یکی بودند کاربر موقعِ چرخاندنِ ماکت بی‌دلیل اتاق‌ها را
+  // جابه‌جا می‌کرد.
+  const [view, setView] = useState<'plan' | 'model'>('plan')
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const [selected, setSelected] = useState<Room | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
@@ -360,10 +377,48 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className={`os-chip ${view === 'plan' ? 'os-chip-active' : ''}`}
+          onClick={() => setView('plan')}
+          type="button"
+        >
+          {t('home.plan')}
+        </button>
+        <button
+          className={`os-chip ${view === 'model' ? 'os-chip-active' : ''}`}
+          onClick={() => { playClick(); setView('model') }}
+          type="button"
+        >
+          {t('home.model')}
+        </button>
+        {view === 'model' && (
+          <span className="text-[10px] os-muted">{t('home.modelHint')}</span>
+        )}
+      </div>
+
+      {view === 'model' && (
+        /* ماکت. اگر صحنه‌ی WebGL ساخته نشد (سقفِ context پر بود، یا لایه
+           کهکشان نبود) خودِ DreamRoom به نسخه‌ی CSS تنزل می‌کند — پس اینجا
+           هرگز جایِ خالی نمی‌ماند. */
+        <Suspense fallback={<div className="os-card" style={{ height: 200 }} />}>
+          <DreamRoom rooms={rooms} />
+        </Suspense>
+      )}
+
       <div
         ref={canvasRef}
         className="relative w-full overflow-hidden rounded-2xl border"
-        style={{ aspectRatio: '4 / 3', background: 'var(--os-accent-soft)', borderColor: 'var(--os-border)', touchAction: 'none' }}
+        // در نمایِ ماکت، نقشه‌ی ویرایش‌پذیر پنهان می‌شود. عمداً
+        // ``display:none`` و نه حذف از درخت: حذف، حالتِ درگ و ref را
+        // از بین می‌برد و برگشتن به «نقشه» یک بار ری‌مانتِ کامل می‌شد.
+        style={{
+          aspectRatio: '4 / 3',
+          background: 'var(--os-accent-soft)',
+          borderColor: 'var(--os-border)',
+          touchAction: 'none',
+          display: view === 'model' ? 'none' : undefined,
+        }}
         onPointerMove={(e) => {
           if (dragging == null) return
           const room = rooms.find((r) => r.id === dragging)

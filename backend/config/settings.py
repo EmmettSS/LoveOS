@@ -140,6 +140,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# تست‌ها در پوشه‌ی رسانه‌ی موقت اجرا شوند، نه در ریپازیتوری.
+# دلیلش در core/test_runner.py توضیح داده شده: جنگو دیتابیسِ تست را
+# برمی‌گرداند ولی فایل‌سیستم را نه، و آپلودِ تست‌ها ریپو را کثیف می‌کرد.
+# روی پروداکشن هیچ اثری ندارد (فقط هنگامِ manage.py test فعال است).
+TEST_RUNNER = "core.test_runner.IsolatedMediaTestRunner"
+
 # سرو کردن فرانت‌اند و static توسط جنگو (برای هاست‌های تک‌ورودی مثل cPanel/Passenger)
 # media خصوصی فقط با URL امضاشده‌ی /api/media تحویل می‌شود.
 SERVE_FRONTEND = env_bool("SERVE_FRONTEND", False)

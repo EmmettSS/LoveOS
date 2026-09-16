@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import { LoveOSLogo } from '../shared/Icon'
 import { post } from '../shared/api'
+import { Tilt, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -62,6 +63,22 @@ export function Boot() {
   const config = useOS((s) => s.config)
   const setPhase = useOS((s) => s.setPhase)
   const showEgg = useOS((s) => s.showEgg)
+  /**
+   * ⚠️ بوت عمداً **محافظه‌کارانه‌ترین** صفحه برای افکتِ سه‌بعدی است.
+   *
+   * دو دلیل: نخست این‌که موتورِ کیفیت، فریم را حینِ همین صفحه می‌سنجد — اگر
+   * بوت را سنگین کنیم، عددِ سنجه پایین می‌آید و لایه بی‌دلیل تنزل می‌کند
+   * (تله‌ی «سنجشِ فریم حینِ بوت» که قبلاً مستند شده). دوم این‌که بوت صفحه‌ای
+   * است که کودک **تماشا** می‌کند، نه بازی کند؛ انیمیشنِ اضافه اینجا از
+   * «سینمایی» به «شلوغ» می‌رسد.
+   *
+   * پس فقط دو چیز اضافه شده: بازِ‌شدنِ سه‌بعدیِ پنجره‌ی ترمینال (یک انیمیشنِ
+   * ورودِ کوتاه که در حالتِ سکون صفر است و خواناییِ متن را هرگز خراب
+   * نمی‌کند) و تیلتِ لوگو **فقط در لایه‌ی کهکشان** — یعنی دستگاهی که توانش
+   * پیش‌تر اثبات شده.
+   */
+  const tier = useQualityTier()
+  const deep = tier !== 'lite'
 
   const lines = useMemo(() => {
     const value = t('boot.lines', { returnObjects: true })
@@ -201,6 +218,35 @@ export function Boot() {
   // جمع‌وجور می‌شود تا همه‌چیز داخل صفحه جا شود و هیچ اسکرولی نباشد.
   const { ref: fitRef, scale: fit } = useFitScale<HTMLDivElement>()
 
+  /**
+   * دکمه‌ی لوگو به‌صورتِ یک متغیر، تا در لایه‌ی کهکشان داخلِ ``Tilt`` و در
+   * بقیه‌ی لایه‌ها بی‌واسطه رندر شود **بدونِ این‌که بدنه‌اش دو بار نوشته
+   * شود**.
+   *
+   * چرا تیلتِ لوگو فقط در کهکشان: بوت سنگین‌ترین صفحه‌ی اپ است و موتورِ
+   * کیفیت فریم را حینِ همین صفحه می‌سنجد. وصل‌کردنِ listenerِ ژیروسکوپ روی
+   * لایه‌ی بلور — که هنوز توانِ دستگاهش اثبات نشده — یعنی ریسکِ کم‌کردنِ
+   * فریم و تنزلِ بی‌دلیلِ خودش. در کهکشان، دستگاه پیش‌تر از سدِ سنجه رد شده.
+   *
+   * ⚠️ تیلت روی ظرفِ ``Tilt`` است و نبضِ ``scale`` روی خودِ دکمه: دو عنصرِ
+   *    جدا، پس دو transform با هم ترکیب می‌شوند و یکی دیگری را نمی‌بلعد.
+   */
+  const logoButton = (
+    <motion.button
+      onClick={handleLogoClick}
+      aria-label="LoveOS"
+      className="relative z-10 grid place-items-center rounded-[28px] outline-none"
+      animate={{ scale: [1, 1.13, 1, 1.06, 1] }}
+      transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1] }}
+    >
+      {config?.logo ? (
+        <img src={config.logo} alt="LoveOS" className="h-[88px] w-[88px] rounded-3xl object-cover" />
+      ) : (
+        <LoveOSLogo size={92} />
+      )}
+    </motion.button>
+  )
+
   return (
     <motion.div
       onClick={skip}
@@ -281,19 +327,7 @@ export function Boot() {
           animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.14, 1] }}
           transition={{ duration: 1.7, repeat: Infinity }}
         />
-        <motion.button
-          onClick={handleLogoClick}
-          aria-label="LoveOS"
-          className="relative z-10 grid place-items-center rounded-[28px] outline-none"
-          animate={{ scale: [1, 1.13, 1, 1.06, 1] }}
-          transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1] }}
-        >
-          {config?.logo ? (
-            <img src={config.logo} alt="LoveOS" className="h-[88px] w-[88px] rounded-3xl object-cover" />
-          ) : (
-            <LoveOSLogo size={92} />
-          )}
-        </motion.button>
+        {tier === 'dream' ? <Tilt maxDeg={10}>{logoButton}</Tilt> : logoButton}
         {finished && <HeartBurst />}
         <EcgLine />
       </motion.div>
@@ -320,8 +354,20 @@ export function Boot() {
 
       {/* ------------------------------------------------------- ترمینال بایوس */}
       <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
+        /**
+         * بازِ شدنِ سه‌بعدی: پنجره‌ی ترمینال از حالتِ خوابیده باز می‌شود.
+         *
+         * ⚠️ ``transformPerspective`` روی **خودِ عنصر** است نه روی یک ظرفِ
+         *    والد. اگر perspective را روی والد می‌گذاشتیم، ``overflow-hidden``
+         *    همان والد در سافاری preserve-3d را تخت می‌کرد (تله‌ی R-C) و کلِ
+         *    اثر می‌مرد. این روش هیچ ظرفِ سه‌بعدیِ تودرتویی نمی‌سازد.
+         *
+         * ⚠️ در پایانِ انیمیشن ``rotateX`` دقیقاً صفر است، پس متنِ خطوطِ
+         *    بایوس در حالتِ سکون هرگز کج نمی‌ماند — قاعده‌ی «متن کج نشود»
+         *    نقض نمی‌شود، چون این یک گذارِ ورود است نه یک تیلتِ دائمی.
+         */
+        initial={deep ? { opacity: 0, y: 18, rotateX: -9, transformPerspective: 1100 } : { opacity: 0, y: 18 }}
+        animate={deep ? { opacity: 1, y: 0, rotateX: 0, transformPerspective: 1100 } : { opacity: 1, y: 0 }}
         transition={{ delay: 0.9, duration: 0.7 }}
         className="relative z-10 mt-6 w-full max-w-[400px] overflow-hidden rounded-2xl border backdrop-blur-md"
         style={{
@@ -330,10 +376,16 @@ export function Boot() {
           boxShadow: '0 34px 90px -34px rgba(247,103,168,.55), inset 0 1px 0 rgba(255,255,255,.06)',
         }}
       >
-        {/* نوار عنوان ترمینال */}
+        {/* نوار عنوان ترمینال — پخِ روشن از بالا، همان زبانِ بصریِ نوارِ
+            عنوانِ پنجره‌های دسکتاپ. عمداً از linear-gradient استفاده شده و
+            نه color-mix(): color-mix در سافاری ۱۶٫۲+ است و گوشیِ سه-چهار
+            ساله‌ی هدفِ ما iOS 15 دارد. */}
         <div
           className="flex items-center gap-2 border-b px-4 py-2.5"
-          style={{ borderColor: 'rgba(255,255,255,.08)', background: 'rgba(255,255,255,.03)' }}
+          style={{
+            borderColor: 'rgba(255,255,255,.08)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.02) 62%, rgba(255,255,255,.03))',
+          }}
           dir="ltr"
         >
           <span className="h-3 w-3 rounded-full" style={{ background: '#ff5f57', boxShadow: '0 0 8px rgba(255,95,87,.6)' }} />

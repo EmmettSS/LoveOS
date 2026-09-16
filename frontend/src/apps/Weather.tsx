@@ -79,12 +79,23 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
       }[icon] || 'linear-gradient(180deg,#cfd9e8,#f2e9f5)'
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: bg }} aria-hidden>
+    /*
+      ⚠️ ظرفِ آسمان ``overflow-hidden`` دارد و این عمدی و بی‌خطر است: آن‌چه
+      در سافاری عمق را تخت می‌کند ``overflow`` روی **همان عنصری** است که
+      ``transform-style: preserve-3d`` دارد. این‌جا ``perspective`` روی ظرفِ
+      اسکرول‌بسته است و فرزندان فقط ``translateZ`` می‌گیرند (بدونِ
+      preserve-3d)، پس پرسپکتیو درست کار می‌کند.
+
+      پرسپکتیو و عمق‌ها همه در CSS با ``--q3d`` گیت شده‌اند، پس در لایه‌ی
+      مهتاب پرسپکتیو عملاً بی‌نهایت و translateZ صفر می‌شود — یعنی دقیقاً
+      همان ظاهرِ قبلی، بدونِ یک شاخه‌ی اضافه در JS.
+    */
+    <div className="os-sky-3d pointer-events-none absolute inset-0 overflow-hidden" style={{ background: bg }} aria-hidden>
       {!isDay &&
         Array.from({ length: 12 }).map((_, i) => (
           <span
             key={`st${i}`}
-            className="absolute animate-twinkle rounded-full bg-white"
+            className="os-sky-depth-far absolute animate-twinkle rounded-full bg-white"
             style={{
               left: `${(i * 37) % 100}%`,
               top: `${(i * 53) % 55}%`,
@@ -96,7 +107,7 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
         ))}
 
       {icon === 'sun' && isDay && (
-        <div className="absolute" style={{ top: '12%', insetInlineEnd: '10%' }}>
+        <div className="os-sky-depth-near absolute" style={{ top: '12%', insetInlineEnd: '10%' }}>
           <div style={{ position: 'relative', width: 92, height: 92 }}>
             <div
               style={{
@@ -140,19 +151,28 @@ function SkyScene({ icon, isDay }: { icon: string; isDay: boolean }) {
 
       {(icon === 'cloud' || icon === 'rain' || icon === 'snow' || icon === 'storm') &&
         clouds.map((c) => (
+          /*
+            دو عنصرِ تودرتو، و این تصادفی نیست: ظرفِ بیرونی ``translateZ``
+            می‌گیرد (عمق) و ابرِ داخلی انیمیشنِ ``drift`` با ``translateX``.
+            اگر هر دو روی یک عنصر بودند، انیمیشنِ CSS در آبشار بر style
+            درون‌خطی اولویت دارد و عمق بی‌صدا از بین می‌رفت.
+          */
           <div
             key={c.id}
-            style={{
-              position: 'absolute',
-              top: `${c.top}%`,
-              width: c.w,
-              height: c.w * 0.34,
-              borderRadius: 999,
-              background: isDay ? 'rgba(255,255,255,.92)' : 'rgba(190,198,225,.75)',
-              filter: 'blur(1px)',
-              animation: `loveos-drift ${c.dur}s ease-in-out ${c.delay}s infinite`,
-            }}
-          />
+            className="os-sky-depth-mid"
+            style={{ position: 'absolute', top: `${c.top}%`, width: c.w, height: c.w * 0.34 }}
+          >
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: 999,
+                background: isDay ? 'rgba(255,255,255,.92)' : 'rgba(190,198,225,.75)',
+                filter: 'blur(1px)',
+                animation: `loveos-drift ${c.dur}s ease-in-out ${c.delay}s infinite`,
+              }}
+            />
+          </div>
         ))}
 
       {icon === 'fog' &&

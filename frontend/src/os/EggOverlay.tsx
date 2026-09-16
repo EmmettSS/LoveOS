@@ -9,9 +9,11 @@ import { useTranslation } from 'react-i18next'
 
 import { playSuccess, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { useDepthFactor } from '../shared/depth'
 
 export function EggOverlay() {
   const { t } = useTranslation()
+  const dz = useDepthFactor()
   const egg = useOS((s) => s.eggOverlay)
   const showEgg = useOS((s) => s.showEgg)
 
@@ -61,11 +63,19 @@ export function EggOverlay() {
           </div>
 
           <motion.div
-            initial={{ scale: 0.8, y: 24, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.8, y: 24, opacity: 0, rotateX: -11 * dz }}
+            // ⚠️ ``rotateX: 0`` در **هر دو** شاخه‌ی animate و exit لازم است.
+            //    اگر فقط در initial بود، framer مقدارِ -11 را نگه می‌داشت و
+            //    کارتِ راز برای همیشه کج می‌ماند — یک باگِ بی‌صدا که فقط با
+            //    نگاه‌کردن کشف می‌شد.
+            animate={{ scale: 1, y: 0, opacity: 1, rotateX: 0 }}
+            exit={{ scale: 0.9, opacity: 0, rotateX: -6 * dz }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             className="os-card relative z-10 w-full max-w-sm p-6 text-center"
+            // بدونِ پرسپکتیو، rotateX فقط ارتفاع را در cos(θ) ضرب می‌کند و
+            // کارت «له» دیده می‌شود نه «برگشته». پرسپکتیو روی خودِ عنصر است
+            // نه روی جد، چون جد یک لایه‌ی fixed با backdrop-blur است.
+            style={{ transformPerspective: 1100 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-3 text-4xl animate-beat">💝</div>

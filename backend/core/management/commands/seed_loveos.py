@@ -29,6 +29,7 @@ from reading.models import (
     ReadingNote,
     ReadingQuote,
 )
+from content.constellations import SKY_SHAPES
 from content.models import (
     Constellation,
     Countdown,
@@ -263,6 +264,17 @@ class Command(BaseCommand):
             Constellation.objects.get_or_create(
                 order=i,
                 defaults={"letter": letter, "message": msg, "stars": self.letter_stars(letter, i)},
+            )
+
+        # شکل‌های آسمان — ♥ قلب و ∞ بی‌نهایت
+        # این‌ها در مایگریشنِ content.0002 هم ساخته می‌شوند (تا روی دیتابیسِ
+        # زنده‌ی بابا بدونِ اجرای دوباره‌ی seed هم باشند). این‌جا idempotent
+        # است: اگر مایگریشن ساخته باشد، get_or_create چیزی اضافه نمی‌کند.
+        # کلید روی letter است نه order، چون order حرف‌ها ممکن است عوض شود.
+        for shape in SKY_SHAPES:
+            fields = {k: v for k, v in shape.items() if k != "letter"}
+            Constellation.objects.get_or_create(
+                letter=shape["letter"], kind="shape", defaults=fields
             )
 
         for text, hour, minute in CARE_DEFAULTS:

@@ -1,0 +1,597 @@
+/**
+ * depth-tiers.tsx — آزمونِ لایه‌های عمق در اپ‌های سه‌بعدی
+ *
+ * چهار اپِ سه‌بعدی (ستاره‌ها، ضربان، بغل، باغچه) هرکدام **سه مسیرِ رندرِ
+ * متفاوت** دارند (مهتاب/بلور/کهکشان). پیش از این آزمون، هیچ‌کدامِ این
+ * چهار اپ هیچ پوششی نداشتند — یعنی هر سه مسیر کاملاً نسنجیده بودند و یک
+ * خطایِ ساده در شاخه‌ی «بلور» فقط روی گوشیِ واقعیِ کاربر کشف می‌شد.
+ *
+ * این سوئیت هر سه لایه را با ``useOS.setState({ uiQuality })`` اجبار می‌کند
+ * (موتورِ کیفیت در محیطِ آزمون به مهتاب وتو می‌کند، پس راهِ دیگری برای
+ * رسیدن به شاخه‌های عمیق نیست) و این‌ها را می‌سنجد:
+ *
+ *   ۱) هر سه شاخه بدونِ خطا رندر می‌شوند و محتوای واقعی دارند
+ *   ۲) ``id="hb"`` در سند **یک بار** است — این همان تله‌ی مستندشده‌ی
+ *      «کپی‌کردنِ children در Extrude» است که HTML نامعتبر می‌ساخت
+ *   ۳) متن‌ها هرگز داخلِ ظرفِ تیلت نیستند (قاعده‌ی سختِ خوانایی)
+ *   ۴) نبودِ WebGL تنزلِ باوقار می‌دهد، نه صفحه‌ی سفید
+ *   ۵) نبودِ فیلدِ ``kind`` در پاسخِ API با استنتاج از ``letter`` جبران می‌شود
+ */
+import { JSDOM } from 'jsdom'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const fixturesDir = dirname(dirname(fileURLToPath(import.meta.url)))
+
+const dom = new JSDOM('<!doctype html><html lang="fa" dir="rtl"><body><div id="root"></div></body></html>', {
+  pretendToBeVisual: true,
+  url: 'http://localhost:5173/',
+})
+const w: any = dom.window
+const g = globalThis as any
+g.window = w
+g.document = w.document
+Object.defineProperty(g, 'navigator', { value: w.navigator, configurable: true })
+for (const k of [
+  'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'PointerEvent',
+  'KeyboardEvent', 'CustomEvent', 'SVGElement', 'File', 'Blob', 'FormData',
+])
+  g[k] = w[k]
+g.localStorage = w.localStorage
+g.requestAnimationFrame = w.requestAnimationFrame.bind(w)
+g.cancelAnimationFrame = w.cancelAnimationFrame.bind(w)
+g.getComputedStyle = w.getComputedStyle.bind(w)
+g.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} })
+
+/**
+ * jsdom عملاً ``scrollIntoView`` را پیاده‌سازی **نکرده** (فقط امضایش در
+ * تایپ‌ها هست). اپِ ترمینال بعد از هر خط خروجی به انتهای لیست اسکرول
+ * می‌کند و بدونِ این stub، رندر کردنش در آزمون با TypeError منفجر می‌شد.
+ *
+ * ⚠️ این یک کمبودِ محیطِ آزمون است نه باگِ اپ: ``scrollIntoView`` در همه‌ی
+ *    مرورگرهای واقعی هست. پس درستش همین است که این‌جا stub شود، نه اینکه
+ *    کدِ اپ را به ``scrollIntoView?.()`` دفاعی کنیم (که نویزِ بی‌فایده در
+ *    کدِ تولیدی می‌گذاشت). ``Achievements`` از قبل به‌شکلِ ``?.()``
+ *    صدا می‌زند و آن هم درست است.
+ */
+w.Element.prototype.scrollIntoView = function scrollIntoView() {}
+w.HTMLElement.prototype.scrollIntoView = function scrollIntoView() {}
+w.matchMedia = g.matchMedia
+g.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }
+g.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+g.IS_REACT_ACT_ENVIRONMENT = true
+g.scrollTo = () => undefined
+w.scrollTo = () => undefined
+g.URL.createObjectURL = () => 'blob:fake'
+// موتورِ کیفیت با این پرچم محیطِ آزمون را می‌شناسد و به مهتاب وتو می‌کند
+g.__loveosHarness = true
+
+let failCount = 0
+const check = (label: string, cond: boolean, extra = '') => {
+  console.log(`${cond ? '  ✅' : '  ❌'} ${label}${extra ? ' — ' + extra : ''}`)
+  if (!cond) failCount += 1
+}
+
+/* ------------------------------------------------------- پاسخ‌های API --- */
+
+/**
+ * ستاره‌های ♥ و ∞ از هندسه‌ی واقعیِ بک‌اند (نرمالِ ۰..۱، y رو به بالا).
+ * تعدادِ نقطه‌ها عمداً کم نگه داشته شده تا آزمون سریع بماند؛ ساختارِ داده
+ * (آرایه‌ی جفت، نه آبجکتِ {x,y}) دقیقاً همان چیزی است که API می‌فرستد.
+ */
+const HEART_STARS: [number, number][] = Array.from({ length: 9 }, (_, i) => {
+  const t = (i / 8) * Math.PI * 2
+  const x = 16 * Math.sin(t) ** 3
+  const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)
+  return [Number(((x + 17) / 34).toFixed(4)), Number(((y + 18) / 36).toFixed(4))]
+})
+const INF_STARS: [number, number][] = Array.from({ length: 9 }, (_, i) => {
+  const t = (i / 8) * Math.PI * 2
+  const d = 1 + Math.sin(t) ** 2
+  return [Number(((Math.cos(t) / d) * 0.5 + 0.5).toFixed(4)), Number(((Math.sin(t) * Math.cos(t)) / d * 0.5 + 0.5).toFixed(4))]
+})
+
+const LETTERS = ['M', 'A', 'R', 'Y', 'A', 'M']
+
+function starmapPayload(withKind: boolean) {
+  const letters = LETTERS.map((letter, i) => {
+    const base: any = {
+      id: i + 1,
+      letter,
+      order: i,
+      message: `پیامِ حرفِ ${letter}`,
+      // چند نقطه‌ی ساده به شکلِ V تا polyline معنا داشته باشد
+      stars: [
+        [0.1, 0.9], [0.3, 0.3], [0.5, 0.7], [0.7, 0.3], [0.9, 0.9],
+      ] as [number, number][],
+    }
+    if (withKind) base.kind = 'letter'
+    return base
+  })
+  const shapes = [
+    { id: 90, letter: '♥', order: 90, message: 'قلبِ ما', stars: HEART_STARS, ...(withKind ? { kind: 'shape' } : {}) },
+    { id: 91, letter: '∞', order: 91, message: 'بی‌نهایت', stars: INF_STARS, ...(withKind ? { kind: 'shape' } : {}) },
+  ]
+  return { items: [...letters, ...shapes] }
+}
+
+/**
+ * پاسخ‌های اپ‌های تازه‌ی سه‌بعدی‌شده.
+ *
+ * ⚠️ شکلِ داده دقیقاً همان چیزی است که API واقعی می‌فرستد — از روی
+ *    ``interface``های خودِ اپ کپی شده، نه حدس. اگر فیلدی جا بیفتد اپ با
+ *    ``Empty`` رندر می‌شود و آزمون «سبزِ توخالی» می‌دهد.
+ */
+const ACHIEVEMENTS = {
+  items: [
+    { id: 1, code: 'door', title: 'نشانِ دل', description: 'د', icon: 'heart', unlocked: true, unlocked_at: '2026-01-01T10:00:00Z', secret_message: 'راز' },
+    { id: 2, code: 'mic', title: 'نشانِ صدا', description: 'د', icon: 'mic', unlocked: false, unlocked_at: null, secret_message: '' },
+  ],
+  unlocked: 1,
+  total: 2,
+}
+
+const MOODS = { items: [{ mood: 'happy', label: 'خوشحال' }, { mood: 'missing', label: 'دلتنگ' }] }
+
+const CINEMA = {
+  items: [
+    { id: 1, title: 'فیلمِ ما', kind: 'film', link: '', status: 'watching', rating: 4, note: '', poster: null, added_by: 'daddy' },
+    { id: 2, title: 'کارتون', kind: 'film', link: '', status: 'todo', rating: 0, note: '', poster: null, added_by: 'daughter' },
+  ],
+}
+
+const GARDEN = {
+  items: [
+    { id: 1, name: 'گلِ سرخ', color: '#e5484d', emoji: '🌹', water_count: 4 },
+    { id: 2, name: 'گلِ آفتاب', color: '#f5a623', emoji: '🌻', water_count: 1 },
+  ],
+}
+
+const HUG = {
+  received: 3,
+  sent: 5,
+  pending: [],
+  settings: {
+    incoming_title: 'بغل از بابا',
+    incoming_message: 'دلم برات تنگ شده',
+    vibration_pattern: [200, 100],
+    warm_color: '#ffd6a5',
+    heartbeat_sound: null,
+  },
+}
+
+const json = (d: unknown) => ({ ok: true, status: 200, json: async () => d, text: async () => JSON.stringify(d) })
+
+/** با هر بار اجرا می‌توانیم بگوییم ``kind`` فرستاده شود یا نه */
+let sendKind = true
+
+g.fetch = async (url: string, opts: any = {}) => {
+  const raw = String(url)
+  const method = (opts.method || 'GET').toUpperCase()
+  const path = raw.replace(/^https?:\/\/[^/]+/, '')
+  if (path.startsWith('/locales/')) {
+    const lang = path.split('/')[2]
+    try {
+      return json(JSON.parse(readFileSync(join(fixturesDir, '..', 'public', 'locales', lang, 'translation.json'), 'utf8')))
+    } catch {
+      return { ok: false, status: 404, json: async () => ({}), text: async () => '' }
+    }
+  }
+  if (method !== 'GET') return json({ ok: true, found: false })
+  if (path.startsWith('/api/starmap')) return json(starmapPayload(sendKind))
+  if (path.startsWith('/api/garden')) return json(GARDEN)
+  if (path.startsWith('/api/hug')) return json(HUG)
+  if (path.startsWith('/api/boot')) return json({ config: { language: 'fa', theme: 'auto', ui_quality: 'auto' }, unlocked: false })
+  if (path.startsWith('/api/achievements')) return json(ACHIEVEMENTS)
+  if (path.startsWith('/api/moods')) return json(MOODS)
+  if (path.startsWith('/api/cinema')) return json(CINEMA)
+  return json({ items: [] })
+}
+
+const { act } = await import('react')
+const { createRoot } = await import('react-dom/client')
+const { createElement: h } = await import('react')
+
+const i18nModule = await import('../src/shared/i18n')
+await i18nModule.i18nReady
+await i18nModule.default.changeLanguage('fa')
+
+const { useOS } = await import('../src/shared/store')
+const Starmap = (await import('../src/apps/Starmap')).default
+const Heartbeat = (await import('../src/apps/Heartbeat')).default
+const Garden = (await import('../src/apps/Garden')).default
+const Hug = (await import('../src/apps/Hug')).default
+
+async function mount(element: any, wait = 320) {
+  const host = w.document.createElement('div')
+  w.document.body.appendChild(host)
+  const root = createRoot(host)
+  await act(async () => {
+    root.render(element)
+  })
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, wait))
+  })
+  return { html: host.innerHTML, host, root }
+}
+
+async function unmount(m: { host: HTMLElement; root: any }) {
+  await act(async () => {
+    m.root.unmount()
+  })
+  m.host.remove()
+}
+
+/** آیا این عنصر داخلِ یک ظرفِ تیلت‌خور است؟ (قاعده‌ی «متن کج نشود») */
+function insideTilt(el: Element | null): boolean {
+  let node: Element | null = el
+  while (node) {
+    if (node.classList?.contains('os-depth')) return true
+    node = node.parentElement
+  }
+  return false
+}
+
+const TIERS = ['lite', 'balanced', 'dream'] as const
+
+console.log('🧪 آزمونِ لایه‌های عمق (ستاره‌ها، ضربان، بغل، باغچه)')
+
+/* ==========================================================================
+   ۱) هر سه لایه × چهار اپ
+   ========================================================================== */
+for (const tier of TIERS) {
+  await act(async () => {
+    useOS.setState({ uiQuality: tier })
+  })
+  console.log(`\n  ── لایه‌ی «${tier}» ──`)
+
+  /* ------------------------------------------------------------ ستاره‌ها */
+  {
+    // لایه‌ی کهکشان باید منتظرِ lazy import و سپس تنزلِ نبودِ WebGL بماند
+    const m = await mount(h(Starmap), tier === 'dream' ? 900 : 320)
+    const host = m.host
+
+    check('ستاره‌ها رندر شد', host.innerHTML.includes('اسمت رو با ستاره‌ها نوشتم'))
+    const shapes = host.querySelectorAll('[data-shape]')
+    check('دو شکلِ ♥ و ∞ در بخشِ جدا هستند', shapes.length === 2, `یافت‌شده=${shapes.length}`)
+    check('نشانه‌ی ♥ هست', !!host.querySelector('[data-shape="♥"]'))
+    check('نشانه‌ی ∞ هست', !!host.querySelector('[data-shape="∞"]'))
+
+    // شش حرفِ «مریم» — در لایه‌ی کهکشانِ jsdom به دلیلِ نبودِ WebGL به
+    // نسخه‌ی تخت تنزل می‌کند، پس شمارشِ حرف‌ها در همه‌ی لایه‌ها معتبر است
+    const letterCells = host.querySelectorAll('svg g[role="button"], svg g[aria-label]')
+    check('حرف‌های اسم رندر شدند', letterCells.length >= 6, `سلول‌ها=${letterCells.length}`)
+
+    const skyLayers = host.querySelectorAll('.os-sky-layer').length
+    if (tier === 'balanced') {
+      check('لایه‌ی بلور: سه لایه‌ی عمقِ جدا (دور/نزدیک/ستاره‌ها)', skyLayers === 3, `layers=${skyLayers}`)
+    } else if (tier === 'lite') {
+      check('لایه‌ی مهتاب: بدونِ لایه‌بندیِ عمق', skyLayers === 0, `layers=${skyLayers}`)
+    } else {
+      // کهکشان در jsdom: WebGL نیست → باید باوقار به SVG برگردد
+      const canvas = host.querySelector('canvas')
+      const canvasHidden = !canvas || canvas.getAttribute('style')?.includes('display: none')
+      check('کهکشان بدونِ WebGL به SVG تنزل داد (نه صفحه‌ی سفید)', canvasHidden && host.innerHTML.length > 600)
+      check('لایه‌ی کهکشانِ تنزل‌یافته: بومِ WebGLِ نمایان ندارد', !host.querySelector('canvas:not([style*="display: none"])'))
+    }
+
+    await unmount(m)
+  }
+
+  /* -------------------------------------------------------------- ضربان */
+  {
+    const m = await mount(h(Heartbeat))
+    const host = m.host
+    check('ضربان رندر شد', host.innerHTML.includes('ضربان'))
+
+    const extrudeLayers = host.querySelectorAll('.os-extrude-layer').length
+    if (tier === 'lite') {
+      check('مهتاب: قلبِ تخت، بدونِ برجسته‌سازی', extrudeLayers === 0 && !host.querySelector('.os-extrude'))
+    } else if (tier === 'balanced') {
+      check('بلور: قلبِ توپُر با ۱۲ لایه', extrudeLayers === 12, `layers=${extrudeLayers}`)
+    } else {
+      check('کهکشان: قلبِ توپُر با ۱۶ لایه', extrudeLayers === 16, `layers=${extrudeLayers}`)
+    }
+
+    /* ⚠️ مهم‌ترین آزمونِ این سوئیت.
+       اگر Extrude روزی به کپی‌کردنِ children برگردد، ``id="hb"`` چند بار در
+       سند ساخته می‌شود → HTML نامعتبر و همه‌ی لایه‌ها اولین گرادیان را
+       برمی‌دارند. این باگ **بی‌صدا** است و فقط با شمارشِ id کشف می‌شود. */
+    const hbIds = host.querySelectorAll('[id="hb"]').length
+    check('گرادیانِ id="hb" دقیقاً یک بار در سند است (تله‌ی کپیِ defs)', hbIds === 1, `تعداد=${hbIds}`)
+
+    await unmount(m)
+  }
+
+  /* ------------------------------------------------------------- باغچه */
+  {
+    const m = await mount(h(Garden))
+    const host = m.host
+    check('باغچه رندر شد', host.innerHTML.includes('گلِ سرخ'))
+    check('دکمه‌ی آب دادن هست', host.innerHTML.includes('آبش بده'))
+
+    const plants = host.querySelectorAll('.os-card').length
+    check('دو کارتِ گل رندر شد', plants === 2, `کارت‌ها=${plants}`)
+
+    // لایه‌های عمقِ گیاه: در شاخه‌ی عمیق سه SVG با translateZ روی هم
+    const zLayers = Array.from(host.querySelectorAll('svg')).filter((s) =>
+      (s.getAttribute('style') || '').includes('translateZ'),
+    )
+    if (tier === 'lite') {
+      check('مهتاب: گیاهِ تخت بدونِ لایه‌ی عمق', zLayers.length === 0)
+    } else {
+      check('گیاه سه لایه‌ی عمقِ جدا دارد (گلدان/ساقه/گل)', zLayers.length === 6, `لایه‌ها=${zLayers.length}`)
+    }
+
+    // قاعده‌ی سخت: متن هرگز داخلِ ظرفِ تیلت نیست
+    const nameEl = Array.from(host.querySelectorAll('p')).find((p) => (p.textContent || '').includes('گلِ سرخ'))
+    check('اسمِ گل داخلِ ظرفِ تیلت نیست (خواناییِ متن)', !!nameEl && !insideTilt(nameEl))
+    const waterBtn = Array.from(host.querySelectorAll('button')).find((b) => (b.textContent || '').includes('آبش بده'))
+    check('دکمه‌ی آب دادن داخلِ ظرفِ تیلت نیست', !!waterBtn && !insideTilt(waterBtn))
+
+    await unmount(m)
+  }
+
+  /* --------------------------------------------------------------- بغل */
+  {
+    const m = await mount(h(Hug))
+    const host = m.host
+    check('بغل رندر شد', host.innerHTML.includes('بغل'))
+
+    const iconLift = Array.from(host.querySelectorAll('span')).some((s) =>
+      (s.getAttribute('style') || '').includes('translateZ(30px)'),
+    )
+    if (tier === 'lite') {
+      check('مهتاب: آیکنِ بغل بدونِ بالابریِ عمقی', !iconLift)
+      check('مهتاب: ظرفِ تیلت ساخته نمی‌شود', host.querySelectorAll('.os-depth').length === 0)
+    } else {
+      check('آیکنِ بغل بالایِ سطحِ دکمه شناور است (translateZ)', iconLift)
+      check('دکمه‌ی بغل داخلِ ظرفِ تیلت است', host.querySelectorAll('.os-depth').length >= 1)
+    }
+
+    // عنوان و راهنما متن‌اند و نباید کج شوند
+    const titleEl = Array.from(host.querySelectorAll('p')).find((p) => (p.textContent || '').includes('بابا رو بغل'))
+    if (titleEl) check('عنوانِ «بغل کردن بابا» داخلِ تیلت نیست', !insideTilt(titleEl))
+
+    const stats = Array.from(host.querySelectorAll('p')).filter((p) => /^\d+$|^[۰-۹]+$/.test((p.textContent || '').trim()))
+    check('شمارنده‌های دریافت/ارسال بیرونِ ظرفِ تیلت‌اند', stats.every((p) => !insideTilt(p)))
+
+    await unmount(m)
+  }
+}
+
+/* ==========================================================================
+   ۲) استنتاجِ ``kind`` وقتی API آن را نمی‌فرستد (دیتابیسِ مهاجرت‌نخورده)
+   ========================================================================== */
+{
+  await act(async () => {
+    useOS.setState({ uiQuality: 'lite' })
+  })
+  sendKind = false
+  const m = await mount(h(Starmap))
+  const host = m.host
+  check('بدونِ فیلدِ kind هم ♥ و ∞ به‌عنوانِ «شکل» شناخته شدند', host.querySelectorAll('[data-shape]').length === 2)
+  // و مهم‌تر: نباید واردِ ردیفِ حرف‌ها شده باشند و «مریم» را به هم بریزند
+  const caption = host.textContent || ''
+  check('بدونِ kind، اسمِ مریم هنوز ۶ حرف است (شکل‌ها قاطی نشدند)', !caption.includes('♥M') && !caption.includes('M♥'))
+  await unmount(m)
+  sendKind = true
+}
+
+/* ==========================================================================
+   ۳) هدفِ لمسیِ دکمه‌های لایه‌ی کیفیت
+   ========================================================================== */
+{
+  const Settings = (await import('../src/apps/Settings')).default
+  await act(async () => {
+    useOS.setState({ uiQuality: 'balanced', config: { language: 'fa', theme: 'auto', sound_enabled: true, font_scale: 1, ui_quality: 'auto' } as any })
+  })
+  const m = await mount(h(Settings))
+  const host = m.host
+  const qualityBtns = Array.from(host.querySelectorAll('button')).filter((b) =>
+    ['خودکار', 'مهتاب', 'بلور', 'کهکشان'].some((n) => (b.textContent || '').trim() === n),
+  )
+  check('هر چهار لایه در تنظیمات انتخاب‌پذیرند', qualityBtns.length === 4, `یافت‌شده=${qualityBtns.length}`)
+  const allBig = qualityBtns.every((b) => {
+    const st = b.getAttribute('style') || ''
+    return st.includes('min-height: 44px') || st.includes('min-height:44px')
+  })
+  check('هدفِ لمسیِ هر چهار دکمه ≥۴۴ پیکسل است', allBig)
+  check('پنلِ گزارشِ کیفیت رندر شد', !!host.querySelector('[data-quality-panel]'))
+  await unmount(m)
+}
+
+/* ==========================================================================
+   ۳-ب) دلیل‌هایِ لایه در هر دو زبان
+   --------------------------------------------------------------------------
+   موتورِ کیفیت (``shared/quality.ts``) یک ماژولِ خالصِ **بیرونِ React** است
+   و هوکِ ترجمه ندارد. نسخه‌ی اول دلیل‌ها را به‌صورتِ رشته‌ی فارسیِ آماده در
+   store می‌گذاشت و نتیجه یک باگِ واقعیِ دوزبانه بود: کاربر زبان را به
+   انگلیسی عوض می‌کرد، کلِ صفحه‌ی تنظیمات انگلیسی می‌شد ولی فهرستِ «چرا این
+   لایه؟» فارسی می‌ماند — چون آن رشته‌ها از قبل یخ زده بودند و دلیلی برای
+   محاسبه‌ی دوباره نبود.
+
+   اصلاح: موتور فقط ``{ key, args, tierArgs }`` می‌سازد و ترجمه در زمانِ
+   **رندر** در Settings انجام می‌شود. این بخش همان رفتار را از دو طرف
+   می‌سنجد — هم اینکه در انگلیسی هیچ فارسی نمانده، هم اینکه در فارسی کلیدِ
+   خام دیده نمی‌شود.
+
+   سه جور آرگومان عمداً پوشش داده شده‌اند، چون هرکدام راهِ خراب‌شدنِ خودش
+   را دارد:
+     • عددی (``n: 8``)      → باید از ``digits()`` رد شود: ۸ در فارسی، 8 در انگلیسی
+     • نامِ لایه (``tierArgs``) → باید ترجمه شود: «کهکشان» / "Galaxy"، نه ``dream``
+     • بدونِ آرگومان        → باید عیناً ترجمه شود
+   ========================================================================== */
+{
+  const i18n = i18nModule.default
+  const Settings = (await import('../src/apps/Settings')).default
+  const REASONS = [
+    { key: 'qualityCores', args: { n: 8 } },
+    { key: 'qualityVetoSaveData' },
+    { key: 'qualityManualCapped', args: { wanted: 'dream', max: 'balanced' }, tierArgs: ['wanted', 'max'] },
+    { key: 'qualityFpsDowngraded', args: { fps: 27, tier: 'lite' }, tierArgs: ['tier'] },
+    { key: 'qualityRememberedDowngrade', args: { tier: 'dream' }, tierArgs: ['tier'] },
+  ] as never[]
+
+  // حروفِ عربی/فارسی **به‌علاوه‌ی رقم‌های فارسی** — چون ``digits()`` در
+  // فارسی عدد را هم فارسی می‌کند و اگر فقط حروف را می‌سنجیدیم، یک دلیلِ
+  // نیمه‌ترجمه‌شده (متنِ انگلیسی با رقمِ فارسی) رد می‌شد.
+  const PERSIAN = /[\u0600-\u06FF\u06F0-\u06F9\u0660-\u0669]/
+  const CFG = { language: 'fa', theme: 'auto', sound_enabled: true, font_scale: 1, ui_quality: 'auto' } as never
+
+  for (const lang of ['en', 'fa'] as const) {
+    await act(async () => {
+      await i18n.changeLanguage(lang)
+      useOS.setState({ uiQuality: 'balanced', qualityReasons: REASONS, config: CFG, qualityFps: null })
+    })
+    const m = await mount(h(Settings), 320)
+    const host = m.host
+    const items = Array.from(host.querySelectorAll('[data-quality-panel] li')).map((li) => (li.textContent || '').trim())
+    const joined = items.join(' ⏐ ')
+
+    check(`[${lang}] هر ${REASONS.length} دلیل رندر شد`, items.length === REASONS.length, `یافته=${items.length}`)
+    check(`[${lang}] هیچ کلیدِ خامی روی صفحه نیست`, !joined.includes('settings.'), joined)
+
+    if (lang === 'en') {
+      check('[en] هیچ فارسی در دلیل‌ها نمانده', !items.some((t) => PERSIAN.test(t)),
+        items.filter((t) => PERSIAN.test(t)).join(' ⏐ '))
+      // نامِ لایه باید ترجمه شده باشد، نه مقدارِ فنیِ ذخیره‌شده
+      check('[en] نامِ لایه ترجمه شد نه مقدارِ فنی',
+        joined.includes('Galaxy') && joined.includes('Crystal') && joined.includes('Moonlight') &&
+        !/\b(dream|balanced|lite)\b/.test(joined), joined)
+      check('[en] رقم‌ها لاتین‌اند', joined.includes('8 cores') && joined.includes('27 fps'), joined)
+    } else {
+      check('[fa] همه‌ی دلیل‌ها فارسی‌اند', items.every((t) => PERSIAN.test(t)), joined)
+      check('[fa] نامِ شاعرانه‌ی لایه آمد نه مقدارِ فنی',
+        joined.includes('کهکشان') && joined.includes('بلور') && joined.includes('مهتاب') &&
+        !/\b(dream|balanced|lite)\b/.test(joined), joined)
+      check('[fa] رقم‌ها فارسی‌اند', joined.includes('۸ هسته'), joined)
+    }
+    await unmount(m)
+  }
+
+  // زبان را به حالتِ اول برمی‌گردانیم تا بخش‌های بعدیِ همین سوئیت آلوده نشوند
+  await act(async () => { await i18n.changeLanguage('fa') })
+}
+
+/* ==========================================================================
+   ۴) گاردِ کره‌ی نقشه — پرریسک‌ترین تصمیمِ فیچر
+   --------------------------------------------------------------------------
+   ``canUseGlobe`` عمداً یک تابعِ خالص در ماژولِ مشترک است تا بتوان بدونِ
+   بالا‌آوردنِ maplibre و WebGL آزمودش. مهم‌ترین حالت، Mali است: maplibre یک
+   باگِ دقتِ عرضِ جغرافیایی در projection کره‌ای دارد و تهران/استانبول نزدیکِ
+   نوارِ خطرند، پس روی Mali کره باید **هرگز** روشن نشود.
+   ========================================================================== */
+{
+  const { canUseGlobe } = await import('../src/shared/quality')
+  const cap = (over: Record<string, unknown> = {}) =>
+    ({ mali: false, webgl: 2, softwareRenderer: false, ...over }) as any
+
+  console.log('\n  ── گاردِ کره‌ی نقشه ──')
+  check('کهکشان + GPU سالم → کره روشن', canUseGlobe('dream', cap()) === true)
+  check('بلور + GPU سالم → کره خاموش (سقفِ لایه)', canUseGlobe('balanced', cap()) === false)
+  check('مهتاب + GPU سالم → کره خاموش', canUseGlobe('lite', cap()) === false)
+  check('کهکشان + Mali → کره خاموش (باگِ دقتِ عرضِ جغرافیایی)', canUseGlobe('dream', cap({ mali: true })) === false)
+  check('کهکشان + بدونِ WebGL → کره خاموش', canUseGlobe('dream', cap({ webgl: 0 })) === false)
+  check('کهکشان + رندررِ نرم‌افزاری → کره خاموش', canUseGlobe('dream', cap({ softwareRenderer: true })) === false)
+  check('کهکشان + WebGL1 (نه ۲) → کره روشن', canUseGlobe('dream', cap({ webgl: 1 })) === true)
+}
+
+/* ==========================================================================
+   ۵) اپ‌های تازه‌ی سه‌بعدی‌شده در هر سه لایه
+   --------------------------------------------------------------------------
+   سه چیز را قفل می‌کند که jsdom واقعاً می‌تواند ببیندشان:
+
+   الف) **تنزلِ باوقارِ سینما**: در jsdom هیچ WebGL نیست. پس در لایه‌ی
+      کهکشان هم سینما باید سالنِ CSS-سه‌بعدی را نشان دهد، نه یک canvasِ
+      سیاهِ خالی. این همان مسیری است که روی گوشیِ واقعی هم وقتی سقفِ
+      context پر باشد طی می‌شود.
+
+   ب) **قاعده‌ی سختِ «متن کج نمی‌شود»**: هیچ ``<p>`` نباید داخلِ یک ظرفِ
+      تیلت (``.os-depth``) باشد. این قاعده پیش‌تر فقط برای چهار اپ سنجیده
+      می‌شد؛ حالا برای هر اپی که این‌جا رندر شود سنجیده می‌شود.
+
+   پ) **عمقِ نقاشی‌شده در مهتاب هم هست**: قرصِ مدال‌ها و شیشه‌ی CRT باید در
+      هر سه لایه دیده شوند، چون مهتاب یعنی «سایه، پخ، گرادیان» — یعنی
+      حذفِ **حرکت**، نه حذفِ عمق. اگر این‌ها در مهتاب غیب می‌شدند یعنی
+      گیت را زیادی سفت بسته‌ایم.
+   ========================================================================== */
+{
+  const Achievements = (await import('../src/apps/Achievements')).default
+  const Mood = (await import('../src/apps/Mood')).default
+  const Cinema = (await import('../src/apps/Cinema')).default
+  const Terminal = (await import('../src/apps/Terminal')).default
+
+  console.log('\n  ── اپ‌های تازه × سه لایه ──')
+
+  for (const tier of TIERS) {
+    await act(async () => {
+      useOS.setState({ uiQuality: tier })
+    })
+
+    /* ------------------------------------------------------- نشان‌ها */
+    {
+      const m = await mount(h(Achievements), 320)
+      const host = m.host
+      const medals = host.querySelectorAll('.os-medal, .os-medal-locked').length
+      check(`[${tier}] هر دو مدال قرصِ فلزی دارند (عمقِ نقاشی‌شده)`, medals === 2, `medals=${medals}`)
+      check(`[${tier}] هیچ متنی داخلِ ظرفِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      check(`[${tier}] نشان‌ها محتوای واقعی دارند`, host.innerHTML.includes('نشانِ دل'))
+      await unmount(m)
+    }
+
+    /* ------------------------------------------------------- حالِ دل */
+    {
+      const m = await mount(h(Mood), 320)
+      const host = m.host
+      check(`[${tier}] حالِ دل رندر شد`, host.innerHTML.includes('خوشحال'))
+      check(`[${tier}] گریدِ حال‌ها صحنه‌ی سه‌بعدی دارد`, host.querySelectorAll('.os-stage-3d').length >= 1)
+      check(`[${tier}] حالِ دل: متن داخلِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      await unmount(m)
+    }
+
+    /* --------------------------------------------------------- سینما */
+    {
+      // کهکشان باید منتظرِ lazy import و سپس تنزلِ نبودِ WebGL بماند
+      const m = await mount(h(Cinema), tier === 'dream' ? 900 : 320)
+      const host = m.host
+      const hall = host.querySelectorAll('.os-cinema-hall').length
+      // در jsdom هیچ WebGL نیست، پس در **هر سه** لایه باید سالنِ CSS باشد.
+      // در کهکشان این یعنی «تنزلِ باوقار»، در بقیه یعنی «مسیرِ عادی».
+      check(`[${tier}] سالنِ CSS-سه‌بعدی حاضر است (نه canvasِ سیاه)`, hall >= 1, `hall=${hall}`)
+      const visibleCanvas = host.querySelector('canvas:not([style*="display: none"])')
+      check(`[${tier}] سینما بومِ WebGLِ نمایانِ بی‌پشتیبان ندارد`, !visibleCanvas)
+      check(`[${tier}] سینما: لایه‌های عمقِ سالن ساخته شده‌اند`, host.querySelectorAll('.os-cinema-seats').length === 3)
+      check(`[${tier}] سینما: فهرستِ فیلم‌ها رندر شد`, host.innerHTML.includes('فیلمِ ما'))
+      check(`[${tier}] سینما: متن داخلِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      await unmount(m)
+    }
+
+    /* ------------------------------------------------------- ترمینال */
+    {
+      const m = await mount(h(Terminal), 320)
+      const host = m.host
+      const crt = host.querySelector('.os-crt')
+      check(`[${tier}] شیشه‌ی CRT در هر سه لایه هست`, !!crt)
+      // قاعده‌ی سخت: ``.os-crt`` هرگز روی ظرفِ اسکرول نیست، وگرنه بازتابِ
+      // شیشه با هر اسکرول جابه‌جا می‌شود و روی متن می‌لغزد.
+      const crtOnScroller = Array.from(host.querySelectorAll('.os-crt')).some((el) =>
+        /overflow-y-auto|overflow-auto|overflow-y-scroll/.test(el.className),
+      )
+      check(`[${tier}] شیشه‌ی CRT روی ظرفِ اسکرول نیست`, !crtOnScroller)
+      const scroller = host.querySelector('.terminal')
+      check(`[${tier}] ظرفِ اسکرولِ ترمینال خودش CRT نیست`, !!scroller && !scroller.classList.contains('os-crt'))
+      await unmount(m)
+    }
+  }
+}
+
+console.log('')
+// ⚠️ ``process.exit`` این‌جا **ضروری** است، نه تشریفاتی.
+// اپِ ضربان یک زنجیره‌ی ``setTimeout`` برای هر تپش دارد و انیمیشن‌های
+// framer بی‌پایان‌اند؛ هر دو رویداد-loopِ Node را زنده نگه می‌دارند. بدونِ
+// خروجِ صریح، آزمون پاس می‌شود ولی پروسه هرگز تمام نمی‌شود و runner تا
+// timeout منتظر می‌ماند. بقیه‌ی سوئیت‌های پروژه هم همین قرارداد را دارند.
+console.log(failCount === 0 ? '🎉 آزمونِ لایه‌های عمق پاس شد' : `💥 ${failCount} بررسی ناموفق بود`)
+process.exit(failCount === 0 ? 0 : 1)

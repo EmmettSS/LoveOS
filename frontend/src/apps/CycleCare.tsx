@@ -234,16 +234,22 @@ function CalendarTab({ ov, reload, showToast }: { ov: Overview; reload: () => Pr
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="os-card p-3">
+      /* آمارها divِ ساده‌اند → ``.os-depth-list`` امن است.
+
+         ⚠️ آنچه **عمداً** دست نخورده ماند: تقویمِ ``grid grid-cols-7``.
+         آن پرمتراکم‌ترین و پراستفاده‌ترین سطحِ این اپ است و کج‌شدن یا
+         عمق‌گرفتنِ خانه‌هایش خواناییِ تاریخ‌ها را می‌گرفت. انتخابِ خودِ
+         بابا هم «محافظه‌کارانه» بود. آمارها عمق می‌گیرند، داده‌ها نه. */
+      <div className="os-depth-list os-stage-3d grid grid-cols-2 gap-3">
+        <div className="os-card os-slab p-3">
           <p className="text-[11px] os-muted">{t('cycle.avgCycle')}</p>
           <p className="os-title text-xl">{digits(ov.stats.avg_cycle)} {t('cycle.day')}</p>
         </div>
-        <div className="os-card p-3">
+        <div className="os-card os-slab p-3">
           <p className="text-[11px] os-muted">{t('cycle.avgPeriod')}</p>
           <p className="os-title text-xl">{digits(ov.stats.avg_period)} {t('cycle.day')}</p>
         </div>
-        <div className="os-card col-span-2 p-3">
+        <div className="os-card os-slab col-span-2 p-3">
           <p className="text-[11px] os-muted">{t('cycle.nextPredicted')}</p>
           <p className="os-title text-base">{ov.stats.next_start ? formatDate(ov.stats.next_start) : '—'}</p>
         </div>
