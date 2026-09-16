@@ -23,6 +23,7 @@
 11. [Maintenance, tests & troubleshooting](#11-maintenance-tests--troubleshooting)
 12. [What changed in 2.0](#12-what-changed-in-20)
 13. [The 3D quality tier](#13-the-3d-quality-tier)
+14. [3D across every app](#14-3d-across-every-app)
 
 ---
 
@@ -667,7 +668,7 @@ pending notifications, **fires approved-call reminders** and flushes the Soroush
 # backend: 97 tests (models, APIs, search, location, panel, constellations, UI quality)
 cd backend && .venv/bin/python manage.py test
 
-# frontend: type-check, lint, build and 8 UI suites (214 checks)
+# frontend: type-check, lint, build and 9 UI suites (281 checks)
 cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
 ```
 
@@ -777,7 +778,7 @@ from core.services import clear_app_cache; print(clear_app_cache())"
 * **16 new badges and 6 new tutorial chapters** for the new apps.
 * **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
 * **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
-* **97 backend tests** plus 8 frontend suites (`npm run test:ui`, 214 checks) covering the window
+* **97 backend tests** plus 9 frontend suites (`npm run test:ui`, 281 checks) covering the window
   manager, settings (language/theme), global search, the rendering of every new app against real
   backend responses, and the 3D depth tiers.
 
@@ -812,6 +813,10 @@ never couple to display language.
 | `frontend/src/shared/depth.tsx` | Shared toolkit: `useQualityTier`, `useMotionAllowed`, `Tilt`, `Extrude`, `Specular`, `AmbientDepth` |
 | `frontend/src/styles/index.css` | CSS tokens: `--q3d`, `--rim-light`, `--ao-shadow`, `--well-face`, `--btn-edge`, `--light-x/y` |
 | `frontend/src/three/useThreeScene.ts` | The only place in the project that creates a `WebGLRenderer` + live-scene cap + full disposal |
+| `frontend/src/three/scenes/starmap.ts` | The star-field sky scene |
+| `frontend/src/three/scenes/cinema.ts` + `CinemaHall.tsx` | The cinema-hall scene + its `lazy` shell with a CSS fallback |
+| `frontend/src/three/scenes/room.ts` + `DreamRoom.tsx` | The 3D dream-home maquette + its `lazy` shell with a CSS fallback |
+| `frontend/tests/three-hygiene.ts` | 25 static checks over the source text, for rules jsdom can never see |
 | `backend/content/models.py` | `Constellation.kind` (letter or shape) |
 | `backend/accounts/models.py` | `UserConfig.ui_quality` |
 
@@ -891,9 +896,15 @@ from `precache` (`globIgnores` in `vite.config.ts`), served instead by a
 `CacheFirst` runtime rule. So a lite-tier user never downloads it, yet the
 first time someone really opens the 3D sky it caches and then works offline.
 
-⚠️ If `frontend/src/three/StarmapSky.tsx` is ever renamed, the `globIgnores`
-pattern and the `urlPattern` in `vite.config.ts` must change with it, or the
-chunk silently re-enters the precache.
+⚠️ Every `lazy` shell in `frontend/src/three/*.tsx` — `StarmapSky`,
+`CinemaHall`, `DreamRoom`, and any fourth scene added later — must appear both
+in `globIgnores` and in the `CacheFirst` `urlPattern` in `vite.config.ts`, or
+its chunk silently re-enters the precache and every lite user downloads it.
+
+This used to be a comment-only warning, and that is exactly how `CinemaHall`
+leaked into the precache once. It is now **machine-checked**:
+`tests/three-hygiene.ts` reads the real contents of `src/three/` and compares
+it against both lists, so a forgotten scene fails the build instead of shipping.
 
 ### Adding 3D to a new app
 
@@ -919,12 +930,138 @@ in balanced.
 environment, so this is the only way to reach the deep branches) and asserts:
 `id="hb"` uniqueness, text staying out of tilt containers, extrusion layer
 counts per tier, graceful degradation with no WebGL, `kind` inference from
-`letter` when the API omits it, ≥44px touch targets, and seven `canUseGlobe`
-cases.
+`letter` when the API omits it, ≥44px touch targets, seven `canUseGlobe`
+cases, and the newly 3D-ified apps (badges, mood, cinema, terminal) across
+**all three tiers** — including that cinema shows the CSS hall rather than a
+black canvas when WebGL is missing, and that the CRT glass never sits on the
+scroll container.
+
+**`frontend/tests/three-hygiene.ts`** (25 static checks) works on the **source
+text** — no jsdom, no React, under a second. It exists because most bugs in
+this phase were not render-time bugs: they only appear in a real browser
+(Safari flattens `preserve-3d` inside an `overflow-hidden` parent), only at
+build time (the `three.js` chunk silently joins the PWA precache), or only on
+a real device (frame drops). Every one of the 25 checks corresponds to a bug
+that **actually happened** in this project, not a speculative rule.
+
+⚠️ The first version of that suite reported six failures, and **all six were
+false positives**: the text of our own comments matched the patterns. In
+`Vault.tsx` a comment explains why `useQualityTier() !== 'lite' &&
+useMotionAllowed()` is wrong — and the check indicted the comment.
+`stripComments()` now blanks comment bodies while **preserving line numbers**,
+so reports still point at the right line of code. And `//` is only treated as
+a comment in JS/TS, never in CSS — otherwise a single `url(https://…)` would
+have erased the rest of the line.
 
 ⚠️ This suite calls `process.exit` explicitly: the heartbeat `setTimeout`
 chain and framer's endless animations keep Node's event loop alive, so without
 it the test passes but the process hangs until the timeout.
+
+## 14. 3D across every app
+
+Section 13 describes the **engine**; this one describes how that engine sits on
+**all 30 apps**. The guiding principle was that 3D here is a **design
+language**, not decoration: every app should feel like it has weight and depth,
+without making its content harder to read.
+
+### Three classes of treatment
+
+The apps are not alike, so their 3D treatment is not alike either. This split
+was deliberately fixed before a single line was written:
+
+| Class | Apps | What it does |
+|---|---|---|
+| **Signature moment** | Heartbeat, Hug, Garden, Mood, VoiceVault, Achievements, Chat, Music, Cinema, Puzzle, DreamHome, MapOfUs | One bespoke 3D object that *is* the app's identity: a layered heart, a cassette with spinning reels, a metal medal, a gramophone record, a cinema hall, a house maquette, the globe |
+| **Restrained depth** | CallSync, CycleCare, LanguageBridge, ReadTogether, Quiz, FuturePlans, Tutorial, Settings, About | Painted depth + one focal point + parallax header. **Data rows, tables, calendars and forms never tilt**, and app logic is left untouched |
+| **Deliberate exception** | Terminal | CRT glass with corner curvature and phosphor glow — an exception to the resin/crystal language, because a terminal *is* an old display, and imitating its own material is the more honest choice |
+
+The **four OS overlays** unfold too: Start Menu, Notification Center and the
+Easter-egg overlay open from below (negative `rotateX`) while Global Search
+opens from above (positive) — the rotation direction matches the entry
+direction, otherwise the unfold reads as physically backwards.
+
+### The shared toolkit
+
+Most apps become 3D through a **CSS class**, not a component. That is on
+purpose: a class adds no listener, triggers no extra render, and above all
+**cannot break app logic**.
+
+| Tool | What it does | When to use it |
+|---|---|---|
+| `.os-tilt-card` / `-medal` / `-tile` | Pointer/gyro tilt (4°/15°/9°) — all driven by **one** delegated `document` listener | A short visual card or object. Never on text |
+| `.os-depth-list` | Staggered Z-entrance for a list's children | When the list's children are **not** `motion.*` |
+| `.os-slab` | Painted depth: bevel + shadow + gradient, no rotation at all | A row carrying text or numbers that must stay flat |
+| `.os-orb` / `.os-disc` | Glow halo and metal disc behind an element | An app's focal moment |
+| `.os-crt` / `.os-crt-glow` | CRT glass and text phosphor | Terminal only |
+| `.os-parallax-far/mid/near` | Three parallax speeds | Headers |
+| `.os-cinema-*` / `.os-house-*` | CSS fallbacks for the two WebGL scenes | Whenever a scene is unavailable |
+| `useDepthFactor()` | `0` in lite and reduced-motion, `1` otherwise | When you write the rotation value in framer |
+| `DepthHero` | Ready-made header with parallax and depth | App headers |
+
+All of them multiply `--q3d`, so in lite they are inert by construction — with
+not a single `if` in JavaScript.
+
+### Two new WebGL scenes and the scene budget
+
+`useThreeScene` has a hard cap: **`MAX_LIVE_SCENES = 2`**. There are now three
+potential scenes (starmap sky, cinema hall, house maquette), so a third
+concurrent one receives `onUnavailable('budget')` and the app falls back to
+CSS.
+
+Why 2 and not 3: each live `WebGLRenderer` is its own GPU context with its own
+memory and its own compositor layer. Browsers cap around 16, but on a mid-range
+phone the honest ceiling is two. The realistic risk is exactly that one: the
+user opens Cinema and jumps to DreamHome before `dispose` has finished.
+
+Both new scenes ship a **CSS fallback shell**, and those paths are asserted in
+the tests:
+
+| Scene | Fallback |
+|---|---|
+| Starmap sky | The previous SVG reference (unchanged) |
+| `CinemaHall` | `.os-cinema-hall` — a CSS-3D hall with three seat rows, screen and light |
+| `DreamRoom` | `.os-house-*` — a CSS house maquette built from three separate containers |
+
+### The per-app decision rule
+
+There are two cases, and choosing between them is a simple rule:
+
+- The container's children have **no inline transform** → use the CSS classes
+  (`.os-depth-list`, `.os-slab`, `.os-tilt-*`). Zero risk, zero listeners,
+  logic untouched.
+- The children **are `motion.*`** → upgrade the existing animation with
+  `rotateX`/`z` multiplied by `dz`, and put `transformPerspective` in
+  **`style`** (in `transition` it is a TS2559 error). `.os-depth-list` would
+  fight the inline transform here, so it must be dropped.
+
+### Traps we actually hit in this phase
+
+These are not hypothetical; each one broke the code once, and the fix stays in
+the source:
+
+| Trap | Why it is dangerous | The right way |
+|---|---|---|
+| `rotateY: 90` without perspective | `cos(90°) = 0`, so the element gets **squashed flat** instead of turning — the LanguageBridge flashcard had exactly this bug | Always add `transformPerspective` |
+| Glass on a scroll container | `::after` is `position: absolute`, so it scrolls with the content and the reflection slides across the text | `.os-crt` on the non-scrolling outer shell; make the scroller transparent |
+| A CSS animation on an inline transform | `animation` **wins** over the inline transform; an `animate-float` emoji never receives its `translateZ` | Animation outside, framer transform inside — or a separate element for the halo |
+| A 3D key forgotten in `animate` | If `rotateX` lives only in `initial`, the element stays tilted forever — a real bug in the Easter-egg overlay | The 3D key in **all three** of `initial`/`animate`/`exit` |
+| Safari and `overflow-hidden` | `overflow-hidden` on the parent **flattens** `preserve-3d` | For scrollable lists use the self-contained `perspective()` transform function, not `perspective` on the parent |
+| `manualChunks` and `/src/three/` | Routing the `src/three` folder through `manualChunks` migrates `quality.ts` too, and `index.js` ends up with a **static** dependency on `three` — so lite users download 550 kB | `manualChunks` for `node_modules/three` only |
+| `animation-fill-mode: both` | The last keyframe sticks forever and the list stays parked at its final Z | `backwards` |
+
+### The bundle after this phase
+
+| Chunk | Size | gzip | Precached? |
+|---|---|---|---|
+| `index.js` (main) | 328.5 kB | 102.1 | ✅ |
+| `index.css` | 57.6 kB | 12.4 | ✅ |
+| `loveos-3d` (three.js) | 551.7 kB | 136.8 | ❌ — `CacheFirst` |
+| `CinemaHall` | 5.3 kB | 2.5 | ❌ |
+| `DreamRoom` | 5.3 kB | 2.4 | ❌ |
+
+The three WebGL scenes total **562 kB raw**, and a lite-tier user downloads
+none of it. The two new shells added only 10.6 kB, because three.js itself is
+shared inside `loveos-3d`.
 
 <div align="center">
 

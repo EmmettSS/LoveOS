@@ -141,7 +141,7 @@ npm run dev -- --host 0.0.0.0
 * داخل اپ، `Ctrl + K` (یا `⌘ + K`) پالت جستجوی سراسری را باز می‌کند؛ روی موبایل هم از داک،
   آیکن ذره‌بین همان کار را می‌کند.
 * اگر می‌خواهی بدانی همه‌چیز سالم است: `python manage.py test` (۹۷ تست) و در پوشه‌ی فرانت‌اند
-  `npx tsc -b && npx oxlint src && npm run build && npm run test:ui` (۸ سوئیت، ۲۱۴ بررسی)
+  `npx tsc -b && npx oxlint src && npm run build && npm run test:ui` (۹ سوئیت، ۲۸۱ بررسی)
 
 > 💡 راه میان‌بر: اسکریپت `./scripts/dev.sh` در لینوکس/مک هر دو سرور را با هم بالا می‌آورد.
 
