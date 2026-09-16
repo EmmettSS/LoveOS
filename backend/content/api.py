@@ -21,7 +21,6 @@ from content.models import (
     Memory,
     MoodLog,
     MoodMessage,
-    CustomMood,
     QuizQuestion,
     QuizResult,
     QuizReward,
@@ -555,91 +554,22 @@ def plan_item(request, pk: int):
 @api_view(["GET"])
 @require_session
 def moods(request):
-    items = [{"mood": m.mood, "label": m.get_mood_display()} for m in MoodMessage.objects.filter(is_active=True)]
-    customs = [
-        {
-            "mood": f"custom:{c.id}",
-            "label": c.label,
-            "emoji": c.emoji,
-            "color": c.color,
-            "custom_id": c.id,
-            "is_custom": True,
-        }
-        for c in CustomMood.objects.filter(is_active=True).order_by("-created_at")[:40]
-    ]
-    history = []
-    for log in MoodLog.objects.all()[:20]:
-        label = log.mood
-        emoji = ""
-        if log.custom_id:
-            label = log.custom.label if log.custom else log.mood
-            emoji = log.custom.emoji if log.custom else "💖"
-        else:
-            mm = MoodMessage.objects.filter(mood=log.mood).first()
-            label = mm.get_mood_display() if mm else log.mood
-        history.append(
-            {
-                "id": log.id,
-                "mood": log.mood,
-                "label": label,
-                "emoji": emoji,
-                "note": log.note or "",
-                "created_at": log.created_at.isoformat(),
-            }
-        )
-    return Response({"items": items, "customs": customs, "history": history})
+    return Response({"items": [{"mood": m.mood, "label": m.get_mood_display()} for m in MoodMessage.objects.filter(is_active=True)]})
 
 
 @api_view(["POST"])
 @require_session
 def mood_set(request):
-    note = str(request.data.get("note") or "")[:200]
-    custom_id = request.data.get("custom_id")
-    custom = None
-    mood = str(request.data.get("mood") or "")
-    if custom_id:
-        custom = CustomMood.objects.filter(pk=custom_id, is_active=True).first()
-        if custom:
-            mood = f"custom:{custom.id}"
-    MoodLog.objects.create(mood=mood or "custom", note=note, custom=custom)
-    mm = None if custom else MoodMessage.objects.filter(mood=mood, is_active=True).first()
-    label = f"{custom.emoji} {custom.label}" if custom else (mm.get_mood_display() if mm else mood)
-    notify_daddy("mood", f"حال دل دخترت الان: {label}" + (f" — {note}" if note else ""))
-    log_activity("ثبت حال", "mood", label[:60])
+    mood = request.data.get("mood", "")
+    MoodLog.objects.create(mood=mood)
+    mm = MoodMessage.objects.filter(mood=mood, is_active=True).first()
+    notify_daddy("mood", f"حال دل دخترت الان: {mm.get_mood_display() if mm else mood}")
+    log_activity("ثبت حال", "mood", mood)
     return Response(
         {
             "ok": True,
-            "message": (mm.message if mm else "فهمیدم دخترم، کنارتم ❤"),
+            "message": mm.message if mm else "",
             "voice": file_url(mm.voice.audio) if (mm and mm.voice) else None,
-        }
-    )
-
-
-@api_view(["POST"])
-@require_session
-def mood_custom_add(request):
-    """دخترم حال تازه‌ای با ایموجی دلخواه می‌سازد (بدون تأیید)."""
-    label = str(request.data.get("label") or "").strip()[:40]
-    emoji = str(request.data.get("emoji") or "💖").strip()[:8] or "💖"
-    color = str(request.data.get("color") or "#f687b3").strip()[:20]
-    if not label:
-        return Response({"ok": False, "message": "یه اسم برای حالت بنویس"}, status=400)
-    if CustomMood.objects.filter(is_active=True).count() >= 24:
-        return Response({"ok": False, "message": "به سقف حال‌های دلخواه رسیدی"}, status=400)
-    c = CustomMood.objects.create(label=label, emoji=emoji, color=color, created_by="daughter")
-    notify_daddy("mood", f"دخترت حال تازه‌ای ساخت: {emoji} {label}")
-    log_activity("حال دلخواه", "mood", label)
-    return Response(
-        {
-            "ok": True,
-            "item": {
-                "mood": f"custom:{c.id}",
-                "label": c.label,
-                "emoji": c.emoji,
-                "color": c.color,
-                "custom_id": c.id,
-                "is_custom": True,
-            },
         }
     )
 

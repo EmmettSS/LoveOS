@@ -1,0 +1,59 @@
+# LoveOS — docker compose stack
+#   cd deploy/docker && docker compose up -d --build
+# backend/.env is used as-is; set DB_ENGINE=mysql and DB_HOST=db to use the bundled MySQL.
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    env_file: ../../backend/.env
+    environment:
+      SERVE_FRONTEND: "True"
+      # Behind a TLS-terminating proxy the redirect is done by the proxy.
+      SECURE_SSL_REDIRECT: "False"
+    volumes:
+      - media:/app/backend/media
+      - sqlite:/app/backend/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-loveos}
+      MYSQL_USER: ${DB_USER:-loveos}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change-me}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u${DB_USER:-loveos}", "-p${DB_PASSWORD:-change-me}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # Optional: automatic HTTPS with Caddy. Set CADDY_DOMAIN in deploy/docker/.env
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-localhost}
+    depends_on: [web]
+    restart: unless-stopped
+
+volumes:
+  media:
+  sqlite:
+  mysql:
+  caddy_data:

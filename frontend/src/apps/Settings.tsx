@@ -17,13 +17,6 @@ import { getStoredSettings, setStoredSetting, syncSettings } from '../shared/pre
 import { setLanguage } from '../shared/i18n'
 import { digits } from '../shared/format'
 import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../shared/geo'
-import {
-  clearDowngradeMemory,
-  normalizeChoice,
-  probeCapability,
-  resolveTier,
-  type QualityChoice,
-} from '../shared/quality'
 import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
 import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
@@ -168,41 +161,6 @@ export default function Settings() {
           <button className="os-chip" onClick={() => void save({ font_scale: Math.min(1.4, (config.font_scale || 1) + 0.05) }, { silent: true })}>+</button>
         </div>
       </Row>
-
-      {/* ---------------------------------------------------- کیفیت سه‌بعدی --- */}
-      <Row label={t('settings.quality')} hint={t('settings.qualityHint')}>
-        <div className="flex flex-wrap gap-1.5">
-          {(['auto', 'lite', 'balanced', 'dream'] as QualityChoice[]).map((q) => {
-            const current = normalizeChoice(config.ui_quality ?? getStoredSettings().ui_quality ?? 'auto')
-            return (
-              <button
-                key={q}
-                type="button"
-                className={`os-chip ${current === q ? 'os-chip-active' : ''}`}
-                onClick={() => {
-                  playClick()
-                  clearDowngradeMemory()
-                  void save({ ui_quality: q })
-                }}
-              >
-                {t(`settings.tier_${q}`)}
-              </button>
-            )
-          })}
-        </div>
-      </Row>
-      {(() => {
-        const choice = normalizeChoice(config.ui_quality ?? getStoredSettings().ui_quality ?? 'auto')
-        const d = resolveTier(choice, probeCapability(), null)
-        return (
-          <p className="px-1 text-[11px] leading-5 os-muted">
-            {t('settings.qualityNow', { tier: t(`settings.tier_${d.tier}`) })}
-            {d.reasons.slice(0, 2).map((r) => (
-              <span key={r.key}> · {t(`settings.${r.key}`, r.args || {})}</span>
-            ))}
-          </p>
-        )
-      })()}
 
       {/* ---------------------------------------------------- پس‌زمینه‌ها --- */}
       <Row label={t('settings.backgrounds')} hint={t('settings.backgroundsHint')}>

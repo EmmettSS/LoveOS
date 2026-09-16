@@ -264,18 +264,14 @@
         "water": "Water it",
         "watered": "It bloomed 🌸",
         "level": "Stage {{n}}",
-        "caption": "Every visit makes it grow a little.",
-        "dragCan": "Tap a flower or use the water button — the can tilts"
+        "caption": "Every visit makes it grow a little."
     },
     "starmap": {
         "caption": "I wrote your name with stars.",
         "tapLetter": "Tap each letter",
         "fullName": "Light up the whole name",
         "layoutRtl": "Layout: right to left",
-        "layoutLtr": "Layout: left to right",
-        "dragHint": "Drag to spin the sky · double-tap for a secret",
-        "heartMsg": "My heart always points to you — even across the stars.",
-        "infinityMsg": "Our love is infinite; no beginning and no end."
+        "layoutLtr": "Layout: left to right"
     },
     "chat": {
         "placeholder": "Tell Daddy something...",
@@ -297,12 +293,7 @@
             "sad": "Sad",
             "excited": "Excited",
             "sleepy": "Sleepy"
-        },
-        "custom": "My own mood",
-        "customPh": "e.g. calm, buzzing…",
-        "emoji": "Emoji",
-        "notePh": "Want to leave Daddy a note?",
-        "historyEmpty": "No moods logged yet"
+        }
     },
     "quiz": {
         "start": "Start quiz",
@@ -357,10 +348,7 @@
         "textPh": "Any words? (optional)",
         "attach": "📎 Photo / voice / video",
         "added": "Tucked into the vault 💎",
-        "needTitle": "Give it a name first",
-        "opening": "Opening…",
-        "contents": "Treasures inside",
-        "locked3d": "Enter the code to open the lid"
+        "needTitle": "Give it a name first"
     },
     "terminal": {
         "hint": "Type help to see what I know",
@@ -537,25 +525,7 @@
         "layout": "Desktop layout",
         "layoutHint": "Drag icons to rearrange; the order is saved",
         "layoutReset": "Reset layout",
-        "layoutResetDone": "Layout restored to its default ✨",
-        "quality": "3D quality",
-        "qualityHint": "On weaker phones, Moonlight stays smoother",
-        "qualityNow": "Now: {{tier}}",
-        "tier_auto": "Auto",
-        "tier_lite": "Moonlight",
-        "tier_balanced": "Crystal",
-        "tier_dream": "Galaxy",
-        "qualityVetoTestEnv": "Test environment",
-        "qualityVetoReducedMotion": "Reduce motion is on",
-        "qualityNoWebgl": "WebGL unavailable",
-        "qualityVetoSoftware": "Software GPU renderer",
-        "qualityVetoSaveData": "Data saver is on",
-        "qualityFps": "{{n}} fps",
-        "qualityManualCapped": "Choice was capped",
-        "qualityManualChoice": "Manual choice",
-        "qualityRememberedDowngrade": "Previous downgrade remembered",
-        "qualityNet3g": "3G network",
-        "qualityNetSlow": "Slow network"
+        "layoutResetDone": "Layout restored to its default ✨"
     },
     "notifications": {
         "title": "Notification Center",
@@ -770,11 +740,7 @@
         "pickPhoto": "Pick a photo",
         "noPhoto": "Pick a photo first",
         "emptyGallery": "The gallery is empty. Add a lovely photo 🖼",
-        "commentPlaceholder": "Your thoughts…",
-        "viewOrbit": "3D view",
-        "viewTop": "Top plan",
-        "roofToggle": "Roof",
-        "nightMode": "Night"
+        "commentPlaceholder": "Your thoughts…"
     },
     "language": {
         "title": "Language bridge",

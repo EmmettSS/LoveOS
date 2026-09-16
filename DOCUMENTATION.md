@@ -1,63 +1,71 @@
-# LoveOS — Technical & User Documentation
+# LoveOS — Complete Documentation
 
-> A tiny romantic operating system in the browser.
-> Built by Daddy, for his daughter, across a distance that is only a number.
-
-**Version:** 2.0 · **Default language:** Persian (fa) · **Second language:** English (en)
-**Persian version of this document:** [`DOCUMENTATION_FA.md`](./DOCUMENTATION_FA.md)
+> A tiny operating system that runs in the browser. I built it for my daughter, so that
+> the distance between us feels a little shorter every day.
+>
+> This is the single reference for the whole project: what it is, how it is built, how I run it
+> on my own machine, how I put it on a server, and how I keep it alive.
+> The Persian version of this document is [`DOCUMENTATION_FA.md`](./DOCUMENTATION_FA.md).
 
 ---
 
 ## Table of contents
 
-1. [Overview](#1-overview)
+1. [What LoveOS is](#1-what-loveos-is)
 2. [Architecture](#2-architecture)
-3. [Installation & setup](#3-installation--setup)
-4. [The LoveOS apps](#4-the-loveos-apps)
-5. [Global search](#5-global-search)
-6. [The Daddy Panel](#6-the-daddy-panel)
-7. [Soroush bot integration](#7-soroush-bot-integration)
-8. [API reference](#8-api-reference)
-9. [Easter eggs & badges](#9-easter-eggs--badges)
+3. [Project layout](#3-project-layout)
+4. [Development environment](#4-development-environment)
+5. [Configuration (`backend/.env`)](#5-configuration-backendenv)
+6. [The apps](#6-the-apps)
+7. [The Daddy Panel](#7-the-daddy-panel)
+8. [Soroush bot integration](#8-soroush-bot-integration)
+9. [API reference](#9-api-reference)
 10. [Deployment](#10-deployment)
-11. [Maintenance, tests & troubleshooting](#11-maintenance-tests--troubleshooting)
-12. [What changed in 2.0](#12-what-changed-in-20)
+    - [10.1 Before any deployment](#101-before-any-deployment)
+    - [10.2 VPS — Ubuntu/Debian with Nginx + Gunicorn](#102-vps--ubuntudebian-with-nginx--gunicorn)
+    - [10.3 cPanel shared hosting (Passenger)](#103-cpanel-shared-hosting-passenger)
+    - [10.4 Docker / docker compose](#104-docker--docker-compose)
+    - [10.5 DirectAdmin / Plesk and other panels](#105-directadmin--plesk-and-other-panels)
+    - [10.6 PaaS (Railway, Render, Fly.io, Liara, …)](#106-paas-railway-render-flyio-liara-)
+    - [10.7 Split hosting: frontend on a static host, backend elsewhere](#107-split-hosting-frontend-on-a-static-host-backend-elsewhere)
+    - [10.8 After going live: webhook, cron, QR](#108-after-going-live-webhook-cron-qr)
+    - [10.9 Updating a running deployment](#109-updating-a-running-deployment)
+11. [Scripts](#11-scripts)
+12. [Tests](#12-tests)
+13. [Maintenance, backups and troubleshooting](#13-maintenance-backups-and-troubleshooting)
+14. [Security model](#14-security-model)
 
 ---
 
-## 1. Overview
+## 1. What LoveOS is
 
-### What LoveOS is
+LoveOS is a **Progressive Web App that behaves like a miniature operating system**. It boots, asks
+for a passcode, shows a desktop with widgets and a dock, and opens 30 small apps in windows — each
+one a different way of saying *I love you* across a long distance.
 
-LoveOS is a **Progressive Web App disguised as a miniature operating system**. It boots, asks for a
-passcode, shows a desktop with widgets and a dock, and hosts 30 small apps — each one a different way
-of saying *I love you* across a long distance.
+It is a private, single-user system. There is exactly one "user" (my daughter) and one
+administrator (me). Everything she sees — every message, voice note, letter, quiz question,
+terminal reply — I write in an admin panel; nothing is hard-coded.
 
-It is my gift, as a programmer father ("بابا" / Daddy), to my daughter ("دخترم" / my daughter). The
-tone throughout is warm, playful and childlike, and every visible string speaks directly to her.
-Version 2.0 adds five apps that are all about *being together*: call planning, a gift book, reading
-together, a dream home and a language bridge — plus a global search layer across the whole system
-(six new pieces in total).
-
-### Design principles
+The principles I held myself to:
 
 | Principle | What it means in practice |
 |---|---|
-| **Nothing is hardcoded** | Every piece of content — messages, voices, letters, photos, quiz questions, terminal replies, easter-egg texts — lives in the Django admin and can be changed without touching code. |
-| **Secret by construction** | The app lives on an unlisted domain reached by a QR code. `robots.txt` blocks everything, every response carries `X-Robots-Tag: noindex`, and the admin sits behind a secret path plus its own passcode gate. |
-| **Mobile-first, desktop-nice** | Designed for a phone in her hand; on a wide screen apps become draggable floating windows. |
-| **Two languages, zero hardcoded text** | All UI strings live in `frontend/public/locales/{fa,en}/translation.json`. Persian is the default and the layout is RTL. |
+| **Nothing is hard-coded** | All content lives in the Django admin (the "Daddy Panel"). All UI strings live in `frontend/public/locales/{fa,en}/translation.json`. All configuration lives in `backend/.env`. |
+| **Secret by construction** | The app lives on an unlisted domain reached by a QR code. `robots.txt` blocks everything, every response carries `X-Robots-Tag: noindex`, and the panel sits behind a secret path plus its own passcode gate. |
+| **Mobile-first, desktop-nice** | Designed for a phone in her hand; on a wide screen the same apps become draggable floating windows. |
+| **Two languages** | Persian (RTL) is the default; English is one tap away. |
 | **Offline-friendly** | A service worker precaches the shell, fonts and icons, so the OS opens even on a bad connection. |
-| **One truth for location** | Every app that needs "where is she" (map, weather, clock, distance) reads from the same helper; her live device location always wins over the value stored in the panel. |
-| **Gentle by default** | Sounds are synthesized (no copyrighted assets), animations respect `prefers-reduced-motion`, and the sensitive health app carries a medical disclaimer. |
+| **One truth for location** | Every app that needs "where is she" reads the same helper; her live device location always beats the value stored in the panel. |
+| **Gentle by default** | Sounds are synthesized (no copyrighted assets), animations respect `prefers-reduced-motion`, and the health app carries a medical disclaimer. |
 
-### The user journey
+### Her journey
 
 ```
 QR code  →  secret domain
               │
               ▼
-        ┌──────────┐   typing boot lines, soft melody, "سلام دخترم..."
+        ┌──────────┐   typing boot lines, a soft melody, my welcome message
         │   BOOT   │
         └────┬─────┘
              ▼
@@ -66,49 +74,8 @@ QR code  →  secret domain
         └────┬─────┘
              ▼
         ┌──────────┐   clock · next-meeting countdown · next call · both cities' weather
-        │ DESKTOP  │   29 app icons · dock (with the search magnifier) · start menu
-        └────┬─────┘   Ctrl/⌘ + K = global search
-             ▼
-          30 apps
-```
-
-### Repository layout
-
-```
-LoveOS/
-├── backend/                     Django 5 + DRF
-│   ├── config/                  settings, root urls, wsgi, asgi
-│   ├── core/                    notifications, Soroush outbox, achievements,
-│   │                            counters, easter eggs, global search, cache,
-│   │                            effective location, the sweep command
-│   ├── accounts/                UserConfig (single source of truth), device
-│   │                            sessions, live location, unlock attempts
-│   ├── content/                 voices, songs, memories, letters, countdowns,
-│   │                            garden, constellations, cinema, quiz, plans,
-│   │                            moods, vault, tutorial, terminal
-│   ├── social/                  chat, hugs, notifications, reminders, weather, map
-│   ├── health/                  cycle & care, medication, gentle reminders
-│   ├── library/                 "Our Story" book (co-writing)
-│   ├── games/                   heart puzzle
-│   ├── calls/                   app 25 — Call Sync
-│   ├── gifts/                   app 26 — Gift Book
-│   ├── reading/                 app 27 — Read Together
-│   ├── dreamhome/               app 28 — Dream Home
-│   └── language/                app 29 — Language Bridge
-├── frontend/                    React 19 + Vite 8 + TS + Tailwind
-│   ├── src/os/                  boot, lock, desktop, window, dock, start menu,
-│   │                            notification center, global search, day/night
-│   ├── src/apps/                30 app files (one file per app)
-│   ├── src/shared/              store (Zustand), api, ui, Icon, i18n, format,
-│   │                            sound, geo, recorder, prefs, ErrorBoundary
-│   ├── public/locales/          fa / en
-│   └── vite.config.ts           /api proxy + PWA service worker
-├── scripts/                     helper scripts (QR, backup, deploy)
-├── DOCUMENTATION.md             this document (English)
-├── DOCUMENTATION_FA.md          this document (Persian)
-├── QUICKSTART_FA.md             quick start on my own machine
-├── DEPLOY_CPANEL_FA.md          cPanel deployment guide
-└── Soroush-Docs.md              Soroush Plus API reference
+        │ DESKTOP  │   29 app icons · dock · start menu · Ctrl/⌘+K global search
+        └──────────┘
 ```
 
 ---
@@ -117,676 +84,965 @@ LoveOS/
 
 ### Stack
 
-| Layer | What I used |
-|---|---|
-| Backend | Django 5.2 · Django REST Framework 3.18 · SQLite (dev) / MySQL (production) |
-| Auth | Hand-rolled token on `DeviceSession` (no JWT), `@require_session` decorator |
-| Panel | Django's own admin on a secret path + a passcode gate (`ADMIN_GATE_PASSCODE`) |
-| Frontend | React 19 · TypeScript 6 · Vite 8 · Tailwind 3 · Framer Motion 13 |
-| State | Zustand (`src/shared/store.ts`) |
-| i18n | i18next + react-i18next (automatic RTL/LTR) |
-| Map | MapLibre GL (with a light fallback when WebGL is unavailable) |
-| Sound | Web Audio API (synthesis) + Howler (media files) |
-| Recording | MediaRecorder + getUserMedia (`src/shared/recorder.ts`) |
-| PWA | vite-plugin-pwa (Workbox) with `skipWaiting` and `clientsClaim` |
+| Layer | Technology | Why |
+|---|---|---|
+| Backend | Python 3.11+, **Django 5.2**, Django REST Framework | Batteries included: ORM, admin panel, migrations, sessions. The admin *is* my content management system. |
+| Database | **SQLite** in development, **MySQL 8 (utf8mb4)** in production | Zero-setup locally; MySQL is what shared hosts offer. |
+| Frontend | **React 19**, TypeScript, **Vite 8**, Tailwind CSS, Zustand, framer-motion, i18next, MapLibre GL, three.js, Howler | A fast SPA with a real window manager, animations, maps and a star sky. |
+| PWA | `vite-plugin-pwa` (Workbox) | Installable on her phone; shell works offline. |
+| Notifications to me | **Soroush Plus bot API** | The channel through which the app talks to me. |
+| Scheduler | `manage.py sweep` from cron (every minute) | Timed letters, future memories, medication reminders, call reminders, Soroush queue. |
 
 ### Request flow
 
 ```
-her phone ──► Vite (dev) / Nginx or Passenger (production)
-                │
-                ├─ /            → SPA files (React)
-                ├─ /api/...     → Django + DRF  →  models  →  JSON
-                ├─ /api/media/... → signed private media (voices, photos, PDFs, pronunciation audio)
-                └─ /daddy-panel-9x7k/  → Django admin (me only)
+                       ┌────────────────────────────────────────────┐
+  her phone ──HTTPS──► │  reverse proxy (Nginx / Passenger / Caddy) │
+                       └───────┬─────────────────────┬──────────────┘
+                               │ /api, /panel        │ /, /assets (built SPA)
+                               ▼                     ▼
+                        Django + DRF          frontend/dist (static)
+                               │                     ▲
+                               ▼                     │ (or Django serves it
+                          MySQL / SQLite               when SERVE_FRONTEND=True)
+                               │
+                               ▼
+                   SoroushOutbox ──► sweep ──► api.splus.ir ──► my phone
 ```
 
-Every request carries `Authorization: Token …`. When a session expires the API answers 401 and the
-frontend raises the lock screen again (via the `loveos:locked` event).
+Two ways to serve the frontend, chosen with one switch in `.env`:
+
+| `SERVE_FRONTEND` | Who serves `frontend/dist` | Use it on |
+|---|---|---|
+| `False` (default) | Nginx / Caddy / a static host | VPS, Docker with a proxy, split hosting |
+| `True` | Django itself (`core/spa.py`) | cPanel/Passenger, PaaS with a single process, anywhere with only one entry point |
 
 ### Authentication model
 
-* `DeviceSession` — a 32-character token with an expiry (`SESSION_TTL_HOURS`, default 720 h = 30 days).
-* `@require_session` — the decorator wrapping every private view.
-* `UnlockAttempt` — each passcode attempt is stored; after `MAX_UNLOCK_ATTEMPTS` (5) the "Ask Daddy"
-  button appears and a Soroush message reaches me immediately.
-* A security question (`/api/auth/forgot`) and the help route (`/api/auth/help`) are the second and
-  third ways back in.
-* The vault (`/api/vault/unlock`) is a separate lock with a short timer
-  (`VAULT_SESSION_MINUTES`, default 20 minutes).
+* **Her session** — `POST /api/auth/unlock` with the passcode returns a 32-character token
+  (`DeviceSession`) that lives `SESSION_TTL_HOURS` (default 720 h = 30 days). Every private
+  route requires `Authorization: Token <token>` and is wrapped by `@require_session`.
+* **Failed attempts** — each attempt is stored (`UnlockAttempt`); after `MAX_UNLOCK_ATTEMPTS`
+  the "Ask Daddy" button appears and I get a Soroush message immediately.
+* **Second ways in** — the security question (`/api/auth/forgot`) and the help route
+  (`/api/auth/help`).
+* **The vault** — a separate passcode with a short timer (`VAULT_SESSION_MINUTES`, default 20).
+* **Me** — Django admin login, behind a secret URL (`ADMIN_PATH`) and an optional extra passcode
+  gate (`ADMIN_GATE_PASSCODE`, enforced by `core.middleware.AdminGateMiddleware`).
 
-### The phase machine
+### Private media
 
-```
-boot ──► lock ──► desktop
- ↑                  │
- └──── logout ──────┘
-```
+Uploaded files (voices, songs, photos) are **never** served from a public `/media/` URL. The API
+returns short-lived signed URLs (`/api/media/<path>?sig=…`, `core/media.py`) and the reverse-proxy
+configs deliberately contain no `/media/` alias.
 
-The phase lives in `useOS` and changes through `setPhase`. Moving out of the desktop closes every
-window and menu.
+### Effective location
 
-### The window manager (2.0)
+`core.services.effective_daughter_location(cfg)` is the single source of truth for "where is she":
 
-The window manager was rewritten in this version. Three simple but crucial rules:
+1. Her device's live position, if it is fresher than `location_ttl_minutes` and live tracking is on.
+2. Otherwise the city/coordinates stored in the panel.
 
-1. **Geometry is decided once.** A window takes a cascade slot when it opens and keeps its position.
-   No click or focus ever moves it — that is exactly what used to make windows jump out from under
-   the finger so close/minimize looked broken.
-2. **Stacking lives on the outer wrapper.** `z-index` sits on the wrapper, not on the animated box, so
-   a window underneath can never cover the one in front.
-3. **A fading window cannot be clicked.** With `useIsPresent`, once the exit animation is done the
-   wrapper becomes `pointer-events: none` — so no "ghost" of a closed window stays on the desktop.
+Map, weather, distance, time difference and desktop widgets all read this. When a meaningful move
+is detected (> `location_sync_km` or a city/timezone change) the panel value is synced
+automatically and I get a Soroush note.
 
-On mobile every app is a full-height sheet with a sticky header and body padding that clears the dock;
-on desktop the same app becomes a draggable floating window. Each app remembers its size and position
-and reopens exactly there next time.
+### The window manager
 
-### Effective location (2.0)
+Three rules that make windows feel right on both phone and desktop:
 
-Previously each app treated location differently and some read the stale value stored in the panel.
-Now there is a single helper:
+1. **Geometry is decided once** — a window takes a cascade slot on open and never moves because of a
+   click or focus.
+2. **Stacking lives on the outer wrapper** — `z-index` on the wrapper, not the animated box.
+3. **A fading window cannot be clicked** — `pointer-events: none` once the exit animation starts.
 
-```python
-# core/services.py
-effective_daughter_location(cfg)  →  {lat, lng, city, timezone, is_live, captured_at, accuracy, source}
-```
-
-Priority order:
-
-1. **Her device's live location**, when it is fresh (younger than `location_ttl_minutes`) and I have not
-   switched live tracking off in the panel.
-2. Otherwise the **value stored in the panel** (home / default city).
-
-The map, weather, distance, time difference and desktop widgets all read from this function. On top of
-that, when her phone sends a fresh position and the move is meaningful (more than `location_sync_km`, or
-the city/timezone changed), the **stored coordinates and city are synced automatically** so there is a
-single truth — and I get a Soroush note about it.
-
-### Day/night theming
-
-`src/os/daynight.ts` understands three modes: `auto` (based on the clock and her city's sunrise/sunset),
-`day` and `night`. The theme sets `data-theme` on the root and swaps every colour variable. The choice
-is stored both in `localStorage` and on the server profile, so it survives a re-login.
+On a phone every app is a full-height sheet; on desktop it is a draggable, resizable window that
+remembers its size and position.
 
 ---
 
-## 3. Installation & setup
+## 3. Project layout
+
+```
+LoveOS/
+├── backend/                      Django 5 + DRF
+│   ├── config/                   settings.py (reads .env), urls.py, wsgi.py
+│   ├── core/                     sessions, notifications, Soroush outbox, achievements,
+│   │                             easter eggs, global search, signed media, SPA serving,
+│   │                             admin gate, management commands (seed_loveos, sweep)
+│   ├── accounts/                 UserConfig (the one profile), device sessions,
+│   │                             live location, unlock attempts
+│   ├── content/                  voices, songs, memories, letters, countdowns, garden,
+│   │                             constellations, cinema, quiz, plans, moods, vault, tutorial
+│   ├── social/                   chat, hugs, notifications, reminders, weather, map, terminal
+│   ├── health/                   cycle & care, medication, gentle reminders
+│   ├── library/                  "Our Story" book (co-writing)
+│   ├── games/                    heart puzzle
+│   ├── calls/  gifts/  reading/  dreamhome/  language/     the five "being together" apps
+│   ├── media/                    uploads (only two seed images are tracked in git)
+│   ├── templates/admin_gate.html the panel passcode gate
+│   ├── requirements.txt
+│   └── .env.example              every configuration key, documented
+├── frontend/                     React 19 + Vite 8 + TypeScript + Tailwind
+│   ├── src/os/                   Boot, Lock, Desktop, Window, Dock, StartMenu,
+│   │                             NotificationCenter, GlobalSearch, EggOverlay, appRegistry
+│   ├── src/apps/                 30 apps, one file each
+│   ├── src/shared/               api, store, i18n, ui, sound, geo, recorder, prefs, …
+│   ├── public/locales/{fa,en}/   every UI string
+│   ├── tests/                    browser-less UI tests (jsdom) + run.mjs
+│   └── vite.config.ts            dev proxy + PWA
+├── deploy/
+│   ├── vps/                      nginx.conf + loveos.service templates
+│   └── docker/                   Dockerfile, docker-compose.yml, Caddyfile, entrypoint.sh
+├── scripts/
+│   ├── dev.sh                    everything for my machine (run, setup, test, check, reset, clean)
+│   ├── deploy.sh                 everything for servers (build, vps, cpanel, docker, update, package, backup, verify)
+│   └── qr.py                     generates the QR code of the secret domain (no dependencies)
+├── docs/soroush-api-reference.md the Soroush Plus bot API reference I work from
+├── passenger_wsgi.py             entry point for cPanel / Passenger
+├── DOCUMENTATION.md              this file
+├── DOCUMENTATION_FA.md           the same in Persian
+└── README.md
+```
+
+---
+
+## 4. Development environment
 
 ### Requirements
 
 | Tool | Version |
 |---|---|
 | Python | 3.11 or newer |
-| Node.js | 20 or newer |
+| Node.js | 20 or newer (I use 22) |
 | npm | ships with Node |
+| git | any recent version |
 
-### Quick start
+No database server is needed locally — SQLite is used automatically.
+
+### The one-command way
 
 ```bash
 git clone https://github.com/EmmettSS/LoveOS.git
 cd LoveOS
+./scripts/dev.sh
+```
 
-# ---- backend
+That creates `backend/.venv`, installs requirements, writes `backend/.env` with development
+defaults, migrates, seeds demo content, installs npm packages and starts both servers:
+
+| What | Where |
+|---|---|
+| Her app | http://localhost:5173 |
+| Daddy Panel | http://localhost:8000/daddy-panel-9x7k/ |
+| Passcode / vault | `1234` / `0000` |
+
+`Ctrl+C` stops both. Other sub-commands: `setup`, `test`, `test:be`, `test:fe`, `check`, `reset`,
+`clean` — see [§11](#11-scripts).
+
+### The manual way
+
+```bash
+# backend
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env
+cp .env.example .env               # then set DEBUG=True for local work
 .venv/bin/python manage.py migrate
-.venv/bin/python manage.py seed_loveos      # passcode: 1234 · vault: 0000
+.venv/bin/python manage.py seed_loveos          # --passcode 1234 --vault 0000
+.venv/bin/python manage.py createsuperuser      # my panel login
 .venv/bin/python manage.py runserver 0.0.0.0:8000
 
-# ---- frontend (second terminal)
+# frontend (second terminal)
 cd frontend
 npm install
-npm run dev     # http://localhost:5173
+npm run dev                         # http://localhost:5173
 ```
 
-The Vite proxy forwards `/api`, `/static` and `/daddy-panel-9x7k` to `127.0.0.1:8000`, so both
-terminals are needed. A step-by-step walkthrough is in [`QUICKSTART_FA.md`](./QUICKSTART_FA.md).
+The Vite dev server proxies `/api`, `/static`, `/healthz` and `/daddy-panel-9x7k` to
+`127.0.0.1:8000`, so both processes are needed. If I change `ADMIN_PATH` in `.env` I also change it
+in `frontend/vite.config.ts` (`server.proxy`).
 
-### Admin commands
-
-```bash
-.venv/bin/python manage.py makemigrations     # create new migrations
-.venv/bin/python manage.py migrate            # apply them
-.venv/bin/python manage.py check              # project health check
-.venv/bin/python manage.py test               # 72 backend tests
-.venv/bin/python manage.py sweep              # scheduled work (cron)
-.venv/bin/python manage.py createsuperuser    # first-time panel user
-```
-
-### Environment variables
-
-`backend/.env` (sample in `.env.example`):
-
-| Key | Purpose |
-|---|---|
-| `DEBUG` | development mode |
-| `DJANGO_SECRET_KEY` | Django secret key |
-| `ALLOWED_HOSTS` | allowed domains |
-| `CSRF_TRUSTED_ORIGINS` | trusted origins |
-| `TIME_ZONE` | server timezone |
-| `ADMIN_PATH` | secret admin path (default `daddy-panel-9x7k`) |
-| `ADMIN_GATE_PASSCODE` | optional second gate for the panel |
-| `DB_ENGINE` / `DB_NAME` / … | `sqlite` or `mysql` |
-| `NOTIFY_PROVIDER` | `console` · `soroush` · `null` |
-| `SOROUSH_API_BASE` / `SOROUSH_TOKEN` / `SOROUSH_DADDY_CHAT_ID` | Soroush bot wiring |
-| `SOROUSH_TIMEOUT` | per-request Soroush timeout in seconds (default `8`) |
-| `NOTIFY_ASYNC` | send notifications from a background thread so API calls never wait on Soroush (default `true`) |
-| `SESSION_TTL_HOURS` | how long her device session lives |
-| `VAULT_SESSION_MINUTES` | how long the vault stays open |
-| `MAX_UNLOCK_ATTEMPTS` | wrong tries before "Ask Daddy" |
-| `API_RATE_LIMIT` | request ceiling |
-| `SERVE_FRONTEND` | when True, Django also serves the built frontend (cPanel) |
-
-> ⚠️ Restart Django after editing `.env`; the environment file is read only at startup.
-
-### Generating her QR code
+### Useful management commands
 
 ```bash
-.venv/bin/python ../scripts/make_qr.py https://love.example.com
+.venv/bin/python manage.py seed_loveos        # demo content, idempotent
+.venv/bin/python manage.py sweep              # run the scheduler once, by hand
+.venv/bin/python manage.py makemigrations     # after changing models
+.venv/bin/python manage.py check --deploy     # production readiness
+.venv/bin/python manage.py shell              # poke at the data
 ```
 
 ---
 
-## 4. The LoveOS apps
+## 5. Configuration (`backend/.env`)
 
-30 apps, 29 of them with a desktop icon (the "About" app opens from the start menu only).
+Everything is read from `backend/.env` at process start (`python-dotenv`). **Restart Django after
+editing it.** The full sample is `backend/.env.example`.
+
+### Core
+
+| Key | Default | Meaning |
+|---|---|---|
+| `DEBUG` | `True` in code, `False` in the sample | Never `True` in production. |
+| `DJANGO_SECRET_KEY` | dev key | Generate: `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"` |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Comma-separated domains. |
+| `CSRF_TRUSTED_ORIGINS` | `https://*.e2b.app` | Origins allowed to post to the panel, e.g. `https://love.example.com`. |
+| `TIME_ZONE` | `Asia/Tehran` | Server timezone. |
+| `CORS_ALLOW_ALL` / `CORS_ALLOWED_ORIGINS` | off / empty | Only needed for split hosting (§10.7). |
+
+### Panel
+
+| Key | Default | Meaning |
+|---|---|---|
+| `ADMIN_PATH` | `daddy-panel-9x7k` | Secret path of the panel — change it in production. No slashes. |
+| `ADMIN_GATE_PASSCODE` | empty (off) | Extra passcode asked before the Django login page. |
+
+### Database
+
+| Key | Meaning |
+|---|---|
+| `DB_ENGINE` | `sqlite` or `mysql` |
+| `DB_NAME` | SQLite file name, or MySQL database name |
+| `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | MySQL only |
+
+The MySQL connection forces `utf8mb4` — the **database itself must also be created with
+`utf8mb4_unicode_ci`** or Persian text and emoji become `????`.
+
+### Soroush (notifications to me)
+
+| Key | Meaning |
+|---|---|
+| `NOTIFY_PROVIDER` | `console` (log only, dev) · `soroush` (real) · `null` (silent) |
+| `SOROUSH_API_BASE` | `https://api.splus.ir` |
+| `SOROUSH_TOKEN` | bot token |
+| `SOROUSH_DADDY_CHAT_ID` | my chat id |
+| `SOROUSH_WEBHOOK_SECRET` | random string that becomes part of the webhook URL |
+| `SOROUSH_PARSE_MODE` | `HTML` |
+| `SOROUSH_TIMEOUT` | per-request timeout in seconds (default 8) |
+| `NOTIFY_ASYNC` | send from a background thread so API calls never wait (default true) |
+| `OUTBOX_MAX_RETRY` | retries per queued message (default 5) |
+
+### Sessions and limits
+
+| Key | Default | Meaning |
+|---|---|---|
+| `SESSION_TTL_HOURS` | `720` | how long her login lives |
+| `VAULT_SESSION_MINUTES` | `20` | how long the vault stays open |
+| `MAX_UNLOCK_ATTEMPTS` | `5` | wrong tries before "Ask Daddy" |
+| `API_RATE_LIMIT` | `300/min` | DRF throttle |
+
+### Serving
+
+| Key | Default | Meaning |
+|---|---|---|
+| `SERVE_FRONTEND` | `False` | `True` = Django serves `frontend/dist` and `/static/` itself |
+| `FRONTEND_DIST` | `../frontend/dist` | absolute path to the built frontend if it lives elsewhere |
+| `SECURE_SSL_REDIRECT` | `True` when `DEBUG=False` | set `False` only behind a proxy that already redirects to HTTPS |
+
+---
+
+## 6. The apps
+
+30 apps; 29 have a desktop icon (About opens from the start menu). She can reorder icons by drag
+and drop.
 
 ### Emotional core
 
-| App | Icon | What it does |
-|---|---|---|
-| **Map of Us** | 🗺 | Two pins (my home, her place) with distance, time difference, a "fly along the path" button and a live-location badge. |
-| **Voice Vault** | 🎙 | Categorised archive of my voice notes, plus a "random voice" button. |
-| **Our Music** | 🎵 | Songs with "why this song" and lyrics; she can upload songs too when I allow it. |
-| **Memories** | 📸 | Shared memories; some stay locked until a chosen date (a future-memory secret). |
-| **Whisper Letters** | ✉️ | Letters typeset in a Nastaliq hand. |
-| **Countdown** | ⏳ | To the next meeting, her birthday, our anniversary. |
-| **Weather** | ⛅ | Both cities side by side with a loving line based on the temperature gap. |
-| **Heartbeat** | 💓 | "My heart beats for you" — a synthesized pulse on every tap. |
-| **Our Garden** | 🌱 | Water the flowers; each watering opens one bloom. |
-| **Star Sky** | ✨ | Her name drawn as a constellation plus wish stars. |
-| **Chat with Daddy** | 💬 | Direct messages, short and affectionate. |
-| **My Mood** | 🌈 | Log today's mood and receive a matching message from me. |
-| **Our Quiz** | 🧠 | Quizzes I write about our memories, with rewards. |
-| **Our Wishes** | 🎯 | Shared wish list with categories and a "done" tick. |
-| **Our Cinema** | 🎬 | Watch list with "watched / want to watch". |
-| **The Vault** | 🔐 | Private treasures behind a separate passcode. |
-| **Hug** | 🫂 | Instant hugs, back and forth; every hug tells me on Soroush. |
+| App | What it does |
+|---|---|
+| **Map of Us** | Two pins (my home, her place) with distance, time difference, a "fly along the path" button and a live-location badge. |
+| **Voice Vault** | Categorised archive of my voice notes, plus a "random voice" button. |
+| **Our Music** | Songs with "why this song" and lyrics; she can upload songs too when I allow it. |
+| **Memories** | Shared memories; some stay locked until a chosen date (future memories). |
+| **Whisper Letters** | Letters typeset in a Nastaliq hand; some open only on a date. |
+| **Countdown** | To the next meeting, her birthday, our anniversary. |
+| **Weather** | Both cities side by side with a loving line based on the temperature gap. |
+| **Heartbeat** | "My heart beats for you" — a synthesized pulse on every tap. |
+| **Our Garden** | Water the flowers; each watering opens one bloom. |
+| **Star Sky** | Her name drawn as a constellation plus wish stars. |
+| **Chat with Daddy** | Direct messages, short and affectionate. |
+| **My Mood** | Log today's mood and receive a matching message from me. |
+| **Our Quiz** | Quizzes I write about our memories, with rewards. |
+| **Our Wishes** | Shared wish list with categories and a "done" tick. |
+| **Our Cinema** | Watch list with "watched / want to watch". |
+| **The Vault** | Private treasures behind a separate passcode. |
+| **Hug** | Instant hugs, back and forth; every hug tells me on Soroush. |
 
 ### Care & everyday
 
-| App | Icon | What it does |
-|---|---|---|
-| **Cycle & Care** | 🌸 | Period, symptoms and medication logging with gentle wording and clear medical boundaries. |
-| **Our Library** | 📚 | "Our Story" written together, chapter by chapter, with comments on every paragraph. |
-| **Heart Puzzle** | 🧩 | Picture puzzle in easy/medium/hard with a custom ending line. |
-| **Settings** | ⚙️ | Language, theme, sound, font scale, live location and the PWA install guide. |
-| **Tutorial** | 🎓 | "What an operating system is" lessons, all written by me in the panel. |
-| **Terminal** | ⌨️ | Commands like `help`, `love`, `whoami` with playful answers. |
-| **Badges** | 🏅 | 32 achievements unlocked by real activity. |
-| **About LoveOS** | 💗 | The story of the project and my closing words. |
+| App | What it does |
+|---|---|
+| **Cycle & Care** | Period, symptoms and medication logging with gentle wording and clear medical boundaries. |
+| **Our Library** | "Our Story" written together, chapter by chapter, with comments on every paragraph; exportable as a PDF. |
+| **Heart Puzzle** | Picture puzzle in easy/medium/hard with a custom ending line. |
+| **Settings** | Language, theme (auto/day/night), sound, font scale, live location, PWA install guide. |
+| **Tutorial** | "What an operating system is" lessons, written by me in the panel. |
+| **Terminal** | `help`, `love`, `whoami`, `sudo make sandwich` … with playful answers I define. |
+| **Badges** | 32 achievements unlocked by real activity. |
+| **About LoveOS** | The story of the project and my closing words. |
 
-### Being together (new in 2.0)
+### Being together
 
-| App | Icon | What it does |
-|---|---|---|
-| **Call Sync** | 📞 | We publish our weekly free windows; the system finds the overlap. We propose, approve, decline or reschedule calls, then log each call with duration, moods and a note. Voice notes can be recorded straight from the microphone. |
-| **Gift Book** | 🎁 | Every gift is recorded: occasion, price (or price band), photo and "the reaction in that moment", plus yearly stats and a chart. |
-| **Read Together** | 📖 | A shared shelf that also shows the Library app's books. Per chapter: notes with a star rating, treasured quotes and a conversation thread. Progress is tracked for both of us separately. |
-| **Dream Home** | 🏡 | Our dream-home checklist with importance levels, a room layout you drag around on a map, and an inspiration gallery with comments. |
-| **Language Bridge** | 💬 | Our four-language dictionary (Mazandarani, Turkish, Persian, English), flashcards with a day-streak counter, microphone pronunciation recording, and quizzes that only come from my panel. |
+| App | What it does |
+|---|---|
+| **Call Sync** | We publish our weekly free windows; the system finds the overlap. Propose, approve, decline or reschedule calls, then log each call with duration, moods and a note. |
+| **Gift Book** | Every gift: occasion, price band, photo and "the reaction in that moment", plus yearly stats. |
+| **Read Together** | A shared shelf. Per chapter: notes with a star rating, quotes and a conversation thread. Progress tracked for both of us. |
+| **Dream Home** | Checklist with importance levels, a room layout you drag around, an inspiration gallery with comments. |
+| **Language Bridge** | Our four-language dictionary (Mazandarani, Turkish, Persian, English), flashcards with a streak, pronunciation recording, quizzes from my panel. |
 
-### System
+### System pieces
 
 | Part | What it does |
 |---|---|
-| **Boot** | Typing lines, the logo, a soft melody and my welcome message. |
-| **Lock** | Passcode + security question + the "Ask Daddy" button. |
-| **Desktop** | Clock, next-meeting countdown, next call, both cities' weather, today's message and app icons. |
-| **Dock** | Start menu, open apps, search (magnifier), notifications, settings, logout. |
-| **Notification centre** | Every notification for her, with an unread badge. |
-| **Error boundary** | If one app breaks, the whole OS does not go white — that app shows a gentle "try again" and the rest keeps working. |
+| **Global search** (`Ctrl/⌘+K`) | Searches 21 sources with Persian-tolerant matching (`ي/ك`, diacritics, ZWNJ normalised; fuzzy fallback), filters by app/date/kind, cached 45 s. |
+| **Notification centre** | Every in-app notification for her, with an unread badge. |
+| **Easter eggs** | 15 secrets (midnight sky, Konami code, `rm -rf tanhayi`, five clicks on the logo, …). |
+| **Error boundary** | If one app breaks, only that window shows a gentle "try again". |
 
 ---
 
-## 5. Global search
-
-Global search is not a separate app; it is a layer over the whole system.
-
-**Three ways to open it:**
-
-* `Ctrl + K` or `⌘ + K` from anywhere in LoveOS
-* the magnifier icon in the dock
-* the "Global search" row at the top of the start menu
-
-**The 21 sources it searches:** chat messages · letters · voices · memories · music · our story books ·
-chapters · paragraphs · gifts · home features · home rooms · language words · shared reading books ·
-chapter notes · quotes · quiz questions · wishes · achievements · call logs · call appointments ·
-easter eggs.
-
-**Implementation notes:**
-
-* **Persian-tolerant matching:** Arabic `ي/ك`, diacritics and ZWNJ are normalised before comparison; if
-  an exact match fails, a fuzzy match (similarity ≥ 0.62) is tried. So "كتاب يادگاري" still finds
-  "کتاب یادگاری".
-* **Filters:** by app/source, by date range (`from`/`to`) and by record kind.
-* **Empty state:** instead of "nothing found" it offers real suggestions (last message, last memory,
-  last book…).
-* **Cache:** each query result is cached for 45 seconds (the cache key covers every input) so typing
-  stays smooth; the panel has a "clear cache" action for me.
-* **Optional logging:** when enabled in the panel, only the query text is written to `ActivityLog` —
-  nothing else.
-* **Secrets** are deliberately searchable by *title only*, never by their text.
-
----
-
-## 6. The Daddy Panel
-
-### Getting in
+## 7. The Daddy Panel
 
 ```
-https://your-domain/daddy-panel-9x7k/
+https://<domain>/<ADMIN_PATH>/
 ```
 
-* The path comes from `ADMIN_PATH` and I change it in production.
-* It has an optional second passcode gate (`ADMIN_GATE_PASSCODE`) enforced through the session.
-* All activity is stored in `ActivityLog`, filterable in the panel.
+Standard Django admin, in Persian, with Jalali dates. If `ADMIN_GATE_PASSCODE` is set I first see a
+plain passcode page, then the normal login.
 
-### What I control
-
-| Panel section | What I change |
+| Section | What I change there |
 |---|---|
-| **UserConfig** | Names and nicknames, boot/lock messages, security question, default theme and language, font scale, boot/lock/desktop backgrounds, birthday and anniversary, both cities and coordinates, live-location settings (on/off, TTL, sync distance), and the "Global search" fieldset (disabling sources, query logging) |
-| **LiveLocation** | Her current live position, accuracy, source and age — handy when I need to correct it by hand |
-| **Calls** | Free windows, appointments, call logs and "call settings" (default duration, proposal/approval/rejection templates, notification and reminder switches) |
-| **Gifts** | Occasions (with icons) and gift records with price band, photo and favourites |
-| **Reading** | Books, chapters, notes, quotes and comments — all with inlines |
-| **Dream Home** | Categories, features (photo preview, colour chips), room layout with inline ideas and the inspiration gallery with comments |
-| **Language** | Categories, words/idioms with translations, quiz questions and both progress rows |
-| **Content** | Voices, songs, memories, letters, countdowns, garden, constellations, cinema, quiz, wishes, moods, vault, tutorial, terminal commands |
-| **Achievements & secrets** | 32 badges with thresholds and secret messages, 15 easter eggs with their trigger |
-| **Health** | Medication, care reminders and mood messages |
-| **Soroush** | The outbox (`SoroushOutbox`) with status, tries and errors, plus a retry action |
-| **ActivityLog** | Everything that happened + the "clear app cache" action |
+| **UserConfig** | Names and nicknames, boot/lock messages, security question, default theme and language, font scale, backgrounds, birthday and anniversary, both cities and coordinates, live-location settings, global-search settings, today's desktop message. |
+| **LiveLocation** | Her latest live position, accuracy, age — for manual correction. |
+| **Content** | Voices, songs, memories, letters, countdowns, garden, constellations, cinema, quiz, wishes, moods, vault, tutorial, terminal commands. |
+| **Social** | Chat, hugs, reminders, notifications. |
+| **Health** | Medications, care reminders, mood messages. |
+| **Library / Games** | Books, chapters, paragraphs, puzzles. |
+| **Calls / Gifts / Reading / Dream Home / Language** | Everything the five "together" apps show. |
+| **Achievements & secrets** | 32 badges with thresholds and secret messages, 15 easter eggs. |
+| **SoroushOutbox** | Every message to me with status, tries, error, and a retry action. |
+| **ActivityLog** | Everything that happened, filterable, plus "clear app cache". |
 
-### Everyday recipes
+Everyday recipes:
 
 | I want to… | I do this |
 |---|---|
-| add a new voice note | Content → Voices → Add → audio file + category + title |
-| change today's desktop message | UserConfig → "today's message" |
-| lock a memory until a date | Memories → "future memory" + unlock time → `sweep` (cron) opens it |
-| remind her about medication | Medication & care reminders → time and text → `sweep` checks every 15 minutes |
-| fix her stored location by hand | Location → city/coordinates |
-| make search lighter | UserConfig → "Global search" → pick the sources that should stay quiet |
-| see what she did today | ActivityLog (filter by app) |
+| add a voice note | Content → Voices → Add → file + category + title |
+| lock a memory until a date | Memories → "future memory" + unlock time; `sweep` opens it |
+| remind her about medication | Health → Medication → times; `sweep` sends it |
+| change today's desktop message | UserConfig → today's message |
+| see what she did today | ActivityLog, filter by app |
 
 ---
 
-## 7. Soroush bot integration
+## 8. Soroush bot integration
 
-### Setup
+Soroush Plus is the only channel from the app **to me**. Nothing is ever pushed to her through it;
+her notifications live inside the app.
 
 ```ini
 NOTIFY_PROVIDER=soroush
-SOROUSH_API_BASE=https://api.splus.ir
-SOROUSH_TOKEN=bot-token
-SOROUSH_DADDY_CHAT_ID=my-chat-id
-SOROUSH_WEBHOOK_SECRET=some-random-string
-SOROUSH_PARSE_MODE=HTML
+SOROUSH_TOKEN=<bot token>
+SOROUSH_DADDY_CHAT_ID=<my chat id>
+SOROUSH_WEBHOOK_SECRET=<random string>
 ```
 
-* Every message is stored in `SoroushOutbox` first and **then** sent, so a broken token or a bad
-  connection never loses anything. `manage.py sweep` retries the queue (up to `OUTBOX_MAX_RETRY`,
-  default 5 attempts).
-* Incoming webhook: `/api/soroush/webhook/<SOROUSH_WEBHOOK_SECRET>/` — that is how I can reply from
-  Soroush and have the app react.
-* **Nothing is ever pushed to her side through Soroush**; that channel is mine only. Her notifications
-  are created inside the app (`OSNotification`).
+* Every message is written to `SoroushOutbox` first and **then** sent (`core/soroush.py`), so a
+  broken token never loses anything; `sweep` retries the queue.
+* Incoming webhook: `POST /api/soroush/webhook/<SOROUSH_WEBHOOK_SECRET>/` — register it once
+  after going live (§10.8).
+* Events I receive: login, lock help, chat, hugs, voice played, song uploaded, letter opened,
+  memory unlocked, mood, easter egg, quiz perfect, puzzle, achievement, medication taken/skipped,
+  symptoms, period start/end, reminders, book/chapter/comment, cinema, wishes, every call event,
+  gifts, reading notes/quotes/comments, dream-home changes, language entries/quizzes, location
+  changes.
 
-### Events I receive
-
-| Group | Events |
-|---|---|
-| Login & lock | `login` · `lock_help` · `forgot_ok` |
-| Chat & hugs | `chat` · `hug` · `hug_seen` · `hug_miss` |
-| Content | `voice_played` · `song_uploaded` · `letter_opened` · `memory_unlocked` · `mood` · `easter_egg` |
-| Quiz & games | `quiz_perfect` · `puzzle` · `achievement` |
-| Health | `med_added` · `med_taken` · `med_skipped` · `symptoms` · `period_start` · `period_end` · `cycle_anomaly` |
-| Reminders | `reminder_sent` · `reminder_viewed` |
-| Books & films | `book_new` · `book_chapter` · `book_comment` · `cinema_add` · `plan_add` · `plan_done` |
-| **Calls** | `call_proposed` · `call_approved` · `call_rejected` · `call_rescheduled` · `call_logged` · `call_reminder` |
-| **Gifts** | `gift_added` |
-| **Reading together** | `reading_book` · `reading_note` · `reading_quote` · `reading_comment` |
-| **Dream home** | `home_room` · `home_feature` · `home_idea` · `home_inspiration` · `home_comment` |
-| **Language bridge** | `language_entry` · `language_quiz` · `language_practice` |
-| **Location** | `location_change` |
+The bot API reference I work from is in [`docs/soroush-api-reference.md`](./docs/soroush-api-reference.md).
 
 ---
 
-## 8. API reference
+## 9. API reference
 
-Every private route needs `Authorization: Token <token>`. Responses are JSON.
+All private routes require `Authorization: Token <token>`; responses are JSON.
 
 ### Shell & auth
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/boot` | public config + lock state (no secrets) |
-| POST | `/api/auth/unlock` | open the lock with the passcode → session token |
-| POST | `/api/auth/forgot` | answer the security question → unlock |
+| GET | `/api/boot` | public boot/lock config (no secrets) |
+| POST | `/api/auth/unlock` | `{passcode}` → `{token, …}` |
+| POST | `/api/auth/forgot` | answer the security question |
 | POST | `/api/auth/help` | "Ask Daddy" → immediate Soroush message |
 | POST | `/api/auth/logout` | end the session |
-| GET | `/api/me` | full config once unlocked |
+| GET | `/api/me` | full profile once unlocked |
 | GET/POST/PATCH | `/api/settings` | language, theme, sound, font scale |
-| GET/POST | `/api/location` | read the effective location / report a fresh device position |
-| GET | `/api/search` | global search (`q`, `app`, `kind`, `from`, `to`, `suggest`) |
+| GET/POST | `/api/location` | effective location / report a fresh device position |
+| GET | `/api/search` | `q`, `app`, `kind`, `from`, `to`, `suggest` |
 | POST | `/api/vault/unlock` | open the vault |
-| GET | `/healthz` | service health |
+| GET | `/healthz` | liveness (returns `ok`) |
 
 ### Content
-
-`/api/voices` (`…/random`, `…/<id>/played`) · `/api/songs` (`…/upload`, `…/<id>`, `…/<id>/played`) ·
-`/api/memories` · `/api/letters` (`…/random`, `…/<id>/open`) · `/api/countdowns` · `/api/garden`
-(`…/<id>/water`) · `/api/starmap` · `/api/cinema` (`…/<id>`) · `/api/quiz` (`…/submit`) · `/api/plans`
-(`…/<id>`) · `/api/moods` (`…/set`) · `/api/vault` · `/api/tutorial` · `/api/terminal` (`…/sudo`) ·
-`/api/egg` · `/api/achievements`
+`/api/voices` (`/random`, `/<id>/played`) · `/api/songs` (`/upload`, `/<id>`, `/<id>/played`) ·
+`/api/memories` (`/<id>`) · `/api/letters` (`/random`, `/<id>/open`) · `/api/countdowns` (`/<id>`) ·
+`/api/garden` (`/reset`, `/<id>/water`) · `/api/starmap` · `/api/cinema` (`/<id>`) · `/api/quiz`
+(`/submit`) · `/api/plans` (`/<id>`) · `/api/moods` (`/set`) · `/api/vault` · `/api/tutorial`
 
 ### Social
-
-`/api/chat` · `/api/hug` (`…/send`, `…/<id>/open`) · `/api/notifications` (`…/read-all`, `…/<id>/read`) ·
-`/api/reminders` (`…/<id>/mute`) · `/api/weather` · `/api/map`
+`/api/chat` · `/api/hug` (`/send`, `/<id>/open`) · `/api/notifications` (`/read-all`, `/<id>/read`) ·
+`/api/reminders` (`/<id>/mute`) · `/api/terminal` (`/sudo`) · `/api/egg` · `/api/achievements` ·
+`/api/weather` · `/api/map`
 
 ### Health
-
-`/api/cycle` (`…/start`, `…/end`, `…/symptoms`) · `/api/meds` (`…/today`, `…/act`, `…/report`) ·
-`/api/care` (`…/<id>/toggle`)
+`/api/cycle` (`/start`, `/end`, `/symptoms`) · `/api/meds` (`/today`, `/act`, `/report`) ·
+`/api/care` (`/<id>/toggle`)
 
 ### Library & games
+`/api/books` (`/<id>`, `/<id>/chapters`) · `/api/chapters/<id>/publish` ·
+`/api/pages/<id>/paragraphs` · `/api/pages/<id>/bookmark` · `/api/paragraphs/<id>` (`/notes`) ·
+`/api/puzzles` (`/upload`, `/<id>/start`, `/<id>/complete`, `/<id>`)
 
-`/api/books` (`…/<id>`, `…/<book_id>/chapters`) · `/api/chapters/<id>/publish` ·
-`/api/pages/<page_id>/paragraphs` · `/api/pages/<page_id>/bookmark` · `/api/paragraphs/<id>` ·
-`/api/paragraphs/<paragraph_id>/notes` · `/api/puzzles` (`…/<id>/start`, `…/<id>/complete`)
+### Calls `/api/calls`
+`overview` · `slots` (`/<id>`) · `appointments` (`/<id>/respond`, `/<id>/cancel`) · `logs` (`/<id>`) ·
+`stats` · `next`
 
-### Calls (`/api/calls`)
+### Gifts `/api/gifts`
+`GET/POST /` · `GET/PATCH/DELETE /<id>` · `occasions` · `stats` — filters `giver`, `receiver`,
+`occasion`, `year`, `band`, `q`
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/calls/overview` | everything the app needs in one request |
-| GET/POST | `/api/calls/slots` | free windows + shared overlap |
-| POST/DELETE | `/api/calls/slots/<id>` | remove a window |
-| GET/POST | `/api/calls/appointments` | list / propose a call |
-| POST | `/api/calls/appointments/<id>/respond` | approve, reject or propose an alternative |
-| POST/DELETE | `/api/calls/appointments/<id>/cancel` | cancel |
-| GET/POST | `/api/calls/logs` | call log (voice attachment via `multipart`) |
-| PATCH/POST | `/api/calls/logs/<id>` | edit a log |
-| GET | `/api/calls/stats` | month, six-month chart, record and average |
-| GET | `/api/calls/next` | next call (for the desktop widget) |
+### Read together `/api/reading`
+`overview` · `books` (`/<id>`, `/<id>/chapters`, `/<id>/progress`) · `chapters/<id>/notes|quotes|comments` ·
+`quotes` · `stats`
 
-### Gifts (`/api/gifts`)
+### Dream home `/api/home`
+`overview` · `features` (`/<id>`) · `rooms` (`/<id>`, `/<id>/ideas`) · `inspirations` (`/<id>`,
+`/<id>/comments`) · `categories` · `stats` — room coordinates are percentages, clamped server-side
 
-`GET/POST /api/gifts` · `GET/PATCH/POST/DELETE /api/gifts/<id>` · `GET /api/gifts/occasions` ·
-`GET /api/gifts/stats` — filters: `giver`, `receiver`, `occasion`, `year`, `band`, `q`.
-
-### Read together (`/api/reading`)
-
-`GET /api/reading/overview` · `GET/POST /api/reading/books` · `GET/PATCH/POST/DELETE /api/reading/books/<id>` ·
-`POST /api/reading/books/<id>/chapters` · `POST /api/reading/books/<id>/progress` ·
-`POST/GET /api/reading/chapters/<id>/notes` · `POST/GET /api/reading/chapters/<id>/quotes` ·
-`POST /api/reading/chapters/<id>/comments` · `GET /api/reading/quotes` · `GET /api/reading/stats`.
-
-To put a Library-app book on the shared shelf, send its `library_book` id with `POST /books`; if it is
-already linked the same record comes back with `already: true`.
-
-### Dream home (`/api/home`)
-
-`GET /api/home/overview` · `GET/POST /api/home/features` · `PATCH/POST/DELETE /api/home/features/<id>` ·
-`GET/POST /api/home/rooms` · `PATCH/POST/DELETE /api/home/rooms/<id>` ·
-`POST/GET /api/home/rooms/<id>/ideas` · `GET/POST /api/home/inspirations` ·
-`GET/POST/DELETE /api/home/inspirations/<id>` · `POST/GET /api/home/inspirations/<id>/comments` ·
-`GET /api/home/categories` · `GET /api/home/stats` — room coordinates are percentages (0..100) and are
-clamped server-side.
-
-### Language bridge (`/api/language`)
-
-`GET /api/language/overview` · `GET/POST /api/language/entries` ·
-`GET/PATCH/POST/DELETE /api/language/entries/<id>` (pronunciation uploads use `pronunciation`) ·
-`GET /api/language/categories` · `GET /api/language/flashcards` ·
-`POST /api/language/practice` · `GET /api/language/quiz` · `POST /api/language/quiz/submit` ·
-`GET /api/language/stats`.
+### Language bridge `/api/language`
+`overview` · `entries` (`/<id>`) · `categories` · `flashcards` · `practice` · `quiz` (`/submit`) · `stats`
 
 ### Outside `/api`
-
 | Path | Purpose |
 |---|---|
-| `/` | LoveOS itself (SPA) |
-| `/daddy-panel-9x7k/` | the Daddy Panel |
-| `/api/media/<path>?sig=…` | short-lived signed private files |
-| `/robots.txt` | keeps every crawler out |
-
----
-
-## 9. Easter eggs & badges
-
-### 15 easter eggs
-
-| Egg | Trigger | What happens |
-|---|---|---|
-| Midnight sky | between 00:00 and 05:00 | the sky fills with hearts and stars |
-| Anniversary heart | anniversary day | a floating heart on the desktop |
-| Birthday cake | her birthday | a hidden cake icon |
-| Magic sentence | typing "دوستت دارم" in chat | a rain of hearts |
-| Old code | the Konami code on the desktop | a secret message |
-| Sandwich | `sudo make sandwich` in the terminal | a playful reply |
-| Delete loneliness | `rm -rf tanhayi` | a dedicated message |
-| Heart rain | typing "love" anywhere | hearts across the screen |
-| Daddy's help | five wrong passcodes | a help message from me |
-| Hidden logo heart | five clicks on the logo | a hidden heart |
-| Centre star | double-clicking a star | a special wish |
-| Daddy's home | zooming far into the map | a home message |
-| Our song | playing one song three times | an "our song" message |
-| Missing you | three hugs in a row | a longing message |
-| Special flower | watering one flower five times | a unique bloom |
-
-### Badges (32)
-
-*The original 16:* first login · first voice · 100 days with Daddy · perfect quiz · all letters ·
-puzzle player · puzzle master · Daddy's cuddly chick · Daddy's kind girl · regular · self care ·
-writer · storyteller · secret finder · secret master · know-it-all
-
-*16 new in 2.0:* first call · ten calls · a hundred call hours · first gift · ten gifts · fifty gifts ·
-first shared book · five books · ten books · a hundred notes · ten home features · fifty home features ·
-first room · first word · a hundred words · language master
-
-Every threshold is editable in the panel, as is each badge's secret message. When one unlocks, she gets
-an in-app notification and I get a Soroush message.
+| `/` | the SPA (via proxy or `SERVE_FRONTEND`) |
+| `/<ADMIN_PATH>/` | the Daddy Panel |
+| `/api/media/<path>?sig=…` | signed, short-lived private files |
+| `/api/soroush/webhook/<secret>/` | incoming Soroush updates |
+| `/robots.txt` | `Disallow: /` |
 
 ---
 
 ## 10. Deployment
 
-### One command
+### 10.1 Before any deployment
+
+These steps are the same for every host. Do them first.
+
+**1. Decide who serves the frontend** (see the table in §2). Rule of thumb:
+
+* I control Nginx/Caddy → `SERVE_FRONTEND=False`, the proxy serves `frontend/dist`.
+* I only get one Python process (cPanel, PaaS) → `SERVE_FRONTEND=True`.
+
+**2. Build the frontend.** On any machine with Node 20+:
 
 ```bash
-./scripts/deploy.sh
+cd frontend && npm ci && npm run build      # → frontend/dist/
 ```
 
-The script installs dependencies, collects static files, builds the frontend, applies migrations and
-restarts the service. The full cPanel walkthrough is in [`DEPLOY_CPANEL_FA.md`](./DEPLOY_CPANEL_FA.md).
+`./scripts/deploy.sh build` does the same and also runs `collectstatic`.
 
-### Production checklist
+**3. Write `backend/.env` for production.** Start from `.env.example` and change at least:
 
-- [ ] `DEBUG=False`
-- [ ] a long random `DJANGO_SECRET_KEY`
-- [ ] `ALLOWED_HOSTS` limited to my domain
-- [ ] change `ADMIN_PATH` and set `ADMIN_GATE_PASSCODE`
-- [ ] `SERVE_FRONTEND=True` on single-app hosting
-- [ ] `NOTIFY_PROVIDER=soroush` with a real token
-- [ ] `python manage.py check --deploy`
-- [ ] `python manage.py migrate` then `collectstatic --noinput`
-- [ ] `cd frontend && npm run build`
-- [ ] a cron entry for `manage.py sweep` (every 15 minutes)
-- [ ] daily backups of the database and `media/`
-
-> Version 2.0 adds five migrations (`calls`, `gifts`, `reading`, `dreamhome`, `language`) plus
-> `accounts.0003`. When upgrading, run `migrate` first.
-
-### MySQL
-
-Set `DB_ENGINE=mysql` in `.env` and fill the remaining `DB_*` keys. No code changes needed.
-
-### Scheduled work (cron)
-
-```cron
-*/15 * * * * cd /home/USER/loveos/backend && .venv/bin/python manage.py sweep >> /home/USER/loveos-sweep.log 2>&1
+```ini
+DEBUG=False
+DJANGO_SECRET_KEY=<50+ random characters>
+ALLOWED_HOSTS=love.example.com
+CSRF_TRUSTED_ORIGINS=https://love.example.com
+ADMIN_PATH=<something-nobody-guesses>
+ADMIN_GATE_PASSCODE=<a strong passcode>
+DB_ENGINE=mysql            # or sqlite for a very small VPS
+DB_NAME=… DB_USER=… DB_PASSWORD=… DB_HOST=127.0.0.1 DB_PORT=3306
+NOTIFY_PROVIDER=soroush
+SOROUSH_TOKEN=… SOROUSH_DADDY_CHAT_ID=… SOROUSH_WEBHOOK_SECRET=<random>
+SERVE_FRONTEND=False       # True on cPanel / single-process hosts
 ```
 
-`sweep` opens timed memories, releases future letters, sends medication and care reminders, delivers
-pending notifications, **fires approved-call reminders** and flushes the Soroush queue.
+`scripts/deploy.sh` refuses to run with a placeholder secret key or an empty `ALLOWED_HOSTS`.
+
+**4. MySQL must be utf8mb4.** Create the database like this (or set the collation in
+phpMyAdmin → Operations):
+
+```sql
+CREATE DATABASE loveos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'loveos'@'localhost' IDENTIFIED BY '<password>';
+GRANT ALL PRIVILEGES ON loveos.* TO 'loveos'@'localhost';
+```
+
+**5. HTTPS is mandatory**, not optional: with `DEBUG=False` Django redirects to HTTPS, service
+workers only register on HTTPS, and Soroush only accepts HTTPS webhooks.
+
+**6. Never place the project inside a public web root** (`public_html`, `/var/www/html`). The
+`.env` with every secret lives next to the code.
+
+**Production checklist**
+
+- [ ] `DEBUG=False`, real `DJANGO_SECRET_KEY`, correct `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`
+- [ ] `ADMIN_PATH` changed and `ADMIN_GATE_PASSCODE` set
+- [ ] MySQL database created with `utf8mb4_unicode_ci`
+- [ ] `frontend/dist` built
+- [ ] `migrate`, `collectstatic`, `createsuperuser`, `seed_loveos --passcode … --vault …`
+- [ ] HTTPS certificate
+- [ ] cron for `manage.py sweep` every minute
+- [ ] Soroush webhook registered
+- [ ] `./scripts/deploy.sh verify` is green
+- [ ] backups scheduled (`./scripts/deploy.sh backup`)
 
 ---
 
-## 11. Maintenance, tests & troubleshooting
+### 10.2 VPS — Ubuntu/Debian with Nginx + Gunicorn
+
+The setup I recommend: a small VPS (1 vCPU / 1 GB is plenty), Ubuntu 22.04/24.04 or Debian 12.
+
+**Step 1 — system packages**
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-dev build-essential pkg-config \
+                    default-libmysqlclient-dev mysql-server nginx git curl \
+                    certbot python3-certbot-nginx
+# Node 22 (only needed to build the frontend on the server)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
+```
+
+**Step 2 — MySQL**
+
+```bash
+sudo mysql_secure_installation
+sudo mysql -e "CREATE DATABASE loveos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'loveos'@'localhost' IDENTIFIED BY 'STRONG-PASSWORD';
+GRANT ALL PRIVILEGES ON loveos.* TO 'loveos'@'localhost'; FLUSH PRIVILEGES;"
+```
+
+**Step 3 — code and configuration**
+
+```bash
+sudo mkdir -p /srv/loveos && sudo chown $USER /srv/loveos
+git clone https://github.com/EmmettSS/LoveOS.git /srv/loveos
+cd /srv/loveos
+cp backend/.env.example backend/.env
+nano backend/.env            # fill in everything from §10.1 (SERVE_FRONTEND=False)
+```
+
+Uncomment `mysqlclient` in `backend/requirements.txt` or let the deploy script install it.
+
+**Step 4 — DNS.** Point an `A` record of the domain to the server's IP and wait until
+`dig +short love.example.com` returns it (certbot needs this).
+
+**Step 5 — run the deploy script**
+
+```bash
+sudo DOMAIN=love.example.com ./scripts/deploy.sh vps
+```
+
+What it does, in order:
+
+1. `npm ci && npm run build` (skip with `SKIP_FRONTEND=1` if `dist/` was uploaded).
+2. Creates `backend/.venv`, installs requirements + `gunicorn` + `mysqlclient`.
+3. `migrate`, `collectstatic`, `check --deploy`.
+4. Renders `deploy/vps/loveos.service` → `/etc/systemd/system/loveos.service`
+   (Gunicorn on `127.0.0.1:8001`, 3 workers, reads `backend/.env`).
+5. Renders `deploy/vps/nginx.conf` → `/etc/nginx/sites-available/loveos` and enables it:
+   `frontend/dist` as root with SPA fallback, `/api/`, `/<ADMIN_PATH>/`, `/healthz`, `/robots.txt`
+   proxied to Gunicorn, `/static/` aliased, `sw.js` uncached, **no `/media/` alias**.
+6. Installs the cron line `* * * * * … manage.py sweep` for the service user.
+7. Requests a Let's Encrypt certificate with certbot (`SKIP_CERTBOT=1` to skip).
+8. `chown` to `www-data`, `chmod 600 backend/.env`, `nginx -t`, enables and starts everything.
+
+**Step 6 — first admin user and content**
+
+```bash
+cd /srv/loveos/backend
+sudo -u www-data .venv/bin/python manage.py createsuperuser
+sudo -u www-data .venv/bin/python manage.py seed_loveos --passcode 2468 --vault 1357
+```
+
+**Step 7 — verify**
+
+```bash
+./scripts/deploy.sh verify         # /healthz, /api/boot, /, /robots.txt, panel, 401 on /api/me
+journalctl -u loveos -f            # Gunicorn logs
+tail -f /srv/loveos/logs/sweep.log # scheduler
+```
+
+Then do §10.8 (webhook, QR).
+
+**Manual equivalents** (if I ever need to do it without the script): the two templates in
+`deploy/vps/` have `__APP_DIR__`, `__DOMAIN__`, `__PORT__`, `__USER__`, `__WORKERS__`,
+`__ADMIN_PATH__` placeholders — replace them with `sed` and copy them into place.
+
+**Firewall**: `sudo ufw allow OpenSSH && sudo ufw allow 'Nginx Full' && sudo ufw enable`.
+
+---
+
+### 10.3 cPanel shared hosting (Passenger)
+
+On cPanel there is no Nginx I control; every request goes through Phusion Passenger to **one**
+WSGI app (`passenger_wsgi.py`). So Django serves the frontend too: `SERVE_FRONTEND=True`.
+Shared hosts usually have no Node, so the frontend is built on my machine and uploaded.
+
+**Step 1 — build and package on my machine**
+
+```bash
+./scripts/deploy.sh package        # → loveos-release.tar.gz
+```
+
+The archive contains `backend/` (without `.venv`, `.env`, sqlite, staticfiles, uploads),
+`frontend/dist/`, `passenger_wsgi.py`, `scripts/` and `deploy/`.
+
+**Step 2 — database.** cPanel → **MySQL® Databases**: create database `USER_loveos`, user
+`USER_loveos`, add the user with ALL PRIVILEGES. Then phpMyAdmin → the database → **Operations**
+→ Collation `utf8mb4_unicode_ci` → Go.
+
+**Step 3 — upload.** File Manager → create `/home/USER/loveos/` (**outside** `public_html`),
+upload `loveos-release.tar.gz` there and extract it.
+
+**Step 4 — Python app.** cPanel → **Setup Python App** → Create Application:
+
+| Field | Value |
+|---|---|
+| Python version | 3.11 or newer |
+| Application root | `loveos` |
+| Application URL | the domain / subdomain |
+| Application startup file | `passenger_wsgi.py` |
+| Application Entry point | `application` |
+
+After creating, cPanel shows a line like
+`source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos` —
+**every terminal command below starts with that line.**
+
+**Step 5 — `.env`.** Create `/home/USER/loveos/backend/.env` with the production values from
+§10.1 plus:
+
+```ini
+SERVE_FRONTEND=True
+FRONTEND_DIST=/home/USER/loveos/frontend/dist
+DB_ENGINE=mysql
+DB_NAME=USER_loveos
+DB_USER=USER_loveos
+DB_HOST=localhost
+```
+
+**Step 6 — install and migrate** (cPanel → Terminal, or SSH):
+
+```bash
+source /home/USER/virtualenv/loveos/3.11/bin/activate && cd /home/USER/loveos
+SKIP_FRONTEND=1 ./scripts/deploy.sh cpanel
+python backend/manage.py createsuperuser
+python backend/manage.py seed_loveos --passcode 2468 --vault 1357
+```
+
+The `cpanel` target installs requirements and the MySQL driver (falls back to `pymysql` when
+`mysqlclient` cannot compile — in that case add these two lines to `backend/config/__init__.py`:
+`import pymysql` / `pymysql.install_as_MySQLdb()`), runs `migrate` + `collectstatic`, and touches
+`tmp/restart.txt`.
+
+**Step 7 — restart.** Setup Python App → **Restart**. Passenger does not pick up changes to
+`.env` or code by itself; restart after every change (`touch /home/USER/loveos/tmp/restart.txt`
+does the same).
+
+**Step 8 — SSL.** cPanel → **SSL/TLS Status** → Run AutoSSL for the domain.
+
+**Step 9 — cron.** cPanel → **Cron Jobs**, every minute, full paths:
+
+```
+* * * * * /home/USER/virtualenv/loveos/3.11/bin/python /home/USER/loveos/backend/manage.py sweep >> /home/USER/loveos/logs/sweep.log 2>&1
+```
+
+(create `/home/USER/loveos/logs/` first).
+
+**Step 10** — §10.8 (webhook, QR) and `BASE_URL=https://domain ./scripts/deploy.sh verify`.
+
+**Hosts without a terminal**: install the requirements on a machine with the same Python
+version and architecture, upload `site-packages` into the cPanel virtualenv, and run `migrate`
+through a temporary Django management view — or, honestly, choose a host with SSH.
+
+---
+
+### 10.4 Docker / docker compose
+
+`deploy/docker/` contains a two-stage `Dockerfile` (Node builds the frontend, Python runs
+Gunicorn with `SERVE_FRONTEND=True`), a `docker-compose.yml` with **web + MySQL 8 + Caddy**
+(automatic HTTPS), and an `entrypoint.sh` that waits for MySQL, migrates, collects static files,
+runs the `sweep` loop and starts Gunicorn.
+
+```bash
+cp backend/.env.example backend/.env       # production values, DB_ENGINE=mysql, DB_HOST=db
+echo "CADDY_DOMAIN=love.example.com" > deploy/docker/.env
+./scripts/deploy.sh docker                  # docker compose build && up -d && migrate
+docker compose -f deploy/docker/docker-compose.yml exec web python manage.py createsuperuser
+```
+
+Notes:
+
+* `SECURE_SSL_REDIRECT=False` is set on the container because Caddy terminates TLS and already
+  redirects HTTP→HTTPS.
+* Uploads live in the `media` volume; back it up with `docker run --rm -v docker_media:/m -v $PWD:/b alpine tar czf /b/media.tar.gz /m`.
+* If I already have a reverse proxy, delete the `caddy` service and point the proxy at
+  `127.0.0.1:8000`.
+* Ports 80/443 must be free on the host.
+
+---
+
+### 10.5 DirectAdmin / Plesk and other panels
+
+Both panels run Python apps through Passenger just like cPanel, so **§10.3 applies verbatim**
+with these differences:
+
+| | DirectAdmin | Plesk |
+|---|---|---|
+| Where | *Setup Python App* (CloudLinux) or *Python Selector* | *Websites & Domains → Python* |
+| Startup file / entry | `passenger_wsgi.py` / `application` | Application startup file `passenger_wsgi.py`, entry `application` |
+| App root | outside `public_html`, e.g. `/home/USER/loveos` | outside `httpdocs`, e.g. `/var/www/vhosts/DOMAIN/loveos` |
+| Cron | *Cron Jobs* in the panel | *Scheduled Tasks* |
+| SSL | *SSL Certificates* → Let's Encrypt | *SSL/TLS Certificates* → Let's Encrypt |
+
+Plesk additionally has an "Additional nginx directives" box: if I paste the `location` blocks from
+`deploy/vps/nginx.conf` there, I can set `SERVE_FRONTEND=False` and let nginx serve `dist/`; on
+plain shared hosting I keep `SERVE_FRONTEND=True`.
+
+---
+
+### 10.6 PaaS (Railway, Render, Fly.io, Liara, …)
+
+A PaaS gives one process and a managed database; Django serves everything.
+
+* **Build**: `cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt gunicorn mysqlclient && python manage.py collectstatic --noinput`
+  (or simply point the platform at `deploy/docker/Dockerfile`, which most of them accept).
+* **Start**: `cd backend && python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2`
+* **Environment**: every key from §10.1 as platform env vars, plus `SERVE_FRONTEND=True`,
+  `FRONTEND_DIST=/app/frontend/dist` (adjust to the platform's path) and
+  `SECURE_SSL_REDIRECT=False` (the platform's edge already does HTTPS).
+* **Database**: a managed MySQL with utf8mb4 (or PostgreSQL after adding `psycopg` — not what I
+  ship, MySQL/SQLite are the tested paths).
+* **Media**: PaaS filesystems are ephemeral. Mount a persistent volume at `backend/media` (Fly
+  volumes, Railway volumes, Liara disks) — otherwise every deploy erases her voice notes.
+* **Scheduler**: a cron/worker service that runs `python manage.py sweep` every minute — or run
+  the container from `deploy/docker`, whose entrypoint already loops `sweep`.
+
+---
+
+### 10.7 Split hosting: frontend on a static host, backend elsewhere
+
+Frontend on Netlify/Vercel/Cloudflare Pages/GitHub Pages and backend on a VPS or cPanel.
+
+1. **Backend** as in 10.2/10.3 with `SERVE_FRONTEND=False` and:
+   ```ini
+   CORS_ALLOWED_ORIGINS=https://app.example.com
+   CSRF_TRUSTED_ORIGINS=https://app.example.com,https://api.example.com
+   ```
+2. **Frontend**: the app calls relative `/api/...` URLs. Either the static host proxies `/api/*`
+   and `/<ADMIN_PATH>/*` to the backend (Netlify `_redirects`:
+   `/api/*  https://api.example.com/api/:splat  200`), or I build with an absolute API base by
+   setting `server.proxy`-equivalent rewrites on the host. Proxying is the simpler, cookie-safe
+   choice.
+3. **SPA fallback**: every unknown path must serve `index.html`
+   (Netlify: `/*  /index.html  200`; Vercel: `rewrites` in `vercel.json`).
+4. `sw.js` and `index.html` must be served with `Cache-Control: no-cache`.
+
+I do not recommend this for the private-media reason alone: two origins mean two places to get
+security headers right. One origin is simpler and safer.
+
+---
+
+### 10.8 After going live: webhook, cron, QR
+
+**Soroush webhook** — once, from any machine:
+
+```bash
+curl "https://api.splus.ir/bot<TOKEN>/setWebhook?url=https://love.example.com/api/soroush/webhook/<SOROUSH_WEBHOOK_SECRET>/"
+curl "https://api.splus.ir/bot<TOKEN>/getWebhookInfo"      # url must be echoed back without errors
+```
+
+**Cron sanity** — after one minute `logs/sweep.log` should show lines like
+`sweep ok: memories=0 letters=0 meds=0 care=0 reminders=0 calls=0 outbox=0`.
+Without cron, **timed letters never open** and medication reminders never fire.
+
+**Her QR code**
+
+```bash
+python3 scripts/qr.py https://love.example.com --out loveos-qr.svg
+```
+
+Print it, hand it over. No dependencies needed — the QR encoder is implemented in the script.
+
+**Smoke test**
+
+```bash
+DOMAIN=love.example.com ./scripts/deploy.sh verify
+```
+
+---
+
+### 10.9 Updating a running deployment
+
+```bash
+./scripts/deploy.sh update
+```
+
+Pulls (`git pull --ff-only` when the checkout is a git repo), then detects the host type:
+docker → rebuild & up; cPanel → `cpanel` target; systemd service present → rebuild frontend,
+migrate, collectstatic, restart. Always run `./scripts/deploy.sh backup` first when the update
+contains migrations.
+
+Manual order, if I ever need it: `git pull` → `npm run build` → `pip install -r requirements.txt`
+→ `migrate` → `collectstatic` → restart Gunicorn / Passenger.
+
+---
+
+## 11. Scripts
+
+### `scripts/dev.sh` — my machine
+
+| Command | Does |
+|---|---|
+| `./scripts/dev.sh` / `run` | setup if needed, then backend on :8000 and frontend on :5173 |
+| `setup` | venv, requirements, `.env` with dev defaults, migrate, seed, `npm ci` |
+| `test` | backend tests + frontend checks (below) |
+| `test:be` | `manage.py check` + `manage.py test` (83 tests) |
+| `test:fe` | `tsc -b` + `oxlint src` + `npm run build` + `npm run test:ui` |
+| `check` | `manage.py check`, `makemigrations --check`, `tsc`, `oxlint` — fast pre-commit check |
+| `reset` | delete the SQLite file, migrate, seed again |
+| `clean` | remove `.venv`, `node_modules`, `dist`, `staticfiles`, caches |
+
+Environment overrides: `BACKEND_PORT`, `FRONTEND_PORT`, `PYTHON_BIN`.
+
+### `scripts/deploy.sh` — servers
+
+| Target | Does |
+|---|---|
+| `build` | `npm ci && npm run build`, install requirements, `collectstatic` |
+| `vps` | full Ubuntu/Debian setup: systemd + Nginx + cron + certbot (root) |
+| `cpanel` | requirements, MySQL driver, migrate, collectstatic, Passenger restart |
+| `docker` | `docker compose build && up -d && migrate` in `deploy/docker` |
+| `update` | pull + rebuild + migrate + restart, auto-detecting the host type |
+| `package` | `loveos-release.tar.gz` for hosts without git/node |
+| `backup` | DB dump (mysqldump or sqlite copy) + `media.tar.gz` + `.env` copy into `backups/<timestamp>/` |
+| `verify` | HTTP smoke test of a live deployment |
+
+Environment overrides: `APP_DIR`, `DOMAIN`, `SERVICE`, `RUN_USER`, `GUNICORN_PORT`, `WORKERS`,
+`SKIP_FRONTEND=1`, `SKIP_CERTBOT=1`, `BASE_URL` (verify), `PYTHON_BIN`.
+
+### `scripts/qr.py`
+
+`python3 scripts/qr.py <url> [--out file.svg]` — dependency-free QR generator (byte mode, EC
+level M, versions 1–10).
+
+---
+
+## 12. Tests
+
+```bash
+./scripts/dev.sh test          # everything
+```
+
+### Backend — 83 tests (`manage.py test`)
+
+Per app `tests.py`: session lifecycle and expiry, boot endpoint hiding secrets, unlock attempt
+limit, settings round-trip, effective location (live vs. panel vs. stale), Persian-tolerant search,
+content endpoints, hugs and chat, medication and cycle flows, library co-writing, puzzle
+start/complete, call overlap and approve/reject/reschedule, single-shot call reminders, gift stats
+and price bands, reading progress and the shared shelf, room-coordinate clamping, language
+flashcards/streak and panel-only quizzes, and "every registered admin model renders".
+
+### Frontend — type check, lint, build, UI tests
+
+```bash
+cd frontend
+npx tsc -b && npx oxlint src && npm run build
+npm run test:ui                     # all suites
+npm run test:ui window-manager-settings   # one suite
+```
+
+The UI tests run under **jsdom** with esbuild — no browser needed (`frontend/tests/run.mjs`):
+
+| Suite | Locks down |
+|---|---|
+| `boot-sequence` | boot in StrictMode, auto-finish, skip on tap, English boot |
+| `window-manager-settings` | open/close/minimize, stable geometry, z-order, reopen position, language + theme persisted |
+| `apps-render` | all "together" apps render against real API fixtures (`tests/fixtures.json`), global search, desktop icons, next-call widget |
+| `puzzle-win` | win celebration even without a server response |
+| `pdf-book` | PDF export of the library book |
+| `desktop-drag` | icon reordering by drag and drop |
+| `viewport-fit` | full-height shell without inner scroll on boot/lock/desktop |
+
+`tests/fixtures.json` was captured from the live API; if an endpoint contract changes, these
+fail before she notices.
+
+---
+
+## 13. Maintenance, backups and troubleshooting
 
 ### Routine
 
 | Cadence | What I do |
 |---|---|
-| daily | glance at `ActivityLog` and the Soroush outbox |
-| weekly | back up the database + `media/`, check disk space |
-| monthly | `pip list --outdated` and `npm outdated`, review panel content |
-| every update | `migrate` → `npm run build` → restart the service |
+| daily | glance at `ActivityLog` and `SoroushOutbox` in the panel |
+| weekly | `./scripts/deploy.sh backup`; check disk space |
+| monthly | `pip list --outdated`, `npm outdated`; review content |
+| every update | backup → `./scripts/deploy.sh update` → `verify` |
 
-### Tests
+### Backups
 
-```bash
-# backend: 72 tests (models, APIs, search, location, panel)
-cd backend && .venv/bin/python manage.py test
-
-# frontend: type-check, lint, build and 47 UI checks
-cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
-```
-
-The backend tests lock in: call overlap detection, approve/reject/reschedule flows, a single-shot call
-reminder, gift stats and price bands, reading progress and the shared shelf, room-coordinate clamping,
-language flashcards/streak and the rule that quizzes only come from panel questions, Persian-tolerant
-search, effective location (live vs. panel vs. stale) and the fact that every registered model renders
-in the panel without errors.
-
-### Frontend UI tests (no browser needed)
-
-These tests run under **jsdom** so that checking the interface never requires opening a browser: each
-`frontend/tests/*.tsx` file is bundled with esbuild and then executed as a Node program.
-
-```bash
-cd frontend
-npm run test:ui            # both files
-npm run test:ui window-manager-settings
-```
-
-| File | What it locks down |
-|---|---|
-| `tests/window-manager-settings.tsx` | Open/close/minimize, geometry staying put while clicking, correct z-order, no ghost of a closed window, reopening at the previous position, and language + theme actually being applied and stored |
-| `tests/apps-render.tsx` | All five new apps booting against real backend responses (`tests/fixtures.json`), global search, desktop icons and the next-call widget |
-
-The backend responses in `tests/fixtures.json` were captured from the live API, so if an endpoint
-contract changes, these tests complain before the app does.
+`./scripts/deploy.sh backup` writes `backups/<timestamp>/` with `db.sql.gz` (or `db.sqlite3`),
+`media.tar.gz` and `env.backup`. Copy that folder off the server. Restore: import the dump, extract
+`media.tar.gz` into `backend/`, restore `.env`, restart.
 
 ### Common problems
 
-| Symptom | Likely cause | Fix |
+| Symptom | Cause | Fix |
 |---|---|---|
-| "app opens but the page is blank" | an old service-worker release | The service worker now updates itself (`skipWaiting`/`clientsClaim`); if you still see it, hard-refresh once and ship a fresh `npm run build` |
-| close/minimize on a window does nothing | window geometry changing under the pointer | Since 2.0 geometry is frozen; if it recurs, check the console that `AppWindow` renders its `z-index` on the wrapper |
-| letters/numbers look mirrored | the y-axis in the star map | Since 2.0 the y-axis is corrected and the letter direction is switchable (RTL/LTR) |
-| location, clock or weather looks stale | the panel value is being used because the live fix is old | Turn on live location in her Settings, or update the panel value |
-| `/api/settings` returns 405 | unsupported method | Since 2.0 it accepts `GET`/`POST`/`PATCH`/`PUT` |
-| Soroush messages do not arrive | token or connectivity | Inspect `SoroushOutbox` (status, tries, error) then run `manage.py sweep` |
-| white screen after an update | stale build files in the browser cache | fresh build + one hard refresh |
-| the panel will not load | `ADMIN_PATH` or the gate | read the path from `.env` and enter the gate passcode if enabled |
+| Persian text shows as `????` | database not utf8mb4 | recreate the DB with `utf8mb4_unicode_ci` (§10.1) |
+| `DisallowedHost` / 400 | `ALLOWED_HOSTS` | add the domain, restart |
+| panel login says CSRF failed | `CSRF_TRUSTED_ORIGINS` | add `https://domain`, restart |
+| infinite redirect loop | `SECURE_SSL_REDIRECT` behind a proxy that already terminates TLS | set `SECURE_SSL_REDIRECT=False`, make sure the proxy sends `X-Forwarded-Proto` |
+| page blank after an update | old service worker | hard refresh once; `sw.js` must be served with `no-cache` |
+| "فرانت‌اند هنوز build نشده است" (501) | `SERVE_FRONTEND=True` but `dist/` missing | build/upload `frontend/dist`, check `FRONTEND_DIST` |
+| Soroush messages do not arrive | token / connectivity | panel → SoroushOutbox (status, error) → `manage.py sweep` |
+| timed letters never open | no cron | install the `sweep` cron line |
+| uploads fail > ~10 MB | proxy body limit | `client_max_body_size 80M` (already in the Nginx template) |
+| `mysqlclient` will not compile | missing headers | `apt install default-libmysqlclient-dev build-essential` or use `pymysql` |
+| location, weather or clock look stale | live fix is old, panel value used | enable live location in her Settings or update the panel |
+| panel URL 404 | `ADMIN_PATH` | read it from `.env`; no leading/trailing slash there |
 
-### Useful queries
+### Handy shell snippets
 
 ```bash
 # what did she do today?
-.venv/bin/python manage.py shell -c "
-from core.models import ActivityLog
-[print(a.created_at, a.title, a.detail) for a in ActivityLog.objects.all()[:20]]"
-
-# which secrets has she found?
-.venv/bin/python manage.py shell -c "
-from core.models import EasterEggLog
-[print(l.created_at, l.egg.title) for l in EasterEggLog.objects.all()]"
-
+manage.py shell -c "from core.models import ActivityLog; [print(a.created_at, a.title, a.detail) for a in ActivityLog.objects.all()[:20]]"
 # her latest live position
-.venv/bin/python manage.py shell -c "
-from accounts.models import LiveLocation
-l = LiveLocation.current()
-print(l.city, l.lat, l.lng, l.age_minutes(), 'minutes ago') if l else print('not recorded')"
-
-# force the Soroush queue
-.venv/bin/python manage.py shell -c "
-from core.soroush import flush_outbox; print(flush_outbox())"
-
-# clear the search cache
-.venv/bin/python manage.py shell -c "
-from core.services import clear_app_cache; print(clear_app_cache())"
+manage.py shell -c "from accounts.models import LiveLocation; l=LiveLocation.current(); print(l and (l.city, l.lat, l.lng, l.age_minutes()))"
+# flush the Soroush queue now
+manage.py shell -c "from core.soroush import flush_outbox; print(flush_outbox())"
+# change her passcode
+manage.py shell -c "from accounts.models import UserConfig; c=UserConfig.get_solo(); c.set_passcode('2468'); c.save()"
 ```
 
 ---
 
-## 12. What changed in 2.0
+## 14. Security model
 
-### Bugs fixed
-
-1. **Closed windows would not reopen.** The window manager was rewritten: geometry is chosen once and
-   then frozen, stacking lives on the outer wrapper, and a fading window no longer captures clicks.
-2. **Letters in the star map were mirrored.** The y-axis was inverted (an `M` used to look like a `W`)
-   and letter order was fixed for RTL; there is now a toggle between right-to-left and left-to-right.
-3. **Location was measured from the stale stored value.** Every app now reads the "effective location"
-   whose first priority is her live device position, and the stored coordinates/city are synced
-   automatically so all apps agree.
-4. **Desktop apps "did not work".** The shared cause was a stale cached PWA shell and chunk loading:
-   `skipWaiting`, `clientsClaim` and `cleanupOutdatedCaches` were enabled and a `vite:preloadError`
-   handler now performs a clean reload. An error boundary was also added around every app so one
-   failure can no longer blank the whole OS.
-5. **The settings theme toggle had no effect.** The theme is now stored on the server and on the
-   device, applied immediately, and works with `auto/day/night`.
-6. **Changing language only flipped the text direction.** All the new apps and their locale keys are
-   fully bilingual, and switching language now swaps the whole interface, not just the direction.
-7. **`PATCH /api/settings` returned 405.** The view now accepts `GET`, `POST`, `PATCH` and `PUT`, and
-   silently ignores invalid values instead of failing.
-8. **The date range in global search was not precise.** The "from … to …" filter passed a raw `date`
-   to datetime fields (which also produced naive-datetime warnings) and the fuzzy fallback ignored the
-   range altogether, so out-of-range records could surface. Range boundaries are now timezone-aware,
-   "to this date" includes the whole day, and both search paths (exact and fuzzy) honour the range.
-9. **Denying microphone permission failed silently.** Call Sync and Language Bridge now show a clear
-   line saying microphone access was refused and that the browser settings need to allow it.
-
-### New in this version
-
-* **Five new apps** (Call Sync, Gift Book, Read Together, Dream Home, Language Bridge) plus
-  **global search** — six new pieces in total.
-* **Five new model groups** across those apps + `LiveLocation` in `accounts` and two search-related
-  settings keys on `UserConfig`.
-* **21 search sources** with Persian-tolerant matching, app/date/kind filters and a 45-second cache.
-* **16 new badges and 6 new tutorial chapters** for the new apps.
-* **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
-* **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
-* **72 backend tests** plus 47 frontend checks (`npm run test:ui`) covering the window manager,
-  settings (language/theme), global search and the rendering of every new app against real backend
-  responses.
+* **Discovery**: unlisted domain, `robots.txt` disallow-all, `X-Robots-Tag: noindex` on every
+  response, `X-Frame-Options: DENY`.
+* **Her side**: passcode → opaque token; attempt limit; separate vault passcode with a short TTL;
+  DRF throttling (`API_RATE_LIMIT`).
+* **My side**: secret admin path, optional passcode gate before the login page, Django auth,
+  `ActivityLog` of everything.
+* **Transport**: HSTS (1 year, preload) and secure cookies whenever `DEBUG=False`.
+* **Files**: uploads are outside any public URL; only signed, expiring `/api/media` links.
+* **Secrets**: only in `backend/.env` (`chmod 600`), never in git, never in the frontend bundle.
+* **Backups**: contain everything — treat the folder like the `.env`.
 
 ---
 
-<div align="center">
-
-**LoveOS, version 2.0**
-
-*Built by Daddy, for his daughter.*
-*The distance is only a number. Our hearts are always in the same place.* ❤
-
-</div>
+*Distance is just a number. Our hearts are always one.* ❤

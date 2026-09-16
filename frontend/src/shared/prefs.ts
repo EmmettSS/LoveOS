@@ -12,7 +12,7 @@ import type { Config } from './store'
 const KEY = 'loveos_prefs_v1'
 
 /** کلیدهایی که اجازه دارند محلی ذخیره شوند (همان‌هایی که در صفحه‌ی تنظیمات هستند) */
-const ALLOWED = ['language', 'theme', 'sound_enabled', 'font_scale', 'ui_quality'] as const
+const ALLOWED = ['language', 'theme', 'sound_enabled', 'font_scale'] as const
 type AllowedKey = (typeof ALLOWED)[number]
 
 export type LocalPrefs = Partial<Pick<Config, AllowedKey>>
