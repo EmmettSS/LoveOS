@@ -16,6 +16,7 @@ import { patch, upload } from '../shared/api'
 import { getStoredSettings, setStoredSetting, syncSettings } from '../shared/prefs'
 import { setLanguage } from '../shared/i18n'
 import { digits } from '../shared/format'
+import type { QualityReason } from '../shared/quality'
 import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../shared/geo'
 import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
 import { Toggle } from '../shared/ui'
@@ -51,6 +52,31 @@ export default function Settings() {
   const uiQuality = useOS((s) => s.uiQuality)
   const uiQualityChoice = useOS((s) => s.uiQualityChoice)
   const qualityReasons = useOS((s) => s.qualityReasons)
+
+  /**
+   * دلیل‌هایِ لایه را **این‌جا** ترجمه می‌کند، نه در موتورِ کیفیت.
+   *
+   * ``quality.ts`` ماژولِ خالصِ بیرونِ React است و هوکِ ترجمه ندارد؛ اگر
+   * رشته‌ی نهایی را همان‌جا می‌ساخت، زبانِ دلیل در لحظه‌ی محاسبه یخ می‌زد و
+   * با عوض‌شدنِ زبان، فهرستِ «چرا این لایه؟» فارسی می‌ماند در حالی که
+   * بقیه‌ی صفحه انگلیسی بود — یک باگِ دوزبانه‌ی واقعی که این تابع
+   * بستش.
+   *
+   * دو کار می‌کند:
+   *   • آرگومان‌هایی که در ``tierArgs`` نام برده شده‌اند نامِ لایه‌اند، پس
+   *     با ``settings.tier_*`` ترجمه می‌شوند (وگرنه کاربر به‌جای «کهکشان»
+   *     رشته‌ی فنیِ ``dream`` را می‌دید).
+   *   • بقیه‌ی عددها از ``digits()`` رد می‌شوند تا در فارسی رقمِ فارسی
+   *     بگیرند — دقیقاً همان کاری که پنلِ مشخصاتِ دستگاه پایین‌تر می‌کند.
+   */
+  const reasonText = (r: QualityReason): string => {
+    const args: Record<string, string | number> = {}
+    for (const [k, v] of Object.entries(r.args ?? {})) {
+      if ((r.tierArgs ?? []).includes(k)) args[k] = t(`settings.tier_${v}`)
+      else args[k] = typeof v === 'number' ? digits(v) : v
+    }
+    return t(`settings.${r.key}`, args)
+  }
   const qualityReport = useOS((s) => s.qualityReport)
   const qualityFps = useOS((s) => s.qualityFps)
   const qualityAutoDowngraded = useOS((s) => s.qualityAutoDowngraded)
@@ -239,7 +265,7 @@ export default function Settings() {
             <summary className="cursor-pointer os-muted select-none">{t('settings.qualityWhy')}</summary>
             <ul className="mt-1.5 space-y-0.5 list-inside list-disc os-muted">
               {qualityReasons.map((r, i) => (
-                <li key={i}>{r}</li>
+                <li key={i}>{reasonText(r)}</li>
               ))}
             </ul>
           </details>

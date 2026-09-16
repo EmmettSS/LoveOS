@@ -350,10 +350,38 @@ export function measureFpsCached(sampleMs = 650, force = false): Promise<number 
 
 /* --------------------------------------------------- حلِ لایه‌ی کیفیت --- */
 
+/**
+ * یک دلیلِ **ساختاریافته** برای انتخابِ لایه.
+ *
+ * چرا رشته‌ی آماده نه:
+ *
+ * ``quality.ts`` یک ماژولِ خالصِ بیرونِ React است و به هوکِ ترجمه دسترسی
+ * ندارد. اگر رشته‌ی نهایی را همین‌جا می‌ساختیم، زبانِ دلیل در لحظه‌ی
+ * **محاسبه** یخ می‌زد. نتیجه‌اش یک باگِ واقعیِ دوزبانه بود: کاربر زبان را
+ * به انگلیسی عوض می‌کرد، کلِ صفحه‌ی تنظیمات انگلیسی می‌شد ولی فهرستِ
+ * «چرا این لایه؟» فارسی می‌ماند — چون آن رشته‌ها از قبل در store نشسته
+ * بودند و دلیلی برای محاسبه‌ی دوباره نبود.
+ *
+ * پس این‌جا فقط کلید و آرگومان می‌سازیم و ترجمه در زمانِ **رندر** در
+ * ``Settings.tsx`` انجام می‌شود. عوض‌شدنِ زبان فوراً روی دلیل‌ها هم اثر
+ * می‌کند، بدونِ یک سنجشِ دوباره‌ی دستگاه.
+ *
+ * ``tierArgs`` نامِ آرگومان‌هایی است که مقدارشان یک لایه است
+ * (``lite|balanced|dream|auto``) و باید پیش از جایگذاری با کلیدِ
+ * ``settings.tier_*`` ترجمه شوند — وگرنه کاربر به‌جای «کهکشان» رشته‌ی
+ * فنیِ ``dream`` را می‌دید.
+ */
+export interface QualityReason {
+  /** کلیدِ i18n، بدونِ پیشوند؛ زیرِ namespaceِ ``settings`` زندگی می‌کند */
+  key: string
+  args?: Record<string, string | number>
+  tierArgs?: string[]
+}
+
 export interface QualityDecision {
   tier: QualityTier
   /** چرا این لایه انتخاب شد — برای نمایش در تنظیمات */
-  reasons: string[]
+  reasons: QualityReason[]
   score: number
   fps: number | null
 }
@@ -364,34 +392,27 @@ export interface QualityDecision {
  * وزن‌ها طوری تنظیم شده‌اند که یک گوشیِ جدیدِ میان‌رده/پرچمدار به کهکشان
  * برسد، یک گوشیِ قدیمی به بلور، و یک دستگاهِ واقعاً ضعیف به مهتاب.
  */
-function staticScore(r: CapabilityReport): { score: number; reasons: string[] } {
-  const reasons: string[] = []
+function staticScore(r: CapabilityReport): { score: number; reasons: QualityReason[] } {
+  const reasons: QualityReason[] = []
   let score = 0
 
   if (r.cores >= 8) {
     score += 2
-    reasons.push(`${r.cores} هسته`)
   } else if (r.cores >= 6) {
     score += 1.5
-    reasons.push(`${r.cores} هسته`)
   } else if (r.cores >= 4) {
     score += 1
-    reasons.push(`${r.cores} هسته`)
-  } else if (r.cores > 0) {
-    reasons.push(`فقط ${r.cores} هسته`)
   }
+  // سه شاخه‌ی بالا یک دلیلِ مشترک دارند؛ شاخه‌ی چهارم لحنش فرق می‌کند
+  // («فقط») چون آن‌جا هسته‌ها کمبود است نه امتیاز.
+  if (r.cores >= 4) reasons.push({ key: 'qualityCores', args: { n: r.cores } })
+  else if (r.cores > 0) reasons.push({ key: 'qualityCoresOnly', args: { n: r.cores } })
 
   if (r.memoryGB != null) {
-    if (r.memoryGB >= 8) {
-      score += 2
-      reasons.push(`${r.memoryGB}GB حافظه`)
-    } else if (r.memoryGB >= 4) {
-      score += 1.5
-      reasons.push(`${r.memoryGB}GB حافظه`)
-    } else {
-      score += 0.5
-      reasons.push(`${r.memoryGB}GB حافظه`)
-    }
+    if (r.memoryGB >= 8) score += 2
+    else if (r.memoryGB >= 4) score += 1.5
+    else score += 0.5
+    reasons.push({ key: 'qualityMemory', args: { n: r.memoryGB } })
   } else {
     // مرورگر حافظه را گزارش نمی‌کند (Safari/Firefox). نه جایزه می‌دهیم نه
     // جریمه: ناآگاهی نباید به معنایِ «ضعیف» فرض‌شدن باشد.
@@ -400,10 +421,10 @@ function staticScore(r: CapabilityReport): { score: number; reasons: string[] } 
 
   if (r.webgl === 2) {
     score += 2
-    reasons.push('WebGL2')
+    reasons.push({ key: 'qualityWebgl', args: { v: 2 } })
   } else if (r.webgl === 1) {
     score += 1
-    reasons.push('فقط WebGL1')
+    reasons.push({ key: 'qualityWebglOnly', args: { v: 1 } })
   }
 
   if (r.maxTextureSize >= 8192) score += 1
@@ -412,14 +433,14 @@ function staticScore(r: CapabilityReport): { score: number; reasons: string[] } 
   // دسکتاپ دستِ بازتری دارد (خنک‌کاری بهتر، نمایشگر بزرگ‌تر ولی DPR پایین‌تر)
   if (!r.touch) {
     score += 1.5
-    reasons.push('دسکتاپ')
+    reasons.push({ key: 'qualityDesktop' })
   }
 
   // DPR بالا یعنی پیکسلِ خیلی بیشتر برای پرکردن. روی گوشی‌های dpr=3 هزینه‌ی
   // رندرِ WebGL تقریباً ۲٫۲۵ برابرِ dpr=2 است. جریمه‌ی ملایم، نه سنگین.
   if (r.dpr > 3) {
     score -= 0.5
-    reasons.push('چگالیِ پیکسلِ خیلی بالا')
+    reasons.push({ key: 'qualityHighDpr' })
   } else if (r.dpr <= 2) {
     score += 0.5
   }
@@ -429,10 +450,10 @@ function staticScore(r: CapabilityReport): { score: number; reasons: string[] } 
     score += 1
   } else if (et === '3g') {
     score -= 1
-    reasons.push('شبکه‌ی ۳G')
+    reasons.push({ key: 'qualityNet3g' })
   } else if (et === '2g' || et === 'slow-2g') {
     score -= 2
-    reasons.push('شبکه‌ی بسیار کند')
+    reasons.push({ key: 'qualityNetSlow' })
   }
 
   return { score, reasons }
@@ -443,36 +464,38 @@ function staticScore(r: CapabilityReport): { score: number; reasons: string[] } 
  *
  * این‌ها مقدم بر امتیازند: هیچ امتیازی نمی‌تواند از این سقف عبور کند.
  */
-function hardCeiling(r: CapabilityReport): { ceiling: QualityTier; why: string[] } {
-  const why: string[] = []
+function hardCeiling(r: CapabilityReport): { ceiling: QualityTier; why: QualityReason[] } {
+  const why: QualityReason[] = []
   let ceiling: QualityTier = 'dream'
 
   if (r.isTestEnv) {
     // محیطِ تست هیچ WebGL و هیچ چیدمانِ واقعی ندارد. اگر این‌جا مهتاب
     // ندهیم، three.js داخلِ jsdom استثنا پرتاب می‌کند و تست‌ها می‌شکنند.
-    return { ceiling: 'lite', why: ['محیطِ آزمون'] }
+    return { ceiling: 'lite', why: [{ key: 'qualityVetoTestEnv' }] }
   }
   if (r.reducedMotion) {
-    why.push('«کاهش حرکت» در سیستم روشن است')
+    why.push({ key: 'qualityVetoReducedMotion' })
     ceiling = 'lite'
   }
   if (r.webgl === 0 || r.softwareRenderer) {
-    why.push(r.webgl === 0 ? 'WebGL در دسترس نیست' : 'رندرِ نرم‌افزاری (GPU واقعی نیست)')
+    // ``qualityNoWebgl`` از قبل برای پنلِ مشخصاتِ دستگاه وجود داشت؛
+    // دوباره نساختیمش چون دقیقاً همان جمله است.
+    why.push({ key: r.webgl === 0 ? 'qualityNoWebgl' : 'qualityVetoSoftware' })
     ceiling = 'lite'
   }
   if (r.saveData) {
     // کاربر صریحاً خواسته داده کمتر مصرف شود. chunk سه‌بعدی ۱۳۵KB است؛
     // احترام به این خواسته مقدم بر زیبایی است.
-    why.push('«صرفه‌جویی در داده» روشن است')
+    why.push({ key: 'qualityVetoSaveData' })
     if (TIER_ORDER.indexOf(ceiling) > TIER_ORDER.indexOf('balanced')) ceiling = 'balanced'
   }
   return { ceiling, why }
 }
 
 /** امتیازِ فریم را به امتیازِ کل اضافه می‌کند و وتوی فریم را اعمال می‌کند. */
-function applyFps(score: number, fps: number | null, reasons: string[]): { score: number; ceiling: QualityTier } {
+function applyFps(score: number, fps: number | null, reasons: QualityReason[]): { score: number; ceiling: QualityTier } {
   if (fps == null) return { score, ceiling: 'dream' }
-  reasons.push(`${fps} فریم بر ثانیه`)
+  reasons.push({ key: 'qualityFps', args: { n: fps } })
   if (fps >= FPS_DREAM) return { score: score + 2, ceiling: 'dream' }
   if (fps >= FPS_BALANCED) return { score: score + 1, ceiling: 'balanced' }
   if (fps >= FPS_PANIC) return { score, ceiling: 'balanced' }
@@ -500,8 +523,11 @@ export function resolveTier(
     const wanted = choice
     const tier = clampToCeiling(wanted, ceiling)
     const reasons = [...why]
-    if (tier !== wanted) reasons.push(`«${wanted}» خواستی ولی دستگاه بیشتر از «${tier}» نمی‌تواند`)
-    else reasons.push('انتخابِ دستیِ خودت')
+    if (tier !== wanted) {
+      reasons.push({ key: 'qualityManualCapped', args: { wanted, max: tier }, tierArgs: ['wanted', 'max'] })
+    } else {
+      reasons.push({ key: 'qualityManualChoice' })
+    }
     return { tier, reasons, score: 0, fps }
   }
 
@@ -517,7 +543,7 @@ export function resolveTier(
   const remembered = readDowngradeMemory()
   if (remembered) {
     score -= 4
-    reasons.push(`دفعه‌ی قبل ${remembered} سنگین بود`)
+    reasons.push({ key: 'qualityRememberedDowngrade', args: { tier: remembered }, tierArgs: ['tier'] })
   }
 
   let tier: QualityTier = score >= DREAM_MIN_SCORE ? 'dream' : score >= BALANCED_MIN_SCORE ? 'balanced' : 'lite'

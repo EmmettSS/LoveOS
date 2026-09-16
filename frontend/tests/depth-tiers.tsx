@@ -403,6 +403,79 @@ for (const tier of TIERS) {
 }
 
 /* ==========================================================================
+   ۳-ب) دلیل‌هایِ لایه در هر دو زبان
+   --------------------------------------------------------------------------
+   موتورِ کیفیت (``shared/quality.ts``) یک ماژولِ خالصِ **بیرونِ React** است
+   و هوکِ ترجمه ندارد. نسخه‌ی اول دلیل‌ها را به‌صورتِ رشته‌ی فارسیِ آماده در
+   store می‌گذاشت و نتیجه یک باگِ واقعیِ دوزبانه بود: کاربر زبان را به
+   انگلیسی عوض می‌کرد، کلِ صفحه‌ی تنظیمات انگلیسی می‌شد ولی فهرستِ «چرا این
+   لایه؟» فارسی می‌ماند — چون آن رشته‌ها از قبل یخ زده بودند و دلیلی برای
+   محاسبه‌ی دوباره نبود.
+
+   اصلاح: موتور فقط ``{ key, args, tierArgs }`` می‌سازد و ترجمه در زمانِ
+   **رندر** در Settings انجام می‌شود. این بخش همان رفتار را از دو طرف
+   می‌سنجد — هم اینکه در انگلیسی هیچ فارسی نمانده، هم اینکه در فارسی کلیدِ
+   خام دیده نمی‌شود.
+
+   سه جور آرگومان عمداً پوشش داده شده‌اند، چون هرکدام راهِ خراب‌شدنِ خودش
+   را دارد:
+     • عددی (``n: 8``)      → باید از ``digits()`` رد شود: ۸ در فارسی، 8 در انگلیسی
+     • نامِ لایه (``tierArgs``) → باید ترجمه شود: «کهکشان» / "Galaxy"، نه ``dream``
+     • بدونِ آرگومان        → باید عیناً ترجمه شود
+   ========================================================================== */
+{
+  const i18n = i18nModule.default
+  const Settings = (await import('../src/apps/Settings')).default
+  const REASONS = [
+    { key: 'qualityCores', args: { n: 8 } },
+    { key: 'qualityVetoSaveData' },
+    { key: 'qualityManualCapped', args: { wanted: 'dream', max: 'balanced' }, tierArgs: ['wanted', 'max'] },
+    { key: 'qualityFpsDowngraded', args: { fps: 27, tier: 'lite' }, tierArgs: ['tier'] },
+    { key: 'qualityRememberedDowngrade', args: { tier: 'dream' }, tierArgs: ['tier'] },
+  ] as never[]
+
+  // حروفِ عربی/فارسی **به‌علاوه‌ی رقم‌های فارسی** — چون ``digits()`` در
+  // فارسی عدد را هم فارسی می‌کند و اگر فقط حروف را می‌سنجیدیم، یک دلیلِ
+  // نیمه‌ترجمه‌شده (متنِ انگلیسی با رقمِ فارسی) رد می‌شد.
+  const PERSIAN = /[\u0600-\u06FF\u06F0-\u06F9\u0660-\u0669]/
+  const CFG = { language: 'fa', theme: 'auto', sound_enabled: true, font_scale: 1, ui_quality: 'auto' } as never
+
+  for (const lang of ['en', 'fa'] as const) {
+    await act(async () => {
+      await i18n.changeLanguage(lang)
+      useOS.setState({ uiQuality: 'balanced', qualityReasons: REASONS, config: CFG, qualityFps: null })
+    })
+    const m = await mount(h(Settings), 320)
+    const host = m.host
+    const items = Array.from(host.querySelectorAll('[data-quality-panel] li')).map((li) => (li.textContent || '').trim())
+    const joined = items.join(' ⏐ ')
+
+    check(`[${lang}] هر ${REASONS.length} دلیل رندر شد`, items.length === REASONS.length, `یافته=${items.length}`)
+    check(`[${lang}] هیچ کلیدِ خامی روی صفحه نیست`, !joined.includes('settings.'), joined)
+
+    if (lang === 'en') {
+      check('[en] هیچ فارسی در دلیل‌ها نمانده', !items.some((t) => PERSIAN.test(t)),
+        items.filter((t) => PERSIAN.test(t)).join(' ⏐ '))
+      // نامِ لایه باید ترجمه شده باشد، نه مقدارِ فنیِ ذخیره‌شده
+      check('[en] نامِ لایه ترجمه شد نه مقدارِ فنی',
+        joined.includes('Galaxy') && joined.includes('Crystal') && joined.includes('Moonlight') &&
+        !/\b(dream|balanced|lite)\b/.test(joined), joined)
+      check('[en] رقم‌ها لاتین‌اند', joined.includes('8 cores') && joined.includes('27 fps'), joined)
+    } else {
+      check('[fa] همه‌ی دلیل‌ها فارسی‌اند', items.every((t) => PERSIAN.test(t)), joined)
+      check('[fa] نامِ شاعرانه‌ی لایه آمد نه مقدارِ فنی',
+        joined.includes('کهکشان') && joined.includes('بلور') && joined.includes('مهتاب') &&
+        !/\b(dream|balanced|lite)\b/.test(joined), joined)
+      check('[fa] رقم‌ها فارسی‌اند', joined.includes('۸ هسته'), joined)
+    }
+    await unmount(m)
+  }
+
+  // زبان را به حالتِ اول برمی‌گردانیم تا بخش‌های بعدیِ همین سوئیت آلوده نشوند
+  await act(async () => { await i18n.changeLanguage('fa') })
+}
+
+/* ==========================================================================
    ۴) گاردِ کره‌ی نقشه — پرریسک‌ترین تصمیمِ فیچر
    --------------------------------------------------------------------------
    ``canUseGlobe`` عمداً یک تابعِ خالص در ماژولِ مشترک است تا بتوان بدونِ

@@ -668,7 +668,7 @@ pending notifications, **fires approved-call reminders** and flushes the Soroush
 # backend: 97 tests (models, APIs, search, location, panel, constellations, UI quality)
 cd backend && .venv/bin/python manage.py test
 
-# frontend: type-check, lint, build and 9 UI suites (285 checks)
+# frontend: type-check, lint, build and 10 UI suites (326 checks)
 cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
 ```
 
@@ -680,19 +680,33 @@ in the panel without errors.
 
 ### Frontend UI tests (no browser needed)
 
-These tests run under **jsdom** so that checking the interface never requires opening a browser: each
-`frontend/tests/*.tsx` file is bundled with esbuild and then executed as a Node program.
+Eight suites run under **jsdom** so that checking the interface never requires opening a browser; two run
+**statically** (they only read the source text — no jsdom, no React). Each file is bundled with esbuild and
+then executed as a Node program.
 
 ```bash
 cd frontend
-npm run test:ui            # both files
-npm run test:ui window-manager-settings
+npm run test:ui            # all ten suites · 326 checks
+npm run test:ui depth-tiers i18n-keys
 ```
 
 | File | What it locks down |
 |---|---|
+| `tests/boot-sequence.tsx` | The boot sequence: translations loading at runtime, the typing loop surviving StrictMode (the "freezes on entry" bug), auto-ending and skipping on click — in both languages |
 | `tests/window-manager-settings.tsx` | Open/close/minimize, geometry staying put while clicking, correct z-order, no ghost of a closed window, reopening at the previous position, and language + theme actually being applied and stored |
-| `tests/apps-render.tsx` | All five new apps booting against real backend responses (`tests/fixtures.json`), global search, desktop icons and the next-call widget |
+| `tests/apps-render.tsx` | Apps booting against real backend responses (`tests/fixtures.json`), global search, desktop icons and the next-call widget |
+| `tests/puzzle-win.tsx` | Puzzle win detection: a full solve → immediate celebration + result saved to the server, plus the edge cases |
+| `tests/pdf-book.tsx` | The writing-book PDF export along the exact path the app takes: pagination → canvas render → JPEG → `miniPdf` |
+| `tests/desktop-drag.tsx` | Desktop icon drag-and-drop with both mouse and touch, and real hit-testing (the "drag does not work on mobile" bug) |
+| `tests/viewport-fit.tsx` | The shell (boot/lock/desktop) being full-height, with no outer scroll and no white strip at the bottom |
+| `tests/depth-tiers.tsx` | The 3D tiers: all three tiers across the apps, text staying out of tilt containers, graceful degradation with no WebGL, ≥44px touch targets, seven Mali-globe-guard cases, and **the quality reasons being correct in both languages** |
+| `tests/three-hygiene.ts` | 🔍 **static** — Rules-of-Hooks, 3D keys closing in all three framer branches, build chunking and precache, Safari traps, the scene budget, and the "no app stays flat" coverage guard |
+| `tests/i18n-keys.ts` | 🔍 **static** — full parity between the two languages, matching `{{…}}` placeholders, all 540 used keys existing, all 30 app titles, the shape of the `boot.lines` array, and the quality engine's dynamic keys |
+
+Why two static suites: some bugs are **not render-time bugs**. They appear only in a real browser (Safari
+flattens `preserve-3d` inside an `overflow-hidden` parent), only at build time (the `three.js` chunk silently
+joins the precache), or only when a translation key is emitted from a non-component module that no type-check
+can police. Those suites run in under a second and never boot jsdom.
 
 The backend responses in `tests/fixtures.json` were captured from the live API, so if an endpoint
 contract changes, these tests complain before the app does.
@@ -778,7 +792,7 @@ from core.services import clear_app_cache; print(clear_app_cache())"
 * **16 new badges and 6 new tutorial chapters** for the new apps.
 * **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
 * **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
-* **97 backend tests** plus 9 frontend suites (`npm run test:ui`, 285 checks) covering the window
+* **97 backend tests** plus 10 frontend suites (`npm run test:ui`, 326 checks) covering the window
   manager, settings (language/theme), global search, the rendering of every new app against real
   backend responses, and the 3D depth tiers.
 
@@ -817,6 +831,7 @@ never couple to display language.
 | `frontend/src/three/scenes/cinema.ts` + `CinemaHall.tsx` | The cinema-hall scene + its `lazy` shell with a CSS fallback |
 | `frontend/src/three/scenes/room.ts` + `DreamRoom.tsx` | The 3D dream-home maquette + its `lazy` shell with a CSS fallback |
 | `frontend/tests/three-hygiene.ts` | 29 static checks over the source text, for rules jsdom can never see |
+| `frontend/tests/i18n-keys.ts` | 31 static checks over the translation keys: two-language parity, placeholders, and the dynamic keys no type-check can police |
 | `backend/content/models.py` | `Constellation.kind` (letter or shape) |
 | `backend/accounts/models.py` | `UserConfig.ui_quality` |
 
@@ -1074,6 +1089,7 @@ the source:
 | Safari and `overflow-hidden` | `overflow-hidden` on the parent **flattens** `preserve-3d` | For scrollable lists use the self-contained `perspective()` transform function, not `perspective` on the parent |
 | `manualChunks` and `/src/three/` | Routing the `src/three` folder through `manualChunks` migrates `quality.ts` too, and `index.js` ends up with a **static** dependency on `three` — so lite users download 550 kB | `manualChunks` for `node_modules/three` only |
 | `animation-fill-mode: both` | The last keyframe sticks forever and the list stays parked at its final Z | `backwards` |
+| Baking a translated string in a pure module | `quality.ts` lives outside React and has no translation hook. A ready-made string freezes the reason's language at **compute** time: the page turned English while the "why this level" list stayed Persian | The engine builds `{ key, args, tierArgs }`; translation happens at render time in `Settings.tsx`. `i18n-keys` guards that coupling |
 
 ### The bundle after this phase
 

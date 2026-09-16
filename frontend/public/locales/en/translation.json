@@ -554,7 +554,21 @@
     "qualityMemoryUnknown": "Memory not reported",
     "qualityGpuUnknown": "GPU: unknown",
     "qualityMeasuring": "Measuring...",
-    "qualityRemeasure": "Measure again"
+    "qualityRemeasure": "Measure again",
+    "qualityCoresOnly": "Only {{n}} cores",
+    "qualityWebglOnly": "Only WebGL{{v}}",
+    "qualityDesktop": "Desktop",
+    "qualityHighDpr": "Very high pixel density",
+    "qualityNet3g": "3G network",
+    "qualityNetSlow": "Very slow network",
+    "qualityVetoTestEnv": "Test environment",
+    "qualityVetoReducedMotion": "“Reduce motion” is on in the system",
+    "qualityVetoSoftware": "Software rendering (not a real GPU)",
+    "qualityVetoSaveData": "“Data saver” is on",
+    "qualityManualCapped": "You asked for {{wanted}}, but this device can only do {{max}}",
+    "qualityManualChoice": "Your own manual choice",
+    "qualityRememberedDowngrade": "{{tier}} was too heavy last time",
+    "qualityFpsDowngraded": "In practice it ran at {{fps}} fps → softened to {{tier}}"
   },
   "notifications": {
     "title": "Notification Center",

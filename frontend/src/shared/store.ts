@@ -22,6 +22,7 @@ import {
   writeDowngradeMemory,
   type CapabilityReport,
   type QualityChoice,
+  type QualityReason,
   type QualityTier,
 } from './quality'
 
@@ -128,7 +129,7 @@ interface OSState {
   /** سنجه‌ی توان دستگاه (برای نمایشِ «چرا این لایه») */
   qualityReport: CapabilityReport | null
   /** دلیل‌های انسانیِ تصمیم */
-  qualityReasons: string[]
+  qualityReasons: QualityReason[]
   /** آخرین فریمِ اندازه‌گیری‌شده */
   qualityFps: number | null
   /** آیا اندازه‌گیری/تنزل خودکار اتفاق افتاده (برای پیامِ ملایم) */
@@ -358,7 +359,12 @@ export const useOS = create<OSState>((set, get) => ({
       uiQuality: next,
       qualityFps: fps,
       qualityAutoDowngraded: true,
-      qualityReasons: [...get().qualityReasons, `در عمل ${fps} فریم بود → به ${next} تنزل داد`],
+      qualityReasons: [
+        ...get().qualityReasons,
+        // ساختاریافته، نه رشته‌ی آماده — چون این دلیل ممکن است ساعت‌ها بعد و
+        // در زبانی دیگر خوانده شود. ترجمه در زمانِ رندر انجام می‌شود.
+        { key: 'qualityFpsDowngraded', args: { fps, tier: next }, tierArgs: ['tier'] },
+      ],
     })
     restartWatchdog(next)
   },

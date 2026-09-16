@@ -543,7 +543,21 @@
     "qualityMemoryUnknown": "حافظه گزارش نشد",
     "qualityGpuUnknown": "گرافیک: ناشناس",
     "qualityMeasuring": "دارم می‌سنجم...",
-    "qualityRemeasure": "سنجشِ دوباره"
+    "qualityRemeasure": "سنجشِ دوباره",
+    "qualityCoresOnly": "فقط {{n}} هسته",
+    "qualityWebglOnly": "فقط WebGL{{v}}",
+    "qualityDesktop": "دسکتاپ",
+    "qualityHighDpr": "چگالیِ پیکسلِ خیلی بالا",
+    "qualityNet3g": "شبکه‌ی ۳G",
+    "qualityNetSlow": "شبکه‌ی بسیار کند",
+    "qualityVetoTestEnv": "محیطِ آزمون",
+    "qualityVetoReducedMotion": "«کاهش حرکت» در سیستم روشن است",
+    "qualityVetoSoftware": "رندرِ نرم‌افزاری (GPU واقعی نیست)",
+    "qualityVetoSaveData": "«صرفه‌جویی در داده» روشن است",
+    "qualityManualCapped": "«{{wanted}}» خواستی ولی دستگاه بیشتر از «{{max}}» نمی‌تواند",
+    "qualityManualChoice": "انتخابِ دستیِ خودت",
+    "qualityRememberedDowngrade": "دفعه‌ی قبل {{tier}} سنگین بود",
+    "qualityFpsDowngraded": "در عمل {{fps}} فریم بود → به {{tier}} تنزل داد"
   },
   "notifications": {
     "title": "مرکز اعلان",

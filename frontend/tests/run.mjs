@@ -32,6 +32,10 @@ const ALL = {
   // (چانک‌بندیِ build، تله‌های سافاری، Rules-of-Hooks، جفت‌شدنِ
   // initial/animate در framer). jsdom و React وارد نمی‌کند.
   'three-hygiene': join(here, 'three-hygiene.ts'),
+  // آزمونِ ایستایِ کلیدهایِ ترجمه: برابریِ دو زبان، جای‌نماها، کلیدهایِ
+  // مصرف‌شده در کد، عنوانِ اپ‌ها، و کلیدهایِ **پویایِ** موتورِ کیفیت که
+  // هیچ تایپ‌چکی نگهبانی‌شان نمی‌کند.
+  'i18n-keys': join(here, 'i18n-keys.ts'),
 }
 
 const only = process.argv.slice(2)
