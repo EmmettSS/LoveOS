@@ -43,6 +43,20 @@ g.requestAnimationFrame = w.requestAnimationFrame.bind(w)
 g.cancelAnimationFrame = w.cancelAnimationFrame.bind(w)
 g.getComputedStyle = w.getComputedStyle.bind(w)
 g.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} })
+
+/**
+ * jsdom عملاً ``scrollIntoView`` را پیاده‌سازی **نکرده** (فقط امضایش در
+ * تایپ‌ها هست). اپِ ترمینال بعد از هر خط خروجی به انتهای لیست اسکرول
+ * می‌کند و بدونِ این stub، رندر کردنش در آزمون با TypeError منفجر می‌شد.
+ *
+ * ⚠️ این یک کمبودِ محیطِ آزمون است نه باگِ اپ: ``scrollIntoView`` در همه‌ی
+ *    مرورگرهای واقعی هست. پس درستش همین است که این‌جا stub شود، نه اینکه
+ *    کدِ اپ را به ``scrollIntoView?.()`` دفاعی کنیم (که نویزِ بی‌فایده در
+ *    کدِ تولیدی می‌گذاشت). ``Achievements`` از قبل به‌شکلِ ``?.()``
+ *    صدا می‌زند و آن هم درست است.
+ */
+w.Element.prototype.scrollIntoView = function scrollIntoView() {}
+w.HTMLElement.prototype.scrollIntoView = function scrollIntoView() {}
 w.matchMedia = g.matchMedia
 g.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }
 g.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
@@ -102,6 +116,31 @@ function starmapPayload(withKind: boolean) {
   return { items: [...letters, ...shapes] }
 }
 
+/**
+ * پاسخ‌های اپ‌های تازه‌ی سه‌بعدی‌شده.
+ *
+ * ⚠️ شکلِ داده دقیقاً همان چیزی است که API واقعی می‌فرستد — از روی
+ *    ``interface``های خودِ اپ کپی شده، نه حدس. اگر فیلدی جا بیفتد اپ با
+ *    ``Empty`` رندر می‌شود و آزمون «سبزِ توخالی» می‌دهد.
+ */
+const ACHIEVEMENTS = {
+  items: [
+    { id: 1, code: 'door', title: 'نشانِ دل', description: 'د', icon: 'heart', unlocked: true, unlocked_at: '2026-01-01T10:00:00Z', secret_message: 'راز' },
+    { id: 2, code: 'mic', title: 'نشانِ صدا', description: 'د', icon: 'mic', unlocked: false, unlocked_at: null, secret_message: '' },
+  ],
+  unlocked: 1,
+  total: 2,
+}
+
+const MOODS = { items: [{ mood: 'happy', label: 'خوشحال' }, { mood: 'missing', label: 'دلتنگ' }] }
+
+const CINEMA = {
+  items: [
+    { id: 1, title: 'فیلمِ ما', kind: 'film', link: '', status: 'watching', rating: 4, note: '', poster: null, added_by: 'daddy' },
+    { id: 2, title: 'کارتون', kind: 'film', link: '', status: 'todo', rating: 0, note: '', poster: null, added_by: 'daughter' },
+  ],
+}
+
 const GARDEN = {
   items: [
     { id: 1, name: 'گلِ سرخ', color: '#e5484d', emoji: '🌹', water_count: 4 },
@@ -144,6 +183,9 @@ g.fetch = async (url: string, opts: any = {}) => {
   if (path.startsWith('/api/garden')) return json(GARDEN)
   if (path.startsWith('/api/hug')) return json(HUG)
   if (path.startsWith('/api/boot')) return json({ config: { language: 'fa', theme: 'auto', ui_quality: 'auto' }, unlocked: false })
+  if (path.startsWith('/api/achievements')) return json(ACHIEVEMENTS)
+  if (path.startsWith('/api/moods')) return json(MOODS)
+  if (path.startsWith('/api/cinema')) return json(CINEMA)
   return json({ items: [] })
 }
 
@@ -381,6 +423,95 @@ for (const tier of TIERS) {
   check('کهکشان + بدونِ WebGL → کره خاموش', canUseGlobe('dream', cap({ webgl: 0 })) === false)
   check('کهکشان + رندررِ نرم‌افزاری → کره خاموش', canUseGlobe('dream', cap({ softwareRenderer: true })) === false)
   check('کهکشان + WebGL1 (نه ۲) → کره روشن', canUseGlobe('dream', cap({ webgl: 1 })) === true)
+}
+
+/* ==========================================================================
+   ۵) اپ‌های تازه‌ی سه‌بعدی‌شده در هر سه لایه
+   --------------------------------------------------------------------------
+   سه چیز را قفل می‌کند که jsdom واقعاً می‌تواند ببیندشان:
+
+   الف) **تنزلِ باوقارِ سینما**: در jsdom هیچ WebGL نیست. پس در لایه‌ی
+      کهکشان هم سینما باید سالنِ CSS-سه‌بعدی را نشان دهد، نه یک canvasِ
+      سیاهِ خالی. این همان مسیری است که روی گوشیِ واقعی هم وقتی سقفِ
+      context پر باشد طی می‌شود.
+
+   ب) **قاعده‌ی سختِ «متن کج نمی‌شود»**: هیچ ``<p>`` نباید داخلِ یک ظرفِ
+      تیلت (``.os-depth``) باشد. این قاعده پیش‌تر فقط برای چهار اپ سنجیده
+      می‌شد؛ حالا برای هر اپی که این‌جا رندر شود سنجیده می‌شود.
+
+   پ) **عمقِ نقاشی‌شده در مهتاب هم هست**: قرصِ مدال‌ها و شیشه‌ی CRT باید در
+      هر سه لایه دیده شوند، چون مهتاب یعنی «سایه، پخ، گرادیان» — یعنی
+      حذفِ **حرکت**، نه حذفِ عمق. اگر این‌ها در مهتاب غیب می‌شدند یعنی
+      گیت را زیادی سفت بسته‌ایم.
+   ========================================================================== */
+{
+  const Achievements = (await import('../src/apps/Achievements')).default
+  const Mood = (await import('../src/apps/Mood')).default
+  const Cinema = (await import('../src/apps/Cinema')).default
+  const Terminal = (await import('../src/apps/Terminal')).default
+
+  console.log('\n  ── اپ‌های تازه × سه لایه ──')
+
+  for (const tier of TIERS) {
+    await act(async () => {
+      useOS.setState({ uiQuality: tier })
+    })
+
+    /* ------------------------------------------------------- نشان‌ها */
+    {
+      const m = await mount(h(Achievements), 320)
+      const host = m.host
+      const medals = host.querySelectorAll('.os-medal, .os-medal-locked').length
+      check(`[${tier}] هر دو مدال قرصِ فلزی دارند (عمقِ نقاشی‌شده)`, medals === 2, `medals=${medals}`)
+      check(`[${tier}] هیچ متنی داخلِ ظرفِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      check(`[${tier}] نشان‌ها محتوای واقعی دارند`, host.innerHTML.includes('نشانِ دل'))
+      await unmount(m)
+    }
+
+    /* ------------------------------------------------------- حالِ دل */
+    {
+      const m = await mount(h(Mood), 320)
+      const host = m.host
+      check(`[${tier}] حالِ دل رندر شد`, host.innerHTML.includes('خوشحال'))
+      check(`[${tier}] گریدِ حال‌ها صحنه‌ی سه‌بعدی دارد`, host.querySelectorAll('.os-stage-3d').length >= 1)
+      check(`[${tier}] حالِ دل: متن داخلِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      await unmount(m)
+    }
+
+    /* --------------------------------------------------------- سینما */
+    {
+      // کهکشان باید منتظرِ lazy import و سپس تنزلِ نبودِ WebGL بماند
+      const m = await mount(h(Cinema), tier === 'dream' ? 900 : 320)
+      const host = m.host
+      const hall = host.querySelectorAll('.os-cinema-hall').length
+      // در jsdom هیچ WebGL نیست، پس در **هر سه** لایه باید سالنِ CSS باشد.
+      // در کهکشان این یعنی «تنزلِ باوقار»، در بقیه یعنی «مسیرِ عادی».
+      check(`[${tier}] سالنِ CSS-سه‌بعدی حاضر است (نه canvasِ سیاه)`, hall >= 1, `hall=${hall}`)
+      const visibleCanvas = host.querySelector('canvas:not([style*="display: none"])')
+      check(`[${tier}] سینما بومِ WebGLِ نمایانِ بی‌پشتیبان ندارد`, !visibleCanvas)
+      check(`[${tier}] سینما: لایه‌های عمقِ سالن ساخته شده‌اند`, host.querySelectorAll('.os-cinema-seats').length === 3)
+      check(`[${tier}] سینما: فهرستِ فیلم‌ها رندر شد`, host.innerHTML.includes('فیلمِ ما'))
+      check(`[${tier}] سینما: متن داخلِ تیلت نیست`, host.querySelectorAll('.os-depth p').length === 0)
+      await unmount(m)
+    }
+
+    /* ------------------------------------------------------- ترمینال */
+    {
+      const m = await mount(h(Terminal), 320)
+      const host = m.host
+      const crt = host.querySelector('.os-crt')
+      check(`[${tier}] شیشه‌ی CRT در هر سه لایه هست`, !!crt)
+      // قاعده‌ی سخت: ``.os-crt`` هرگز روی ظرفِ اسکرول نیست، وگرنه بازتابِ
+      // شیشه با هر اسکرول جابه‌جا می‌شود و روی متن می‌لغزد.
+      const crtOnScroller = Array.from(host.querySelectorAll('.os-crt')).some((el) =>
+        /overflow-y-auto|overflow-auto|overflow-y-scroll/.test(el.className),
+      )
+      check(`[${tier}] شیشه‌ی CRT روی ظرفِ اسکرول نیست`, !crtOnScroller)
+      const scroller = host.querySelector('.terminal')
+      check(`[${tier}] ظرفِ اسکرولِ ترمینال خودش CRT نیست`, !!scroller && !scroller.classList.contains('os-crt'))
+      await unmount(m)
+    }
+  }
 }
 
 console.log('')

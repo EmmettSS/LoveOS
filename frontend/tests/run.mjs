@@ -28,6 +28,10 @@ const ALL = {
   'desktop-drag': join(here, 'desktop-drag.tsx'),
   'viewport-fit': join(here, 'viewport-fit.tsx'),
   'depth-tiers': join(here, 'depth-tiers.tsx'),
+  // آزمونِ ایستایِ «بهداشتِ سه‌بعدی»: قاعده‌هایی که jsdom هرگز نمی‌بیندشان
+  // (چانک‌بندیِ build، تله‌های سافاری، Rules-of-Hooks، جفت‌شدنِ
+  // initial/animate در framer). jsdom و React وارد نمی‌کند.
+  'three-hygiene': join(here, 'three-hygiene.ts'),
 }
 
 const only = process.argv.slice(2)
