@@ -22,8 +22,12 @@ import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  // ⚠️ عمداً ``os-tilt-card`` **نگرفت**: هر Row یک برچسب و یک راهنمای
+  //    متنی دارد و قانونِ سختِ پروژه «متن هرگز کج نمی‌شود» است. چیزی که
+  //    می‌گیرد ``os-slab`` است — لبه‌ی توپُرِ فیزیکی، بدونِ هیچ چرخش. این
+  //    «عمقِ نقاشی‌شده» در هر سه لایه (حتی مهتاب) فعال است چون حرکت ندارد.
   return (
-    <div className="os-card flex flex-wrap items-center gap-3 p-3">
+    <div className="os-card os-slab flex flex-wrap items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <span className="block text-sm">{label}</span>
         {hint && <span className="mt-0.5 block text-[11px] leading-5 os-muted">{hint}</span>}
@@ -115,7 +119,11 @@ export default function Settings() {
   const cached = readCachedLocation()
 
   return (
-    <div className="space-y-3">
+    /* هیچ ``motion.*`` در این فایل نیست، پس بچه‌ها transform درون‌خطی
+       نمی‌گیرند و ``.os-depth-list`` بدونِ دعوا کار می‌کند: بخش‌ها یکی‌یکی
+       از عمق بالا می‌آیند. انیمیشن ``backwards`` است، پس بعد از ورود هیچ
+       transformی روی عنصر نمی‌ماند. */
+    <div className="os-depth-list space-y-3">
       <Row label={t('settings.language')} hint={t('settings.languageHint')}>
         {(['fa', 'en'] as const).map((l) => (
           <button
@@ -212,7 +220,7 @@ export default function Settings() {
         </div>
       </Row>
 
-      <div className="os-card space-y-2 p-3" data-quality-panel>
+      <div className="os-card os-slab space-y-2 p-3" data-quality-panel>
         <p className="text-sm">
           <span className="os-muted">{t('settings.qualityNow')}</span>{' '}
           <b style={{ color: 'var(--os-accent)' }}>{t(`settings.tier_${uiQuality}`)}</b>
@@ -372,7 +380,7 @@ export default function Settings() {
         </Row>
       )}
 
-      <div className="os-card p-3 text-[11px] leading-6 os-muted">{t('settings.privacy')}</div>
+      <div className="os-card os-slab p-3 text-[11px] leading-6 os-muted">{t('settings.privacy')}</div>
 
       <button className="os-btn w-full" onClick={() => openApp('about')}>
         <span className="inline-flex items-center justify-center gap-2"><Icon name="about" size={15} /> {t('settings.about')}</span>
@@ -423,7 +431,7 @@ function BackgroundPicker({
   }
 
   return (
-    <div className="os-card flex flex-wrap items-center gap-3 p-3">
+    <div className="os-card os-slab flex flex-wrap items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <span className="block text-sm">{label}</span>
         {current && (

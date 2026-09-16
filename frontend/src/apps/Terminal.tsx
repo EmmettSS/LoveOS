@@ -92,23 +92,36 @@ export default function Terminal() {
   }
 
   return (
-    <div className="relative">
+    // ⚠️ این یک استثنایِ **عمدیِ** بصری است که خودِ بابا انتخاب کرد:
+    //    ترمینال یک کنسولِ رترو است و زبانِ «رزینِ پاستلی / بلورِ شب‌تاب»
+    //    بقیه‌ی اپ‌ها به آن نمی‌آید. پس به‌جایِ پخِ صورتی، شیشه‌ی CRT
+    //    می‌گیرد (اسکن‌لاین + وینیت + بازتابِ موربِ شیشه).
+    //
+    // ⚠️ ``.os-crt`` روی **ظرفِ بیرونی** است نه روی ``.terminal``:
+    //    ``.terminal`` یک ظرفِ اسکرول است و ``.os-crt::after`` (بازتابِ
+    //    شیشه) ``position:absolute`` دارد. اگر روی ظرفِ اسکرول می‌نشست،
+    //    با هر اسکرول جابه‌جا می‌شد و شیشه با متن می‌لغزید.
+    //    هیچ preserve-3d هم در کار نیست، پس تله‌ی R-C فعال نمی‌شود.
+    <div className="os-crt relative">
       <div
         className="terminal max-h-[380px] min-h-[300px] overflow-y-auto rounded-2xl p-3 text-[13px] leading-6 no-scrollbar"
+        // پس‌زمینه‌ی خودِ ``.terminal`` شفاف می‌شود تا شیشه و اسکن‌لاینِ
+        // ``.os-crt`` از پشتش دیده شود.
+        style={{ background: 'transparent' }}
         onClick={() => inputRef.current?.focus()}
       >
         {lines.map((l, i) => (
           /* term-line → unicode-bidi: plaintext؛ قاطی فارسی و انگلیسی
              دیگر نمی‌ریزد: هر خط با زبان خودش درست چیده می‌شود */
-          <pre key={i} className="term-line whitespace-pre-wrap" style={{ color: l.kind === 'in' ? '#ffd98a' : '#b6f4c8' }}>
+          <pre key={i} className="term-line os-crt-glow whitespace-pre-wrap" style={{ color: l.kind === 'in' ? '#ffd98a' : '#b6f4c8' }}>
             {l.kind === 'in' ? `$ ${l.text}` : l.text}
           </pre>
         ))}
         <form onSubmit={run} className="flex items-center gap-2">
-          <span style={{ color: '#ffd98a' }}>{sudoKind ? '#' : '$'}</span>
+          <span className="os-crt-glow" style={{ color: '#ffd98a' }}>{sudoKind ? '#' : '$'}</span>
           <input
             ref={inputRef}
-            className="flex-1 bg-transparent outline-none"
+            className="os-crt-glow flex-1 bg-transparent outline-none"
             style={{ color: '#b6f4c8' }}
             value={value}
             onChange={(e) => setValue(e.target.value)}
