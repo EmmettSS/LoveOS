@@ -246,6 +246,47 @@ class SettingsApiTests(TestCase):
         res = self.client.patch("/api/settings", {"theme": "day"}, content_type="application/json")
         self.assertIn(res.status_code, (401, 403))
 
+    # ------------------------------------------------- کیفیتِ سه‌بعدی UI ---
+    def test_ui_quality_defaults_to_auto(self):
+        """پیش‌فرض باید «خودکار» باشد تا دستگاه خودش لایه را برگزیند."""
+        self.assertEqual(UserConfig.get_solo().ui_quality, "auto")
+        self.assertEqual(self.client.get("/api/me", **self.auth).json()["ui_quality"], "auto")
+
+    def test_ui_quality_round_trip(self):
+        """هر سه لایه‌ی دستی باید ذخیره و برگردانده شوند."""
+        for value in ("lite", "balanced", "dream", "auto"):
+            res = self.client.patch(
+                "/api/settings", {"ui_quality": value}, content_type="application/json", **self.auth
+            )
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(UserConfig.get_solo().ui_quality, value)
+            self.assertEqual(res.json()["config"]["ui_quality"], value)
+
+    def test_invalid_ui_quality_is_ignored_not_saved(self):
+        """
+        مقدارِ نامعتبر باید **بی‌صدا نادیده** گرفته شود، نه این‌که ۴۰۰ بدهد.
+        دلیلش: یک کلاینتِ قدیمی یا یک دستکاریِ دستیِ localStorage نباید بتواند
+        صفحه‌ی تنظیمات را از کار بیندازد — الگوی همان theme/language.
+        """
+        self.client.patch(
+            "/api/settings", {"ui_quality": "dream"}, content_type="application/json", **self.auth
+        )
+        self.client.patch(
+            "/api/settings", {"ui_quality": "ultra-mega"}, content_type="application/json", **self.auth
+        )
+        self.assertEqual(UserConfig.get_solo().ui_quality, "dream")
+
+    def test_ui_quality_is_available_before_unlock(self):
+        """
+        لایه‌ی کیفیت در ``public_config`` است، پس پشتِ صفحه‌ی قفل هم می‌آید.
+        این عمدی است: بوت و قفل هم باید سه‌بعدی رندر شوند و برای آن باید
+        **پیش از ورود** بدانند روی کدام لایه‌اند (وگرنه فلشِ تغییرِ پوسته
+        دیده می‌شود).
+        """
+        res = self.client.get("/api/boot")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("ui_quality", res.json()["config"])
+
 
 class AdminPanelTests(TestCase):
     """
