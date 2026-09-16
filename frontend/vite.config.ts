@@ -53,7 +53,18 @@ export default defineConfig({
          *    داشته شده تا اگر روزی manualChunks برداشته شد، چانک بی‌صدا به
          *    precache برنگردد.
          */
-        globIgnores: ['**/loveos-3d-*.js', '**/StarmapSky-*.js'],
+        // ⚠️ **بی‌تغییر (invariant):** هر صحنه‌ی سه‌بعدیِ تازه‌ای که با
+        //    ``lazy()`` بارگذاری می‌شود باید اسمِ ماژولش این‌جا اضافه شود،
+        //    وگرنه بی‌صدا به precache می‌رود و کاربرِ مهتاب هم دانلودش
+        //    می‌کند. این دقیقاً همان اتفاقی است که برای CinemaHall افتاد و
+        //    با شمارشِ ورودی‌های manifest (۸۳ → ۸۵) کشف شد.
+        //    DreamRoom از الان اینجاست چون صحنه‌ی خونه‌ی رویایی در راه است.
+        globIgnores: [
+          '**/loveos-3d-*.js',
+          '**/StarmapSky-*.js',
+          '**/CinemaHall-*.js',
+          '**/DreamRoom-*.js',
+        ],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
           {
@@ -67,11 +78,12 @@ export default defineConfig({
             // چانکِ three.js (توضیحِ globIgnores بالا). اسمِ فایل content-hash
             // دارد پس محتوایش تغییرناپذیر است و CacheFirst امن‌ترین و
             // ارزان‌ترین انتخاب است؛ کش هم سقف دارد تا تلنبار نشود.
-            urlPattern: /\/assets\/(loveos-3d|StarmapSky)-.*\.js$/,
+            urlPattern: /\/assets\/(loveos-3d|StarmapSky|CinemaHall|DreamRoom)-.*\.js$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'loveos-3d',
-              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              // سقف ۸: چانکِ مشترکِ three + سه پوسته‌ی صحنه + اتاقِ رشد
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 60 },
             },
           },
         ],

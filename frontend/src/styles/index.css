@@ -1374,3 +1374,90 @@ html[data-quality='lite'] .os-vault-dial {
   background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.34) 0 2px, rgba(255, 255, 255, 0.09) 2px 4px);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
 }
+
+/* ==========================================================================
+   سالنِ سینما — نسخه‌ی CSS-سه‌بعدی (لایه‌ی مهتاب و بلور، و fallbackِ کهکشان)
+   --------------------------------------------------------------------------
+   ⚠️ این ظرف هم ``overflow: hidden`` دارد هم ``perspective``. این تنها
+   جایی است که آن ترکیب **امن** است، به همان دلیلی که برای آسمانِ آب‌وهوا
+   امن بود: بچه‌ها فقط ``translateZ`` دارند و **هیچ‌کدام**
+   ``transform-style: preserve-3d`` نمی‌گیرند. تله‌ی R-C سافاری وقتی
+   عمل می‌کند که یک ظرفِ بریده، جدِ یک فضایِ preserve-3d باشد — که اینجا
+   نیست. اگر روزی به این بچه‌ها preserve-3d اضافه کردی، بُرش را به یک
+   ظرفِ بیرونی منتقل کن.
+   ========================================================================== */
+.os-cinema-hall {
+  position: relative;
+  height: 152px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #150e28 0%, #0a0714 58%, #1c1132 100%);
+  perspective: calc(700px * var(--q3d) + 100000px * (1 - var(--q3d)));
+  perspective-origin: 50% 38%;
+  box-shadow: var(--ao-shadow), inset 0 var(--edge-1) 0 rgba(255, 255, 255, 0.10);
+}
+.os-cinema-screen {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 158px;
+  height: 89px;
+  margin-left: -79px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #3b3068 0%, #6d4782 52%, #241a46 100%);
+  box-shadow:
+    0 0 calc(7 * var(--edge-2)) calc(1.5 * var(--edge-2)) rgba(255, 158, 203, 0.26),
+    inset 0 0 calc(6 * var(--edge-2)) rgba(255, 255, 255, 0.18);
+  transform: translateZ(calc(-128px * var(--q3d)));
+}
+/* قابِ سیاهِ پشتِ پرده تا از زمینه جدا شود */
+.os-cinema-frame {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  width: 176px;
+  height: 101px;
+  margin-left: -88px;
+  border-radius: 8px;
+  background: #07050e;
+  transform: translateZ(calc(-134px * var(--q3d)));
+}
+/* مخروطِ نورِ پروژکتور. ``clip-path: polygon()`` بدونِ پیشوند از سافاری
+   ۱۳٫۱ به بعد کار می‌کند، پس روی گوشیِ هدفِ ما (iOS 15) امن است. */
+.os-cinema-beam {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  width: 190px;
+  height: 116px;
+  margin-left: -95px;
+  clip-path: polygon(43% 0%, 57% 0%, 100% 100%, 0% 100%);
+  background: linear-gradient(180deg, rgba(255, 240, 208, 0.03) 0%, rgba(255, 240, 208, 0.15) 100%);
+  transform: translateZ(calc(-60px * var(--q3d)));
+  opacity: calc(0.55 + 0.45 * var(--q3d));
+}
+/* ردیف‌های صندلی: سه لایه در سه عمقِ متفاوت تا سالن واقعاً «جلو و عقب»
+   داشته باشد. ``repeating-linear-gradient`` عمداً به‌جایِ N عنصرِ DOM است —
+   ۲۱ صندلی با سه نوار، یعنی سه عنصر به‌جایِ بیست‌ویک. */
+.os-cinema-seats {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  height: 15px;
+  border-radius: 7px 7px 0 0;
+  background: repeating-linear-gradient(90deg, #8e2450 0 24px, rgba(0, 0, 0, 0) 24px 34px);
+  box-shadow: inset 0 var(--edge-1) 0 rgba(255, 255, 255, 0.20);
+}
+.os-cinema-seats-far  { bottom: 38px; opacity: 0.50; transform: translateZ(calc(-52px * var(--q3d))); }
+.os-cinema-seats-mid  { bottom: 20px; opacity: 0.74; transform: translateZ(calc(-24px * var(--q3d))); }
+.os-cinema-seats-near { bottom: 3px;  opacity: 1;    transform: translateZ(calc(18px * var(--q3d))); }
+/* غبارِ معلق در نور — دو ذره‌ی نرم، نه یک میدانِ ذره (ارزان‌تر از
+   AmbientDepth و در این ارتفاعِ کم خواناتر) */
+.os-cinema-dust {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 244, 220, 0.5);
+  filter: blur(1px);
+  opacity: calc(0.7 * var(--q3d));
+  animation: loveos-drift 11s ease-in-out infinite;
+}
