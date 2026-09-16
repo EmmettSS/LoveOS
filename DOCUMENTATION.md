@@ -22,6 +22,7 @@
 10. [Deployment](#10-deployment)
 11. [Maintenance, tests & troubleshooting](#11-maintenance-tests--troubleshooting)
 12. [What changed in 2.0](#12-what-changed-in-20)
+13. [The 3D quality tier](#13-the-3d-quality-tier)
 
 ---
 
@@ -251,7 +252,7 @@ terminals are needed. A step-by-step walkthrough is in [`QUICKSTART_FA.md`](./QU
 .venv/bin/python manage.py makemigrations     # create new migrations
 .venv/bin/python manage.py migrate            # apply them
 .venv/bin/python manage.py check              # project health check
-.venv/bin/python manage.py test               # 72 backend tests
+.venv/bin/python manage.py test               # 97 backend tests
 .venv/bin/python manage.py sweep              # scheduled work (cron)
 .venv/bin/python manage.py createsuperuser    # first-time panel user
 ```
@@ -663,10 +664,10 @@ pending notifications, **fires approved-call reminders** and flushes the Soroush
 ### Tests
 
 ```bash
-# backend: 72 tests (models, APIs, search, location, panel)
+# backend: 97 tests (models, APIs, search, location, panel, constellations, UI quality)
 cd backend && .venv/bin/python manage.py test
 
-# frontend: type-check, lint, build and 47 UI checks
+# frontend: type-check, lint, build and 8 UI suites (214 checks)
 cd frontend && npx tsc -b && npx oxlint src && npm run build && npm run test:ui
 ```
 
@@ -776,11 +777,154 @@ from core.services import clear_app_cache; print(clear_app_cache())"
 * **16 new badges and 6 new tutorial chapters** for the new apps.
 * **Call reminders** in `sweep`, with a configurable window (5–180 minutes).
 * **In-app microphone recording** for call voice notes and word pronunciation — no manual uploads.
-* **72 backend tests** plus 47 frontend checks (`npm run test:ui`) covering the window manager,
-  settings (language/theme), global search and the rendering of every new app against real backend
-  responses.
+* **97 backend tests** plus 8 frontend suites (`npm run test:ui`, 214 checks) covering the window
+  manager, settings (language/theme), global search, the rendering of every new app against real
+  backend responses, and the 3D depth tiers.
 
 ---
+
+---
+
+## 13. The 3D quality tier
+
+The 3D skin has four tiers. The governing principle: **quality must never be
+paid for with "it stopped working."** When a device cannot afford it, the
+system steps down by one tier itself and the app stays on its feet.
+
+### Tiers
+
+| Stored value | Persian label | What is enabled |
+|---|---|---|
+| `auto` | خودکار (auto) | Device probe + real frame measurement, then automatic choice |
+| `lite` | مهتاب (moonlight) | "Painted" depth: shadow, bevel, surface gradient — no 3D `transform` |
+| `balanced` | بلور (crystal) | CSS rotation, pointer tilt (desktop) and gyro tilt (Android), layered extrusion |
+| `dream` | کهکشان (galaxy) | Everything in balanced, plus real WebGL: a `three.js` starfield and a MapLibre globe |
+
+The Persian labels are poetic on purpose — a child reads this setting. The
+**stored** value stays `lite|balanced|dream`, so engine logic and the backend
+never couple to display language.
+
+### Where things live
+
+| File | Role |
+|---|---|
+| `frontend/src/shared/quality.ts` | Device probe, scoring, FPS watchdog, `attachPointerTilt` / `attachGyroTilt`, `canUseGlobe` |
+| `frontend/src/shared/depth.tsx` | Shared toolkit: `useQualityTier`, `useMotionAllowed`, `Tilt`, `Extrude`, `Specular`, `AmbientDepth` |
+| `frontend/src/styles/index.css` | CSS tokens: `--q3d`, `--rim-light`, `--ao-shadow`, `--well-face`, `--btn-edge`, `--light-x/y` |
+| `frontend/src/three/useThreeScene.ts` | The only place in the project that creates a `WebGLRenderer` + live-scene cap + full disposal |
+| `backend/content/models.py` | `Constellation.kind` (letter or shape) |
+| `backend/accounts/models.py` | `UserConfig.ui_quality` |
+
+### Why most of the work is in CSS, not JS
+
+`--q3d` is `0` in lite and `1` in balanced/dream. 3D values **multiply** it:
+
+```css
+.os-stage-3d { perspective: calc(1200px * var(--q3d) + 100000px * (1 - var(--q3d))); }
+.os-depth    { transform: rotateY(calc(var(--tilt-x, 0deg) * var(--q3d))); }
+.os-sky-depth-far { transform: translateZ(calc(-90px * var(--q3d))); }
+```
+
+In lite the perspective becomes effectively infinite and the rotation zero —
+**with no `if` branch in JavaScript** and no React re-render on theme change.
+That keeps the bundle small and removes the whole class of "we forgot to gate
+that app" bugs.
+
+### Hard rules that must not be broken
+
+1. **Text never tilts.** `Tilt` wraps visuals (the heart, a plant, a memory
+   photo, a gift box), never a text container or a scroll region.
+2. **`Tilt`/`Extrude` go inside a scroll region, never on the scroller.**
+   Safari flattens `preserve-3d` when `overflow` is anything but `visible`,
+   and the whole effect dies silently.
+3. **Never two sources of `transform` on one element.** CSS animations win the
+   cascade over inline `style`, so a framer animation or a tilt variable
+   silently swallows the other. Each needs its own element.
+4. **No `color-mix()`.** It needs Safari 16.2+ and our target phone runs
+   iOS 15. Use `linear-gradient` and `rgba` instead.
+5. **Do not turn `Extrude` back into cloning `children`.** If children carry a
+   `<defs>` with an `id`, N copies mean N duplicate ids → invalid HTML, and
+   every layer picks up the first gradient. `Extrude` takes a `path` instead
+   and renders `defs` once, on the front face. The `depth-tiers` suite locks
+   `id="hb"` to exactly one occurrence.
+6. **Every `three.js` scene must be released.** `useThreeScene` enforces a
+   project-wide cap of 2 live scenes (iOS Safari is strict and silently kills
+   the oldest `context`), and on cleanup disposes geometry/material/texture
+   individually and calls `forceContextLoss`.
+
+### The FPS watchdog
+
+In the galaxy tier a watchdog measures frames in 2.2-second windows. Two
+consecutive readings below the threshold step the tier down, persist it in
+`localStorage` (`loveos_quality_downgrade_v1`) so the next session does not
+repeat the jank, and show one gentle, one-shot notice. It never downgrades
+silently: a child would think the app is broken.
+
+The watchdog pauses while the page is hidden — otherwise a background tab
+would report low frames and quality would drop for no reason.
+
+### Three real traps that have guards in the code
+
+* **Measuring frames during boot** reads a falsely low number. The engine
+  decides first on the static score, then defers the FPS pass to a browser idle
+  moment (`requestIdleCallback`).
+* **Gyro on iOS** needs a permission gesture; that is not justifiable for a
+  decorative effect, so `attachGyroTilt` returns `null` there.
+* **`pointermove` also fires during touch scroll.** Listening to it would tilt
+  cards while scrolling (a seasick UI), so pointer tilt accepts
+  `pointerType === 'mouse'` only.
+
+### The map globe
+
+`canUseGlobe(tier, report)` is a **pure** function in `shared/quality.ts` so it
+can be tested without booting maplibre. Three conditions: `dream` only, never
+on a **Mali**-family GPU (a known maplibre latitude-precision bug in globe
+projection, issue #7419 — Tehran and Istanbul sit near the affected band), and
+only real, non-software WebGL. The guard disables **the globe only**, not the
+whole quality tier. `setProjection` is inside `try/catch` too, so a driver that
+throws leaves the map working in flat mode rather than blank.
+
+### Bundle and PWA
+
+`three.js` (135KB gzip) sits behind `lazy()` in its own chunk and is excluded
+from `precache` (`globIgnores` in `vite.config.ts`), served instead by a
+`CacheFirst` runtime rule. So a lite-tier user never downloads it, yet the
+first time someone really opens the 3D sky it caches and then works offline.
+
+⚠️ If `frontend/src/three/StarmapSky.tsx` is ever renamed, the `globIgnores`
+pattern and the `urlPattern` in `vite.config.ts` must change with it, or the
+chunk silently re-enters the precache.
+
+### Adding 3D to a new app
+
+```tsx
+import { Tilt, Extrude, useMotionAllowed, useQualityTier } from '../shared/depth'
+
+const tier = useQualityTier()          // ⚠️ hooks go above any early return
+const allowed = useMotionAllowed()     // ⚠️ call both unconditionally; `a() && b()`
+const deep = tier !== 'lite' && allowed //    breaks the Rules of Hooks
+
+// Wrap the visual element (never the text):
+{deep ? <Tilt maxDeg={9}>{art}</Tilt> : art}
+```
+
+For a solid body use `Extrude` (a `path`, not `children`); for background
+motion use `AmbientDepth`, which emits zero particles in lite and half as many
+in balanced.
+
+### Tests
+
+`frontend/tests/depth-tiers.tsx` forces each tier with
+`useOS.setState({ uiQuality })` (the engine vetoes to lite in the test
+environment, so this is the only way to reach the deep branches) and asserts:
+`id="hb"` uniqueness, text staying out of tilt containers, extrusion layer
+counts per tier, graceful degradation with no WebGL, `kind` inference from
+`letter` when the API omits it, ≥44px touch targets, and seven `canUseGlobe`
+cases.
+
+⚠️ This suite calls `process.exit` explicitly: the heartbeat `setTimeout`
+chain and framer's endless animations keep Node's event loop alive, so without
+it the test passes but the process hangs until the timeout.
 
 <div align="center">
 
