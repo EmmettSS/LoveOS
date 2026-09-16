@@ -16,8 +16,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
-import { useQualityTier } from '../shared/depth'
-import { canUseGlobe } from '../shared/quality'
 import { digits, formatDate, formatTime } from '../shared/format'
 import { enableLiveLocation, getCurrentPosition, lookupCity, pushLocation } from '../shared/geo'
 import { playClick } from '../shared/sound'
@@ -89,10 +87,7 @@ export default function MapOfUs() {
   const { t } = useTranslation()
   const showEgg = useOS((s) => s.showEgg)
   const patchConfig = useOS((s) => s.patchConfig)
-  const tier = useQualityTier()
   const [data, setData] = useState<MapData | null>(null)
-  /** آیا کره فعال شد؟ فقط برای نمایشِ راهنما؛ خودِ نقشه منبعِ حقیقت است */
-  const [globeOn, setGlobeOn] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const container = useRef<HTMLDivElement | null>(null)
@@ -121,15 +116,6 @@ export default function MapOfUs() {
     // آدرس صریح ورکر: با اسم‌هش‌خورده‌ی بیلد هم درست حل می‌شود (به‌همراه
     // optimizeDeps.exclude در vite.config این خطای ورکر را می‌بندد)
     maplibregl.config.WORKER_URL = maplibreWorkerUrl
-    /**
-     * آیا کره را روشن کنیم؟ تصمیمش در ``canUseGlobe`` است (ماژولِ مشترکِ
-     * quality) تا بدونِ بالا‌آوردنِ maplibre قابلِ آزمون باشد. خلاصه‌ی
-     * دلیل‌ها: فقط لایه‌ی کهکشان، هرگز روی GPU خانواده‌ی Mali (باگِ دقتِ
-     * عرضِ جغرافیاییِ maplibre issue #7419 که تهران و استانبول نزدیکِ
-     * نوارش‌اند)، و فقط با WebGL واقعیِ غیرِنرم‌افزاری.
-     */
-    const wantGlobe = canUseGlobe(tier)
-
     const m = new maplibregl.Map({
       container: container.current,
       style: {
@@ -142,42 +128,10 @@ export default function MapOfUs() {
             attribution: '© OpenStreetMap',
           },
         },
-        layers: [
-          /**
-           * لایه‌ی پس‌زمینه‌ی اقیانوس.
-           *
-           * چرا ضروری است: راهنمای کره‌ی maplibre صریحاً می‌گوید کاشی‌های
-           * raster زیرِ projection کره‌ای مستعدِ **درز** هستند. بدونِ یک
-           * پس‌زمینه، آن درزها به‌صورتِ شکافِ سیاهِ بینِ کاشی‌ها دیده
-           * می‌شوند. با یک رنگِ اقیانوسِ یکدست، درزها «آب» خوانده می‌شوند
-           * نه «سوراخ». ارزان‌ترین راهِ پنهان‌کردنِ محدودیتِ raster-زیر-کره.
-           */
-          { id: 'ocean', type: 'background', paint: { 'background-color': '#0d2450' } },
-          { id: 'osm', type: 'raster', source: 'osm' },
-        ],
-        /**
-         * آسمان و جو. فقط وقتی کره فعال است معنا دارد، ولی بی‌ضرر است که
-         * همیشه در استایل باشد (در نمایِ مسطح محو می‌شود).
-         */
-        sky: {
-          'sky-color': '#1a2f6b',
-          'horizon-color': '#8fb2e8',
-          'sky-horizon-blend': 0.6,
-          'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 10, 0],
-        } as any,
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
       },
       center: [(IRAN_BOUNDS[0][0] + IRAN_BOUNDS[1][0]) / 2, (IRAN_BOUNDS[0][1] + IRAN_BOUNDS[1][1]) / 2],
       zoom: 4.1,
-      /**
-       * ⚠️ سقفِ زوم دستی.
-       *
-       * در نمایِ کره، ``maxBounds`` رعایت نمی‌شود (maplibre issue #6483 در
-       * v5.8 و هنوز پابرجا). پس به‌جایِ تکیه به مرزها، خودِ زوم را می‌بندیم
-       * تا کاربر نتواند آن‌قدر زوم کند که کاشی‌های خالیِ بیرونِ محدوده
-       * ببیند. ۱۸ هم برای «دیدنِ کوچه» کافی است هم از کاشی‌های خالیِ OSM
-       * در زومِ ۱۹ جلو می‌گیرد.
-       */
-      maxZoom: 18,
       attributionControl: { compact: true },
     })
     map.current = m
@@ -202,36 +156,6 @@ export default function MapOfUs() {
       setTimeout(() => {
         try { m.resize() } catch {}
       }, 500)
-
-      /* -------------------------------------------------- کره‌ی زمین --- */
-      /**
-       * فعال‌سازیِ کره، داخلِ ``try/catch`` و **بعد** از رویدادِ load.
-       *
-       * چرا try/catch حتی با وجودِ گاردهای بالا: ``setProjection`` می‌تواند
-       * روی driver های خاص بیندازد (نه فقط وقتی WebGL نیست). اگر می‌گذاشتیم
-       * استثنا بالا بزند، **کلِ نقشه** سفید می‌شد؛ حالا فقط کره خاموش
-       * می‌ماند و نقشه‌ی مسطحِ کاملاً سالم نشان داده می‌شود. تنزلِ باوقار
-       * به‌جایِ صفحه‌ی سفید.
-       *
-       * چرا بعد از load: پیش از آن، استایل هنوز آماده نیست و فراخوانیِ
-       * projection می‌تواند با مقدار‌دهیِ اولیه تداخل کند.
-       */
-      if (wantGlobe) {
-        try {
-          m.setProjection({ type: 'globe' })
-          /**
-           * ``GlobeControl`` خودِ maplibre است، نه دکمه‌ی دست‌سازِ ما: یک
-           * دکمه‌ی آزمون‌پس‌داده برای جابه‌جاییِ کره↔مسطح، با همان CSS که
-           * از قبل import شده. ساختنِ کنترلِ دستی هم بایتِ اضافه بود هم
-           * یک رفتارِ کمتر‌آزموده‌شده.
-           */
-          m.addControl(new maplibregl.GlobeControl(), 'top-left')
-          setGlobeOn(true)
-        } catch {
-          // کره نشد؛ نقشه‌ی مسطح می‌ماند و کاربر هیچ‌وقت متوجه نمی‌شود
-          setGlobeOn(false)
-        }
-      }
 
       m.addSource('route', {
         type: 'geojson',
@@ -276,11 +200,7 @@ export default function MapOfUs() {
       map.current = null
       markers.current = []
     }
-    // ``tier`` هم اینجاست: اگر لایه‌ی کیفیت وسطِ نشست عوض شود، کره باید
-    // روشن یا خاموش شود. پاک‌سازی نقشه را remove می‌کند و ساختِ دوباره با
-    // لایه‌ی تازه انجام می‌شود — همان الگویی که از قبل برای `t` (تغییرِ
-    // زبان) وجود داشت.
-  }, [data, showEgg, t, tier])
+  }, [data, showEgg, t])
 
   /** وقتی موقعیت تازه ثبت شد، نقطه‌ی دخترم بی‌درنگ جابجا می‌شود */
   useEffect(() => {
@@ -357,15 +277,6 @@ export default function MapOfUs() {
       <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
         <div ref={container} className="h-[360px] w-full" />
       </div>
-
-      {/* راهنمای کره — عمداً **بیرونِ** ظرفِ overflow-hidden و بیرونِ هر
-          ظرفِ سه‌بعدیِ CSS است: این یک متن است و قانونِ پروژه می‌گوید متن
-          هرگز کج نشود. عمقِ این اپ کاملاً کارِ خودِ WebGL است. */}
-      {globeOn && (
-        <p className="text-center text-[11px] leading-5 os-muted" data-globe-hint>
-          🌍 {t('map.globeHint')}
-        </p>
-      )}
 
       <div className="grid grid-cols-2 gap-3">
         {[data.daddy, data.daughter].map((side, i) => (

@@ -86,46 +86,10 @@ async function main() {
   await act(async () => { await new Promise((r) => setTimeout(r, 200)) })
 
   const tick = async (ms = 320) => { await act(async () => { await new Promise((r) => setTimeout(r, ms)) }) }
-/**
- * ⚠️ **چرا این helper و نه ``new MouseEvent(...)`` ساده؟**
- *
- * jsdom سازنده‌ی ``PointerEvent`` ندارد، پس ناچاریم ``MouseEvent`` بفرستیم —
- * ولی ``MouseEvent`` اصلاً ``pointerType`` ندارد و شرطِ دسکتاپ این است:
- *
- *     const touch = e.pointerType !== 'mouse'   // undefined !== 'mouse' → true!
- *
- * یعنی یک کلیکِ ساده‌ی موس در آزمون **لمس** خوانده می‌شد. لمس در دسکتاپ یک
- * تایمرِ ``ARM_DELAY_MS = 320`` میلی‌ثانیه‌ای مسلح می‌کند که درگ را «آماده»
- * می‌کند و ordinarily در ``pointerup`` با ``clearTimeout`` پاک می‌شود.
- * فاصله‌ی بینِ دو ``act()`` معمولاً چند میکروثانیه است، ولی زیرِ بارِ سنگینِ
- * CPU (tsc + oxlint + دو اجرایِ پشتِ‌سرِهمِ کلِ سوئیت‌ها روی دستگاهی که
- * هم‌زمان دو سرورِ dev هم داشت) از ۳۲۰ میلی‌ثانیه بیشتر شد: تایمر شلیک شد،
- * ``suppressClickRef`` ست شد و کلیکِ بعدی **قورت داده شد**. نتیجه: پنجره‌ی
- * دوم باز نشد و بررسیِ «دو پنجره باز است» گاهی شکست — یک شکستِ گهگاهی که
- * در شش اجرایِ بعدیِ متوالی تکرار نشد.
- *
- * ست کردنِ ``pointerType: 'mouse'`` این رقابتِ زمانی را از ریشه حذف می‌کند،
- * چون مسیرِ موس هیچ تایمری مسلح نمی‌کند — و هم‌زمان نیتِ واقعیِ fixture را
- * بیان می‌کند: این‌جا با موس کلیک می‌کنیم، نه با انگشت.
- *
- * آزمونِ ``desktop-drag.tsx`` عمداً helperِ جدا با ``pointerType = 'touch'``
- * دارد، چون موضوعِ آن آزمون خودِ درگِ لمسی است.
- */
-const mouseEvent = (type: string) => {
-  // ⚠️ ``button`` عمداً ست **نمی‌شود**: روی ``MouseEvent`` فقط getter دارد و
-  // ``Object.assign`` با TypeError می‌ترکد (خودش به‌طورِ پیش‌فرض ۰ است).
-  // ``desktop-drag.tsx`` می‌تواند ``button`` بدهد چون آن‌جا رویداد را از
-  // ``Event``ِ خام می‌سازد نه ``MouseEvent``. ``pointerType`` چنین getterی
-  // ندارد، پس افزودنش بی‌خطر است.
-  const e = new w.MouseEvent(type, { bubbles: true, cancelable: true })
-  Object.assign(e, { pointerType: 'mouse', pointerId: 1, isPrimary: true })
-  return e
-}
-
   const click = async (el: any) => {
-    await act(async () => { el.dispatchEvent(mouseEvent('pointerdown')) })
-    await act(async () => { el.dispatchEvent(mouseEvent('mouseup')) })
-    await act(async () => { el.dispatchEvent(mouseEvent('click')) })
+    await act(async () => { el.dispatchEvent(new w.MouseEvent('pointerdown', { bubbles: true, cancelable: true })) })
+    await act(async () => { el.dispatchEvent(new w.MouseEvent('mouseup', { bubbles: true, cancelable: true })) })
+    await act(async () => { el.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true })) })
     await tick(260)
   }
   const box = () => container.querySelector('div.pointer-events-auto') as any
@@ -144,10 +108,10 @@ const mouseEvent = (type: string) => {
   check('پنجره باز شد', useOS.getState().windows.length === 1, geo())
   const before = geo()
   const closeBtn = container.querySelector('button[aria-label="بستن"]') as any
-  await act(async () => { closeBtn.dispatchEvent(mouseEvent('pointerdown')) })
+  await act(async () => { closeBtn.dispatchEvent(new w.MouseEvent('pointerdown', { bubbles: true, cancelable: true })) })
   await tick(80)
   check('هندسه‌ی پنجره با فشردن دکمه عوض نمی‌شود', geo() === before, `${before} → ${geo()}`)
-  await act(async () => { closeBtn.dispatchEvent(mouseEvent('click')) })
+  await act(async () => { closeBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true })) })
   await tick(700)
   check('با یک کلیک بسته شد', useOS.getState().windows.length === 0)
   check('پنجره‌ی روحی در DOM نمانده', wrappers().length === 0, `wrappers=${wrappers().length}`)

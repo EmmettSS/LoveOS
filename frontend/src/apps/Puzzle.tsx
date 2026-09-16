@@ -17,7 +17,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { del, post, upload } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits, formatDuration } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick, playSuccess } from '../shared/sound'
@@ -199,12 +198,6 @@ function CreatePuzzle({ onCreated }: { onCreated: () => Promise<void> }) {
 /* ------------------------------------------------------------- اپ ---- */
 export default function Puzzle() {
   const { t } = useTranslation()
-  // ⚠️ این هوک‌ها بالایِ **دو** ``return`` زودهنگامِ پایین‌اند
-  //    (``loading || error`` و ``!active``). زیرشان یعنی نقضِ Rules-of-Hooks.
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const deep = allowed && tier !== 'lite'
-  const dz = deep ? 1 : 0
   const { data, loading, error, reload } = useApi<{ items: P[] }>('/puzzles')
   const [active, setActive] = useState<P | null>(null)
   const [tiles, setTiles] = useState<number[]>([])
@@ -389,15 +382,9 @@ export default function Puzzle() {
     return (
       <div className="space-y-3">
         <p className="text-center text-sm os-muted">{t('puzzle.choose')}</p>
-        /* بچه‌های این گرید ``transform`` درون‌خطی ندارند، پس
-           ``.os-depth-list`` امن است. روی خودِ کارت‌ها هم ``.os-tilt-card``
-           آمده — این ترکیب **به‌خاطرِ** ``animation-fill-mode: backwards``
-           جواب می‌دهد: انیمیشنِ ورود تمام می‌شود و بعد تیلت کنترل را
-           به‌دست می‌گیرد. با ``both`` مقدارِ کلیدِ پایانی برای همیشه
-           می‌ماند و تیلت بی‌صدا خورده می‌شد. */
-        <div className="os-depth-list os-stage-3d grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {items.map((p) => (
-            <div key={p.id} className="os-card os-tilt-card overflow-hidden">
+            <div key={p.id} className="os-card overflow-hidden">
               <button onClick={() => void start(p)} className="block w-full text-start">
                 {p.image ? <img src={p.image} alt={p.title} className="h-28 w-full object-cover" /> : <div className="h-28 w-full" style={{ background: 'var(--os-accent-soft)' }} />}
                 <div className="p-3">
@@ -444,7 +431,7 @@ export default function Puzzle() {
       </div>
 
       <div
-        className="os-slab relative mx-auto grid overflow-hidden rounded-3xl"
+        className="relative mx-auto grid overflow-hidden rounded-3xl"
         style={{
           width: 'min(100%, 340px)',
           aspectRatio: '1',
@@ -486,27 +473,8 @@ export default function Puzzle() {
                 backgroundPosition: `${posX}% ${posY}%`,
                 outline,
                 outlineOffset: -2,
-                // ``transformPerspective`` روی خودِ قطعه است نه روی صفحه‌ی
-                // بازی: صفحه ``overflow-hidden`` دارد و اگر ``perspective``
-                // رویش می‌گذاشتیم، در سافاری عمقِ بچه‌ها تخت می‌شد
-                // (تله‌ی R-C). با تابعِ پرسپکتیو روی خودِ عنصر، هیچ جدی
-                // درگیر نیست.
-                transformPerspective: 900,
-                // قطعه‌ی فیزیکی: لبه‌ی پایینیِ تیره = ضخامتِ خودِ قطعه
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.22), 0 2px 0 rgba(0,0,0,.34), 0 calc(2 * var(--edge-2)) calc(4 * var(--edge-2)) calc(-2 * var(--edge-2)) rgba(0,0,0,.5)',
               }}
-              // ⚠️ ``z`` در **هر دو** شاخه آمده. اگر فقط در شاخه‌ی معمولی
-              //    بود، لحظه‌ی «بررسیِ حل» که ``animate`` به
-              //    ``{ x: [...] }`` عوض می‌شود مقدارِ z بلاتکلیف می‌ماند و
-              //    قطعه‌ی انتخاب‌شده بی‌دلیل به صفحه برمی‌گشت.
-              //    بلندشدنِ قطعه‌ی انتخاب‌شده فقط یک افکت نیست: پیش از این
-              //    «انتخاب» فقط با یک outline نشان داده می‌شد که روی
-              //    عکسِ شلوغ دیده نمی‌شد.
-              animate={
-                isWrong
-                  ? { x: [0, -3, 3, -2, 2, 0], z: (selected === i ? 17 : 4) * dz }
-                  : { x: 0, z: (selected === i ? 17 : 4) * dz }
-              }
+              animate={isWrong ? { x: [0, -3, 3, -2, 2, 0] } : { x: 0 }}
               transition={{ duration: 0.4 }}
               whileTap={{ scale: 0.92 }}
               aria-label={`${i + 1}`}

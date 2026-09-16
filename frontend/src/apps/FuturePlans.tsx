@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { del, patch, post } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { playSuccess, tone } from '../shared/sound'
 import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
@@ -62,9 +61,6 @@ function SparkleBurst({ seed }: { seed: number }) {
 
 export default function FuturePlans() {
   const { t } = useTranslation()
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const dz = allowed && tier !== 'lite' ? 1 : 0
   const { data, loading, error, reload } = useApi<{ items: Plan[] }>('/plans')
   const [title, setTitle] = useState('')
   const [cat, setCat] = useState<(typeof CATS)[number]>('wish')
@@ -128,14 +124,11 @@ export default function FuturePlans() {
           {shown.map((p, i) => (
             <motion.div
               key={p.id}
-              initial={{ opacity: 0, x: 10, z: -34 * dz }}
-              animate={{ opacity: 1, x: 0, z: 0 }}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="os-card os-tilt-card relative flex items-center gap-3 p-3"
-              style={{
-                transformPerspective: 1000,
-                borderColor: p.is_done ? 'var(--os-accent)' : undefined,
-              }}
+              className="os-card relative flex items-center gap-3 p-3"
+              style={p.is_done ? { borderColor: 'var(--os-accent)' } : undefined}
             >
               {/* اکلیل رنگی هنگام تیک خوردن */}
               <AnimatePresence>
@@ -149,13 +142,7 @@ export default function FuturePlans() {
                   background: p.is_done ? 'linear-gradient(135deg,#ff8cc0,#f767a8)' : 'transparent',
                   border: `1.5px solid ${p.is_done ? 'transparent' : 'var(--os-border)'}`,
                   color: '#fff',
-                  // دکمه‌ی تیک یک «کلیدِ فیزیکی» است: وقتی خاموش است گود
-                  // دیده می‌شود (well-inner) و وقتی روشن است برجسته با
-                  // هاله‌ی صورتی. پیش‌تر خاموش هیچ سایه‌ای نداشت و از کارت
-                  // جدا خوانده نمی‌شد.
-                  boxShadow: p.is_done
-                    ? 'inset 0 var(--edge-1) 0 rgba(255,255,255,.45), 0 var(--edge-2) 0 rgba(180,60,120,.55), 0 4px 14px -4px rgba(247,103,168,.8)'
-                    : 'var(--well-inner)',
+                  boxShadow: p.is_done ? '0 4px 14px -4px rgba(247,103,168,.8)' : 'none',
                 }}
                 aria-label={t('os.done')}
               >

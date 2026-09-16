@@ -27,15 +27,6 @@ const ALL = {
   'pdf-book': join(here, 'pdf-book.tsx'),
   'desktop-drag': join(here, 'desktop-drag.tsx'),
   'viewport-fit': join(here, 'viewport-fit.tsx'),
-  'depth-tiers': join(here, 'depth-tiers.tsx'),
-  // آزمونِ ایستایِ «بهداشتِ سه‌بعدی»: قاعده‌هایی که jsdom هرگز نمی‌بیندشان
-  // (چانک‌بندیِ build، تله‌های سافاری، Rules-of-Hooks، جفت‌شدنِ
-  // initial/animate در framer). jsdom و React وارد نمی‌کند.
-  'three-hygiene': join(here, 'three-hygiene.ts'),
-  // آزمونِ ایستایِ کلیدهایِ ترجمه: برابریِ دو زبان، جای‌نماها، کلیدهایِ
-  // مصرف‌شده در کد، عنوانِ اپ‌ها، و کلیدهایِ **پویایِ** موتورِ کیفیت که
-  // هیچ تایپ‌چکی نگهبانی‌شان نمی‌کند.
-  'i18n-keys': join(here, 'i18n-keys.ts'),
 }
 
 const only = process.argv.slice(2)

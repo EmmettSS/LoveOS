@@ -13,7 +13,6 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { post, upload } from '../shared/api'
 import { digits } from '../shared/format'
 import { formatClock, micSupported, useRecorder } from '../shared/recorder'
@@ -490,10 +489,6 @@ function FlashTab({
   onChanged: () => void
 }) {
   const { t } = useTranslation()
-  // ⚠️ بالایِ ``if (deck.error) return`` و ``if (deck.loading) return``
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const dz = allowed && tier !== 'lite' ? 1 : 0
   const [target, setTarget] = useState('tr')
   const [category, setCategory] = useState('all')
   const [index, setIndex] = useState(0)
@@ -597,20 +592,11 @@ function FlashTab({
 
           <motion.button
             key={`${card.id}-${flipped}`}
-            // ⚠️ یک اصلاحِ واقعی، نه فقط افکت: پیش‌تر ``rotateY: 90`` بدونِ
-            //    هیچ پرسپکتیوی اجرا می‌شد. بدونِ پرسپکتیو، rotateY صرفاً
-            //    عرض را در ``cos(90°) = 0`` ضرب می‌کند — یعنی کارت به یک
-            //    نوارِ بی‌ضخامتِ عمودی «له» می‌شد نه اینکه مثلِ یک کارتِ
-            //    واقعی برگردد. حالا ``transformPerspective`` روی خودِ عنصر
-            //    است (نه روی جد، چون جد یک ظرفِ اسکرول است و تله‌ی R-C
-            //    سافاری را فعال می‌کرد) و چرخش واقعاً سه‌بعدی دیده می‌شود.
-            //    در لایه‌ی مهتاب ``dz`` صفر است، پس فقط یک محوِ ساده می‌ماند.
-            initial={{ rotateY: (flipped ? -90 : 90) * dz, opacity: 0 }}
+            initial={{ rotateY: flipped ? -90 : 90, opacity: 0 }}
             animate={{ rotateY: 0, opacity: 1 }}
             transition={{ duration: 0.25 }}
             onClick={() => setFlipped((v) => !v)}
-            className="os-card os-slab flex min-h-[190px] w-full flex-col items-center justify-center gap-2 p-5 text-center"
-            style={{ transformPerspective: 1200 }}
+            className="os-card flex min-h-[190px] w-full flex-col items-center justify-center gap-2 p-5 text-center"
           >
             <span className="os-chip">
               {card.category_icon} {card.category || card.language_label}

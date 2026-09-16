@@ -47,7 +47,6 @@ def public_config(cfg: UserConfig) -> dict:
         "theme": cfg.theme,
         "sound_enabled": cfg.sound_enabled,
         "font_scale": cfg.font_scale,
-        "ui_quality": cfg.ui_quality,
         "logo": _media(cfg.boot_logo),
         "boot_background": _media(cfg.boot_background),
         "lock_background": _media(cfg.lock_background),
@@ -201,11 +200,8 @@ def update_settings(request):
     validators = {
         "language": ("fa", "en"),
         "theme": ("auto", "day", "night"),
-        # لایه‌ی کیفیتِ سه‌بعدی: مقدارِ نامعتبر باید بی‌صدا نادیده گرفته شود
-        # (نه ۴۰۰)، تا یک کلاینتِ قدیمی نتواند صفحه‌ی تنظیمات را بشکند.
-        "ui_quality": ("auto", "lite", "balanced", "dream"),
     }
-    for field in ("language", "theme", "ui_quality"):
+    for field in ("language", "theme"):
         if field in data and str(data[field]) in validators[field]:
             setattr(cfg, field, str(data[field]))
     if "sound_enabled" in data:

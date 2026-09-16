@@ -4,12 +4,11 @@
  * و **پوستر** (دخترم می‌تواند برای هر فیلم پوستر بفرستد).
  */
 import { motion } from 'framer-motion'
-import { lazy, Suspense, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { del, patch, post, upload } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits } from '../shared/format'
 import { blobToUploadFile, resizeImage } from '../shared/image'
 import { playClick } from '../shared/sound'
@@ -28,48 +27,6 @@ interface Item {
 }
 
 const STATUSES = ['todo', 'watching', 'done'] as const
-
-/**
- * سالنِ سه‌بعدیِ واقعی. ``lazy`` است تا ``three`` فقط برای کسی دانلود شود
- * که لایه‌اش کهکشان است و واقعاً این اپ را باز کرده.
- */
-const CinemaHall = lazy(() => import('../three/CinemaHall'))
-
-/**
- * سالنِ CSS-سه‌بعدی — هم لایه‌ی مهتاب/بلور، هم fallbackِ کهکشان.
- *
- * ⚠️ چرا fallback لازم است و نه یک «اگر نشد هیچی نشان نده»:
- *   سقفِ سراسریِ صحنه‌های WebGL زنده دو تاست. اگر کاربر ستاره‌ها و
- *   خونه‌ی رویایی را هم‌زمان باز داشته باشد، سینما به دلایلِ موجه
- *   context نمی‌گیرد. در آن حالت باید **همان سالن** را با CSS ببیند، نه
- *   یک جایِ خالی. یعنی تنزلِ باوقار، نه تنزلِ محسوس.
- */
-function HallCSS({ poster }: { poster: string | null }) {
-  return (
-    <div className="os-cinema-hall" aria-hidden>
-      <div className="os-cinema-frame" />
-      <div className="os-cinema-screen">
-        {poster ? (
-          // پوستر با contain جا می‌گیرد تا چهره‌ها کشیده نشوند — همان
-          // کاری که fitTexture() در صحنه‌ی WebGL می‌کند.
-          <img
-            src={poster}
-            alt=""
-            className="h-full w-full rounded-[6px] object-contain"
-            style={{ background: '#0a0714', opacity: 0.92 }}
-          />
-        ) : null}
-      </div>
-      <div className="os-cinema-beam" />
-      <span className="os-cinema-dust" style={{ left: '46%', top: '34%', width: 3, height: 3 }} />
-      <span className="os-cinema-dust" style={{ left: '53%', top: '48%', width: 2, height: 2, animationDelay: '-4s' }} />
-      <span className="os-cinema-dust" style={{ left: '49%', top: '62%', width: 2, height: 2, animationDelay: '-7.5s' }} />
-      <div className="os-cinema-seats os-cinema-seats-far" />
-      <div className="os-cinema-seats os-cinema-seats-mid" />
-      <div className="os-cinema-seats os-cinema-seats-near" />
-    </div>
-  )
-}
 
 /** ورودی تصویر با پیش‌نمایش کوچک */
 function PosterInput({ onReady, onClear, label }: { onReady: (f: File, preview: string) => void; onClear: () => void; label: string }) {
@@ -124,15 +81,6 @@ function PosterInput({ onReady, onClear, label }: { onReady: (f: File, preview: 
 
 export default function Cinema() {
   const { t } = useTranslation()
-  // ⚠️ هوک‌ها بالایِ ``if (loading || error) return`` — تله‌ی Rules-of-Hooks
-  const tier = useQualityTier()
-  const allowed = useMotionAllowed()
-  const want3D = allowed && tier === 'dream'
-  const dz = allowed && tier !== 'lite' ? 1 : 0
-  // صحنه‌ی WebGL ممکن است به دلیلِ سقفِ context ساخته نشود؛ آن‌وقت باید
-  // همان سالنِ CSS را نشان دهیم. یک state ساده و یک بار مصرف.
-  const [hallFailed, setHallFailed] = useState(false)
-  const showWebGL = want3D && !hallFailed
   const { data, loading, error, reload } = useApi<{ items: Item[] }>('/cinema')
   const [form, setForm] = useState({ title: '', kind: 'film' as 'film' | 'series', link: '' })
   const [filter, setFilter] = useState<'all' | (typeof STATUSES)[number]>('all')
@@ -186,28 +134,8 @@ export default function Cinema() {
   const items = data?.items || []
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
 
-  // فیلمِ «الان داریم این را می‌بینیم» برای پرده‌ی سالن؛ اگر نبود، نخستین
-  // فیلمِ فهرست. پوستر هم از همان می‌آید.
-  const featured = shown.find((i) => i.status === 'watching') || shown[0] || null
-
   return (
     <div className="space-y-3">
-      {/* سالنِ سینما — سربرگِ این اپ */}
-      <div className="overflow-hidden rounded-[22px]">
-        {showWebGL ? (
-          <Suspense fallback={<HallCSS poster={featured?.poster ?? null} />}>
-            <div style={{ height: 152 }}>
-              <CinemaHall
-                posterUrl={featured?.poster ?? null}
-                onFallback={() => setHallFailed(true)}
-              />
-            </div>
-          </Suspense>
-        ) : (
-          <HallCSS poster={featured?.poster ?? null} />
-        )}
-      </div>
-
       <form onSubmit={add} className="os-card space-y-2 p-3">
         <input className="os-input" placeholder={t('cinema.addPlaceholder')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <input className="os-input" placeholder={t('cinema.link')} value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
@@ -238,29 +166,12 @@ export default function Cinema() {
       ) : (
         <div className="space-y-2">
           {shown.map((it, i) => (
-            <motion.div
-              key={it.id}
-              initial={{ opacity: 0, y: 8, rotateX: -7 * dz, z: -30 * dz }}
-              animate={{ opacity: 1, y: 0, rotateX: 0, z: 0 }}
-              transition={{ delay: i * 0.03 }}
-              style={{ transformPerspective: 1000 }}
-              className="os-card overflow-hidden"
-            >
+            <motion.div key={it.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="os-card overflow-hidden">
               <div className="flex gap-3 p-3">
-                {/* پوستر «جسم» است نه متن، پس تیلت می‌گیرد. زاویه و
-                    پرسپکتیویش در CSS است (``.os-tilt-medal``) و listenerش
-                    سراسری — پس ۲۰ پوستر یعنی صفر listenerِ اضافه.
-                    کلاسِ ``relative`` لازم است تا از زیرِ سایه‌ی کارت
-                    بیرون بزند. */}
                 {it.poster ? (
-                  <img
-                    src={it.poster}
-                    alt={it.title}
-                    className="os-tilt-medal relative h-24 w-16 shrink-0 rounded-xl object-cover"
-                    style={{ boxShadow: '0 var(--edge-2) calc(3 * var(--edge-2)) calc(-1 * var(--edge-2)) rgba(0,0,0,.5), inset 0 var(--edge-1) 0 rgba(255,255,255,.3)' }}
-                  />
+                  <img src={it.poster} alt={it.title} className="h-24 w-16 shrink-0 rounded-xl object-cover shadow" />
                 ) : (
-                  <span className="os-tilt-medal relative flex h-24 w-16 shrink-0 items-center justify-center rounded-xl os-slab" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
+                  <span className="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl" style={{ background: 'var(--os-accent-soft)', color: 'var(--os-accent)' }}>
                     <Icon name="cinema" size={22} />
                   </span>
                 )}

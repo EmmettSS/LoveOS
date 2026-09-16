@@ -152,34 +152,10 @@ class FlowerMessage(models.Model):
 
 # ----------------------------------------------------------- آسمان ستاره ---
 class Constellation(TimeStamped):
-    """
-    یک صورتِ فلکی در آسمانِ LoveOS.
-
-    دو دسته است (فیلد ``kind``):
-      • ``letter`` — حرف‌های اسم دخترم؛ با زدن روی هر کدام پیامش باز می‌شود
-      • ``shape``  — «شکل‌های آسمان» مثل ♥ قلب و ∞ بی‌نهایت
-
-    تفکیکِ این دو لازم است چون فرانت‌اند آن‌ها را در دو منطقه‌ی جدا نمایش
-    می‌دهد: حرف‌ها در یک ردیفِ فشرده، شکل‌ها بزرگ‌تر و درخشان‌تر. بدونِ
-    ``kind`` تنها راهِ تشخیص، مقایسه‌ی رشته‌ی ``letter`` بود که شکننده است.
-
-    نکته: ``letter`` عمداً همان نامِ قدیمی‌اش را نگه داشته (نه rename) تا
-    مایگریشنِ داده روی دیتابیسِ زنده‌ی بابا بی‌خطر بماند؛ برای shapeها این
-    فیلد «نماد» معنا می‌دهد.
-    """
-
-    KIND = [("letter", "حرفِ اسم"), ("shape", "شکلِ آسمان")]
-
-    letter = models.CharField("حرف / نماد", max_length=2, help_text="برای شکل‌ها: ♥ یا ∞")
-    kind = models.CharField("نوع", max_length=8, choices=KIND, default="letter", db_index=True)
+    letter = models.CharField("حرف", max_length=2)
     order = models.PositiveIntegerField("ترتیب", default=0)
     message = models.TextField("پیام ستاره مرکزی", blank=True)
-    stars = models.JSONField(
-        "ستاره‌ها [[x,y],...]",
-        default=list,
-        blank=True,
-        help_text="مختصات نسبی ۰..۱ با y رو به بالا",
-    )
+    stars = models.JSONField("ستاره‌ها [[x,y],...]", default=list, blank=True)
     is_active = models.BooleanField("فعال", default=True)
 
     class Meta:

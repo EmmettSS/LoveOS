@@ -11,16 +11,8 @@ import type { Config } from './store'
 
 const KEY = 'loveos_prefs_v1'
 
-/**
- * کلیدهایی که اجازه دارند محلی ذخیره شوند (همان‌هایی که در صفحه‌ی تنظیمات هستند).
- *
- * ``ui_quality`` عمداً این‌جاست: کیفیتِ سه‌بعدی **خاصِ هر دستگاه** است
- * (گوشیِ دخترم با لپ‌تاپِ بابا یکی نیست)، پس نسخه‌ی محلی باید بر مقدارِ سرور
- * مقدم باشد — دقیقاً همان کاری که ``applyLocalPrefs`` انجام می‌دهد. ضمناً
- * اگر سرور در دسترس نبود، انتخابِ لایه باید بی‌درنگ اعمال شود تا «دکمه را
- * زدم و هیچی نشد» پیش نیاید.
- */
-const ALLOWED = ['language', 'theme', 'sound_enabled', 'font_scale', 'ui_quality'] as const
+/** کلیدهایی که اجازه دارند محلی ذخیره شوند (همان‌هایی که در صفحه‌ی تنظیمات هستند) */
+const ALLOWED = ['language', 'theme', 'sound_enabled', 'font_scale'] as const
 type AllowedKey = (typeof ALLOWED)[number]
 
 export type LocalPrefs = Partial<Pick<Config, AllowedKey>>

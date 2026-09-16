@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
-import { Tilt, useMotionAllowed, useQualityTier } from '../shared/depth'
 import { DateField } from '../shared/JalaliDatePicker'
 import { del, upload } from '../shared/api'
 import { formatDate } from '../shared/format'
@@ -41,12 +40,6 @@ export default function Memories() {
   const [showAdd, setShowAdd] = useState(false)
 
   const items = (data?.items || []).filter((m) => (tab === 'future' ? m.is_future : !m.is_future))
-  // دو هوک بدونِ شرط صدا زده می‌شوند و ترکیبشان بعداً — ``&&`` بینِ دو
-  // هوک یک نقضِ Rules-of-Hooks است چون short-circuit می‌کند.
-  const depthTier = useQualityTier()
-  const depthMotion = useMotionAllowed()
-  /** عمقِ عکس فقط در بلور/کهکشان و فقط وقتی حرکت مجاز باشد */
-  const photoDepth = depthTier !== 'lite' && depthMotion
   const withPhoto = items.filter((m) => m.photo && !m.locked)
 
   useEffect(() => {
@@ -124,28 +117,7 @@ export default function Memories() {
                   style={{ background: m.locked ? 'var(--os-border)' : 'var(--os-accent)', boxShadow: '0 0 0 4px var(--os-card)' }}
                 />
                 <div className="os-card overflow-hidden" onClick={() => !m.locked && playPaper()}>
-                  {/*
-                    ⚠️ **فقط عکس** عمق می‌گیرد، نه متن.
-                    کارتِ خاطره پر از متن است (عنوان، تاریخ، مکان) و کج‌کردنِ
-                    متن خوانایی را خراب می‌کند — قاعده‌ی سختِ پروژه. پس تیلت
-                    دورِ خودِ عکس است و بقیه‌ی کارت تخت می‌ماند. عکس یک
-                    سطحِ بصری است و تیلتِ ملایم رویش حسِ «عکسِ چاپیِ برجسته»
-                    می‌دهد.
-
-                    عمداً سراغِ «کاورفلو» نرفتیم: خطِ زمانیِ عمودیِ فعلی
-                    (خطِ زمان + نقطه‌ها) یک الگویِ معنادار و آزموده برای
-                    «گذرِ زمان» است و تبدیلش به نوارِ افقیِ چرخان، خودِ
-                    معنا را از بین می‌برد — یعنی آسیب به UX که خواسته‌ی صریحِ
-                    کاربر «نباید» اتفاق بیفتد.
-                  */}
-                  {m.photo && !m.locked &&
-                    (photoDepth ? (
-                      <Tilt maxDeg={6}>
-                        <img src={m.photo} alt={m.title} className="memories-photo h-44 w-full object-cover" />
-                      </Tilt>
-                    ) : (
-                      <img src={m.photo} alt={m.title} className="h-44 w-full object-cover" />
-                    ))}
+                  {m.photo && !m.locked && <img src={m.photo} alt={m.title} className="h-44 w-full object-cover" />}
                   <div className="p-3">
                     <div className="flex items-center gap-2">
                       <h4 className="os-title flex-1 text-base">{m.title}</h4>

@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next'
 import { Icon, type IconName } from '../shared/Icon'
 import { DateField } from '../shared/JalaliDatePicker'
 import { del, post } from '../shared/api'
-import { useMotionAllowed, useQualityTier } from '../shared/depth'
 import { digits, formatDate } from '../shared/format'
 import { playSuccess } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -33,54 +32,11 @@ const ICONS: Record<string, IconName> = {
 
 const ICON_CHOICES = ['heart', 'plane', 'cake', 'gift', 'star', 'ring'] as const
 
-/**
- * یک خانه‌ی ساعتِ فلیپ.
- *
- * در لایه‌های عمیق، رقم هنگامِ **تغییر** دورِ محورِ X می‌چرخد: رقمِ کهنه به
- * ۹۰− درجه می‌رود و رقمِ تازه از ۹۰+ درجه می‌آید. این همان حسِ «تَق» خوردنِ
- * ساعتِ فلیپِ واقعی است.
- *
- * ⚠️ سه نکته‌ی عمدی:
- *
- * ۱) چرخش **فقط** با تغییرِ واقعیِ مقدار رخ می‌دهد، نه با هر تیک. والد هر
- *    ۶۰ ثانیه یک‌بار ``reload`` می‌کند و ``setTick`` می‌زند، ولی
- *    ``AnimatePresence`` به ``value`` کلید خورده؛ پس تا وقتی دقیقه عوض نشده
- *    هیچ انیمیشنی اجرا نمی‌شود. اگر به رندر کلید می‌خورد، عدد هر دقیقه یک
- *    بار بی‌دلیل می‌چرخید و آزاردهنده می‌شد.
- *
- * ۲) این یکی از معدود جاهایی است که **متن می‌چرخد**. قاعده‌ی پروژه «متن
- *    هرگز کج نشود» برای خواناییِ متنِ ماندگار است؛ این‌جا چرخش یک گذارِ
- *    ۰٫۴۲ ثانیه‌ای است که در حالتِ سکون به rotateX(0) می‌رسد، و موضوعش یک
- *    نمایشگرِ عددی است نه متنِ خواندنی. ضمناً فقط در لایه‌های عمیق و فقط
- *    وقتی حرکت مجاز باشد فعال است.
- *
- * ۳) دامنه‌ی چرخش عمداً بینِ ۹۰− و ۹۰+ نگه داشته شده تا هیچ‌وقت به
- *    «پشتِ» وجه نرسیم؛ با این حال ``backface-visibility: hidden`` هم گذاشته
- *    شده چون اگر روزی دامنه بازتر شد، رقمِ وارونِ آینه‌ای دیده می‌شد.
- */
-function Unit({ value, label, deep }: { value: number; label: string; deep: boolean }) {
+function Unit({ value, label }: { value: number; label: string }) {
   return (
-    <div className="os-flip-unit flex-1" data-flip-unit>
-      <div className="os-flip-viewport">
-        <AnimatePresence initial={false} mode="sync">
-          <motion.div
-            key={value}
-            className="os-flip-face os-title tabular-nums"
-            style={{ color: 'var(--os-accent)' }}
-            initial={deep ? { rotateX: 90, opacity: 0 } : { opacity: 0 }}
-            animate={deep ? { rotateX: 0, opacity: 1 } : { opacity: 1 }}
-            exit={deep ? { rotateX: -90, opacity: 0 } : { opacity: 0 }}
-            transition={{ duration: deep ? 0.42 : 0.2, ease: [0.22, 0.68, 0.36, 1] }}
-            aria-hidden={false}
-          >
-            {digits(value)}
-          </motion.div>
-        </AnimatePresence>
-        {/* درزِ وسطِ ساعتِ فلیپ. یک خطِ یک‌پیکسلی است، ولی همین خط است که
-            «یک کارتِ رنگی» را به «یک خانه‌ی ساعتِ مکانیکی» تبدیل می‌کند. */}
-        {deep && <span className="os-flip-hinge" aria-hidden />}
-      </div>
-      <p className="os-flip-label text-[10px] os-muted">{label}</p>
+    <div className="flex-1 rounded-2xl p-2 text-center" style={{ background: 'var(--os-accent-soft)' }}>
+      <p className="os-title text-2xl tabular-nums" style={{ color: 'var(--os-accent)' }}>{digits(value)}</p>
+      <p className="text-[10px] os-muted">{label}</p>
     </div>
   )
 }
@@ -90,10 +46,6 @@ export default function CountdownApp() {
   const { data, loading, error, reload } = useApi<{ items: Item[] }>('/countdowns')
   const [, setTick] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
-  const tier = useQualityTier()
-  const motionAllowed = useMotionAllowed()
-  /** ساعتِ فلیپ فقط در بلور و کهکشان، و فقط وقتی حرکت مجاز باشد */
-  const deep = tier !== 'lite' && motionAllowed
 
   // هر دقیقه تازه‌سازی برای زنده بودن شمارش
   useEffect(() => {
@@ -156,9 +108,9 @@ export default function CountdownApp() {
                 </p>
               ) : (
                 <div className="mt-3 flex gap-2">
-                  <Unit value={c.days} label={t('os.days')} deep={deep} />
-                  <Unit value={c.hours} label={t('os.hours')} deep={deep} />
-                  <Unit value={c.minutes} label={t('os.minutes')} deep={deep} />
+                  <Unit value={c.days} label={t('os.days')} />
+                  <Unit value={c.hours} label={t('os.hours')} />
+                  <Unit value={c.minutes} label={t('os.minutes')} />
                 </div>
               )}
             </motion.div>
