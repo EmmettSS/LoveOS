@@ -22,6 +22,18 @@ const KONAMI = [
   'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a',
 ]
 
+/**
+ * تا چند میلی‌ثانیه «در حال اتصال» نشان بدهیم و بعد «اتصال برقرار نشد».
+ * در تست‌ها با __LOVEOS_BOOT_SLOW_MS کوتاه می‌شود.
+ */
+function bootSlowMs(): number {
+  const override = (globalThis as { __LOVEOS_BOOT_SLOW_MS?: unknown }).__LOVEOS_BOOT_SLOW_MS
+  return typeof override === 'number' && override >= 0 ? override : 12_000
+}
+
+/** پس‌زمینه‌ی تیره‌ی هم‌خانواده‌ی اسپلش index.html — عمداً inline تا حتی اگر CSS لود نشد سفید نماند. */
+const PRE_READY_BG = 'radial-gradient(80% 60% at 50% 28%, rgba(247,103,168,.16), transparent 70%), radial-gradient(90% 70% at 50% 100%, rgba(150,120,255,.14), transparent 70%), linear-gradient(170deg, #1d0c26 0%, #120719 55%, #0a0410 100%)'
+
 export default function App() {
   const { i18n } = useTranslation()
   const phase = useOS((s) => s.phase)
@@ -31,15 +43,44 @@ export default function App() {
   const showEgg = useOS((s) => s.showEgg)
   const patchConfig = useOS((s) => s.patchConfig)
   const [ready, setReady] = useState(false)
+  const [bootFailed, setBootFailed] = useState(false)
+  const [bootSlow, setBootSlow] = useState(false)
+  const [bootAttempt, setBootAttempt] = useState(0)
 
   useNightMode()
 
-  // بارگذاری اولیه‌ی پیکربندی از بک‌اند
+  // تلاش دوباره: پرچم‌ها ریست می‌شوند تا «در حال اتصال» برگردد، بعد بوتِ تازه می‌آید
+  const retryBootstrap = () => {
+    setBootFailed(false)
+    setBootSlow(false)
+    setBootAttempt((a) => a + 1)
+  }
+
+  // بارگذاری اولیه‌ی پیکربندی از بک‌اند.
+  // موفق → ورود به سیستم؛ خطا/کُندی → همین‌جا «اتصال برقرار نشد + دوباره تلاش»
+  // (هرگز div خالیِ سفید، و هرگز قفلِ بی‌پشتوانه با config خالی).
   useEffect(() => {
-    bootstrap()
-      .catch(() => undefined)
-      .finally(() => setReady(true))
-  }, [bootstrap])
+    let cancelled = false
+    const slowTimer = window.setTimeout(() => {
+      if (!cancelled) setBootSlow(true)
+    }, bootSlowMs())
+    bootstrap().then(
+      () => {
+        window.clearTimeout(slowTimer)
+        if (cancelled) return
+        setBootFailed(false)
+        setReady(true)
+      },
+      () => {
+        window.clearTimeout(slowTimer)
+        if (!cancelled) setBootFailed(true)
+      },
+    )
+    return () => {
+      cancelled = true
+      window.clearTimeout(slowTimer)
+    }
+  }, [bootstrap, bootAttempt])
 
   // زبان، اندازه‌ی فونت و صدا از تنظیمات پنل بابا (با احترام به انتخاب محلی دستگاه)
   useEffect(() => {
@@ -131,7 +172,70 @@ export default function App() {
   }, [phase, showEgg])
 
   if (!ready) {
-    return <div className="h-full w-full" />
+    const failed = bootFailed || bootSlow
+    return (
+      <div
+        className="os-screen"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          background: PRE_READY_BG,
+          color: '#fce7f3',
+          fontFamily: 'Vazirmatn, system-ui, sans-serif',
+          textAlign: 'center',
+        }}
+      >
+        {!failed ? (
+          <div role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                border: '3px solid rgba(255,255,255,.2)',
+                borderTopColor: '#f767a8',
+                animation: 'loveosSpin 0.9s linear infinite',
+              }}
+            />
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>در حال اتصال به LoveOS…</p>
+          </div>
+        ) : (
+          <div role="alert" style={{ maxWidth: 380 }}>
+            <div aria-hidden="true" style={{ fontSize: 46, lineHeight: 1, marginBottom: 16 }}>🥺</div>
+            <p style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>اتصال برقرار نشد</p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, opacity: 0.72, lineHeight: 2 }}>
+              اینترنت را چک کن و دوباره تلاش کن.
+              <br />
+              اگر از کشِ قدیمی PWA شک دارید، اپ را یک بار تازه‌سازی/نصب مجدد کنید.
+            </p>
+            <button
+              type="button"
+              onClick={retryBootstrap}
+              style={{
+                border: 0,
+                cursor: 'pointer',
+                borderRadius: 999,
+                padding: '12px 30px',
+                fontWeight: 700,
+                fontSize: 14,
+                fontFamily: 'inherit',
+                color: '#fff',
+                background: 'linear-gradient(135deg,#ff8cc0,#bba0fb)',
+                boxShadow: '0 12px 28px -12px rgba(247,103,168,.85)',
+              }}
+            >
+              دوباره تلاش
+            </button>
+          </div>
+        )}
+        <style>{'@keyframes loveosSpin { to { transform: rotate(360deg); } }'}</style>
+      </div>
+    )
   }
 
   return (
