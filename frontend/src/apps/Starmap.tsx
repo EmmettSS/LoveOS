@@ -308,7 +308,7 @@ function SkyScene({ items, className, mobile = false, rotated = false, onClose }
   return (
     <div
       ref={skyRef}
-      className={`${className} select-none`}
+      className={`${className} select-none os-no-select`}
       // touch-action: دوبار زدن (راز ⑩) نباید زوم مرورگر را فعال کند
       style={{ background: 'radial-gradient(120% 100% at 50% 0%, #232a5c 0%, #0b1026 75%)', touchAction: 'manipulation', ...insets }}
       onPointerMove={onMove}
@@ -429,13 +429,7 @@ function SkyScene({ items, className, mobile = false, rotated = false, onClose }
         </svg>
       )}
 
-      {/* متن راهنما — شناور روی آسمان */}
-      <p
-        className={`absolute left-1/2 z-10 max-w-[92%] -translate-x-1/2 rounded-full px-4 py-1.5 text-center text-white/90 ${mobile ? 'text-xs' : 'text-sm'}`}
-        style={{ ...GLASS, top: `calc(${mobile ? 8 : 16}px + var(--sky-t))` }}
-      >
-        {t('starmap.caption')}
-      </p>
+      {/* کپشن «اسمت رو با ستاره‌ها نوشتم» حذف شد — درخواست کاربر */}
 
       {/* اگر هیچ صورتی ستاره‌ی سالم نداشت، به‌جای آسمانِ بی‌حال یک راهنمای کوچک */}
       {!hasAnyValidStars && (

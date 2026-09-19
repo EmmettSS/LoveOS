@@ -81,7 +81,7 @@ export default function Chat() {
 
   return (
     <div className="flex h-full min-h-[420px] flex-col">
-      <div className="flex-1 space-y-2 overflow-y-auto pb-3 no-scrollbar">
+      <div className="flex-1 space-y-2 overflow-y-auto pb-3 no-scrollbar os-allow-select">
         {items.length === 0 && <p className="os-empty">{t('chat.startTalking')}</p>}
         {items.map((m) => {
           const mine = m.sender === 'daughter'

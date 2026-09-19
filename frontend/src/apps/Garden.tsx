@@ -100,7 +100,7 @@ export default function Garden() {
   if (items.length === 0) return <Empty />
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-no-select">
       <p className="text-center text-sm os-muted">{t('garden.caption')}</p>
       <div className="grid grid-cols-2 gap-3">
         {items.map((f, i) => (

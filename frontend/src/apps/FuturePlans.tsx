@@ -97,7 +97,7 @@ export default function FuturePlans() {
   const done = items.filter((p) => p.is_done).length
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <form onSubmit={add} className="os-card space-y-2 p-3">
         <input className="os-input" placeholder={t('plans.addPlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
         <div className="flex items-center gap-2">

@@ -273,7 +273,7 @@ export default function MapOfUs() {
   const timeDiff = Math.abs(data.daddy.hour - data.daughter.hour)
 
   return (
-    <div ref={topRef} className="space-y-3">
+    <div ref={topRef} className="space-y-3 os-no-select">
       <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--os-border)' }}>
         <div ref={container} className="h-[360px] w-full" />
       </div>

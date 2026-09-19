@@ -135,7 +135,7 @@ export default function Cinema() {
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <form onSubmit={add} className="os-card space-y-2 p-3">
         <input className="os-input" placeholder={t('cinema.addPlaceholder')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <input className="os-input" placeholder={t('cinema.link')} value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />

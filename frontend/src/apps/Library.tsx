@@ -49,7 +49,7 @@ export default function Library() {
   const items = shelf?.items || []
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <SectionTitle>{t('library.shelf')}</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {/* کارت «کتاب جدید» — دخترم خودش کتاب می‌سازد */}

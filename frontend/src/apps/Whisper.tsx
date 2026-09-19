@@ -46,7 +46,7 @@ export default function Whisper() {
   const items = data?.items || []
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <button className="os-btn-primary w-full" onClick={() => void randomLetter()}>
         <span className="inline-flex items-center justify-center gap-2">
           <Icon name="whisper" size={16} /> {t('whisper.randomLetter')}

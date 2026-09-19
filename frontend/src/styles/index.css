@@ -28,6 +28,40 @@ html[data-theme='night'] {
 
 * { -webkit-tap-highlight-color: transparent; }
 
+/* --------------------------------------------------- جلوگیری از انتخاب متن و منوی لمس طولانی ---- */
+/* برای اپ‌های تعاملی مثل ضربان قلب، بغل، باغچه که لمس طولانی نیاز دارند */
+.os-no-select,
+.os-no-select * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* مناطقی که انتخاب متن مجاز است (چت، نامه‌ها، کتابخانه) */
+.os-allow-select,
+.os-allow-select * {
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  -khtml-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* ورودی‌ها همیشه قابل انتخاب */
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable="true"] * {
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
 /* ------------------------------------------- پوسته‌ی تمام‌صفحه (بدون اسکرول) --
    سیستم باید دقیقاً اندازه‌ی صفحه‌ی دستگاه باشد؛ نه اسکرولی از بیرون، نه لبه‌ی
    خالی. html/body قفل می‌شوند تا حتی کشیدنِ با انگشت هم صفحه را جابه‌جا نکند؛
