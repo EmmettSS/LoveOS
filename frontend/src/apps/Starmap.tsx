@@ -21,6 +21,7 @@ import { post } from '../shared/api'
 import { tone } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { ApiStatus, Empty, useApi } from '../shared/ui'
+import { sanitizeStars } from './starmapStars'
 
 interface Constellation {
   id: number
@@ -36,6 +37,8 @@ interface Constellation {
  * عمودی آینه می‌شود و مثلاً «M» شبیه «W» دیده می‌شود.
  */
 const toCanvasY = (y: number) => 1 - y
+
+
 
 /** شیشه‌ی نیمه‌شفاف لایه‌های شناور روی آسمان */
 const GLASS = {
@@ -97,6 +100,7 @@ export default function Starmap() {
   if (loading || error) return <ApiStatus loading={loading} error={error} />
   const items = data?.items || []
   if (items.length === 0) return <Empty />
+  const hasAnyValidStars = items.some((c) => sanitizeStars(c.stars).length > 0)
 
   const n = items.length
   const slotW = sky.w > 0 ? sky.w / n : 0
@@ -131,29 +135,34 @@ export default function Starmap() {
             // در چیدمان راست‌به‌چپ، اولین صورت فلکی سمت راست می‌نشیند
             const slot = rtlLayout ? n - 1 - ci : ci
             const cx = slotW * (slot + 0.5)
-            const pts = c.stars.map(([x, y]) => [cx + (x - 0.5) * cell, cy + (toCanvasY(y) - 0.5) * cell])
+            const pts = sanitizeStars(c.stars).map(([x, y]) => [cx + (x - 0.5) * cell, cy + (toCanvasY(y) - 0.5) * cell])
             const lit = allLit || active?.id === c.id
             return (
               <g key={c.id} onClick={() => void tapStar(c)} style={{ cursor: 'pointer' }}>
-                <polyline
-                  points={pts.map((p) => p.join(',')).join(' ')}
-                  fill="none"
-                  stroke={lit ? '#ffd98a' : 'rgba(255,255,255,.28)'}
-                  strokeWidth={lit ? Math.max(1.3, dot * 0.5) : 1}
-                  strokeLinejoin="round"
-                />
-                {pts.map((p, pi) => (
-                  <motion.circle
-                    key={pi}
-                    cx={p[0]}
-                    cy={p[1]}
-                    r={lit ? dot * 1.35 : dot}
-                    fill={lit ? '#ffe9a8' : '#ffffff'}
-                    animate={{ opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 2, delay: (ci + pi) * 0.12, repeat: Infinity }}
-                    style={{ filter: lit ? 'drop-shadow(0 0 6px #ffd98a)' : undefined }}
-                  />
-                ))}
+                {/* اگر داده‌ی این صورت فلکی خراب بود، فقط برچسبش می‌ماند (نه خطای رندر، نه آسمان خالی) */}
+                {pts.length > 0 && (
+                  <>
+                    <polyline
+                      points={pts.map((p) => p.join(',')).join(' ')}
+                      fill="none"
+                      stroke={lit ? '#ffd98a' : 'rgba(255,255,255,.28)'}
+                      strokeWidth={lit ? Math.max(1.3, dot * 0.5) : 1}
+                      strokeLinejoin="round"
+                    />
+                    {pts.map((p, pi) => (
+                      <motion.circle
+                        key={pi}
+                        cx={p[0]}
+                        cy={p[1]}
+                        r={lit ? dot * 1.35 : dot}
+                        fill={lit ? '#ffe9a8' : '#ffffff'}
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 2, delay: (ci + pi) * 0.12, repeat: Infinity }}
+                        style={{ filter: lit ? 'drop-shadow(0 0 6px #ffd98a)' : undefined }}
+                      />
+                    ))}
+                  </>
+                )}
                 <text x={cx} y={labelY} textAnchor="middle" fontSize="11" fill="rgba(255,255,255,.55)">
                   {c.letter}
                 </text>
@@ -173,6 +182,16 @@ export default function Starmap() {
       >
         {t('starmap.caption')}
       </p>
+
+      {/* اگر هیچ صورتی ستاره‌ی سالم نداشت، به‌جای آسمانِ بی‌حال یک راهنمای کوچک */}
+      {!hasAnyValidStars && (
+        <p
+          className="absolute inset-x-2 top-16 z-10 mx-auto w-fit max-w-[92%] rounded-full px-4 py-1.5 text-center text-xs text-white/85"
+          style={GLASS}
+        >
+          داده‌ی چند صورت فلکی ناقص است؛ با بابا چک کن
+        </p>
+      )}
 
       {/* چیپ‌ها — زیر ۹۰۰px پنجره تمام‌صفحه است و داکِ شناور پایین صفحه را می‌پوشاند؛
           برای همین آستانه با حالت پنجره (۹۰۰px، نه md) هماهنگ شده تا زیر داک نروند */}
