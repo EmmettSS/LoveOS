@@ -350,25 +350,38 @@ class Command(BaseCommand):
 
     @staticmethod
     def _ensure_schema_ready() -> None:
-        """نگهبانِ طرحِ دیتابیس: اگر ستونِ یتیمِ ``kind`` (یادگارِ مهاجرتِ
-        برگردانده‌شده‌ی ۱۶ سپتامبر) هنوز روی جدولِ آسمان هست، به‌جای
-        tracebackِ گنگِ IntegrityError راهِ درست را بگو: اول migrate."""
+        """نگهبانِ طرحِ دیتابیس: اگر ستون‌های یتیمِ یادگارِ مهاجرتِ
+        برگردانده‌شده‌ی ۱۶ سپتامبر (``kind`` روی جدولِ آسمان، ``ui_quality``
+        روی جدولِ تنظیمات) هنوز هستند، به‌جای tracebackِ گنگِ IntegrityError
+        راهِ درست را بگو: اول migrate."""
+        stale_columns = [
+            (Constellation._meta.db_table, "kind"),
+            (UserConfig._meta.db_table, "ui_quality"),
+        ]
         try:
+            cols_by_table = {}
             with connection.cursor() as cursor:
-                cols = {
-                    f.name
-                    for f in connection.introspection.get_table_description(
-                        cursor, Constellation._meta.db_table
-                    )
-                }
+                for table, _ in stale_columns:
+                    cols_by_table[table] = {
+                        f.name
+                        for f in connection.introspection.get_table_description(
+                            cursor, table
+                        )
+                    }
         except OperationalError:
             raise CommandError(
                 "جدول‌های LoveOS ساخته نشده‌اند؛ اول این را اجرا کن: python manage.py migrate"
             )
-        if "kind" in cols:
+        stale = [
+            (table, column)
+            for table, column in stale_columns
+            if column in cols_by_table[table]
+        ]
+        if stale:
+            names = "، ".join(f"{column} روی {table}" for table, column in stale)
             raise CommandError(
-                "دیتابیس قدیمی است (ستونِ یتیمِ kind از مهاجرتِ برگردانده‌شده هنوز هست). "
-                "اول این را اجرا کن تا خودکار ترمیم شود: python manage.py migrate"
+                f"دیتابیس قدیمی است (ستون‌های یتیم از مهاجرتِ برگردانده‌شده هنوز هست: "
+                f"{names}). اول این را اجرا کن تا خودکار ترمیم شود: python manage.py migrate"
             )
 
     # ------------------------------------------- اپ ۱: هماهنگ‌کننده تماس ---
