@@ -271,7 +271,8 @@
         "tapLetter": "Tap each letter",
         "fullName": "Light up the whole name",
         "layoutRtl": "Layout: right to left",
-        "layoutLtr": "Layout: left to right"
+        "layoutLtr": "Layout: left to right",
+        "rotateHint": "Turn your phone sideways for a bigger sky ✨"
     },
     "chat": {
         "placeholder": "Tell Daddy something...",
