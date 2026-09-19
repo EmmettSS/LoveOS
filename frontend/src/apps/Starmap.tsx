@@ -308,7 +308,7 @@ function SkyScene({ items, className, mobile = false, rotated = false, onClose }
   return (
     <div
       ref={skyRef}
-      className={`${className} select-none`}
+      className={`${className} select-none os-no-select`}
       // touch-action: دوبار زدن (راز ⑩) نباید زوم مرورگر را فعال کند
       style={{ background: 'radial-gradient(120% 100% at 50% 0%, #232a5c 0%, #0b1026 75%)', touchAction: 'manipulation', ...insets }}
       onPointerMove={onMove}

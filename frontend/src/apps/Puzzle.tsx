@@ -380,7 +380,7 @@ export default function Puzzle() {
 
   if (!active) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 os-no-select">
         <p className="text-center text-sm os-muted">{t('puzzle.choose')}</p>
         <div className="grid grid-cols-2 gap-3">
           {items.map((p) => (
@@ -420,7 +420,7 @@ export default function Puzzle() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-no-select">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <button className="os-chip" onClick={() => setActive(null)}>{t('os.back')}</button>
         <span className="os-chip">{t('puzzle.time')}: {formatDuration(seconds)}</span>

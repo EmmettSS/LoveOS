@@ -1,25 +1,19 @@
 /**
- * Boot.tsx — صفحه‌ی بوت سینمایی LoveOS
+ * Boot.tsx — صفحه‌ی بوت سینمایی LoveOS - نسخه قلب+بی‌نهایت
  *
- * حسِ روشن‌کردن یک سیستم‌عامل واقعی، اما عاشقانه:
- *   • پس‌زمینه‌ی شبِ پرستاره با هاله‌های صورتی-بنفش، قلب‌های بالارونده و شهاب
- *   • قلب لوگو با دو حلقه‌ی چرخان، نبضِ ضربان‌دار و نمودار ECG که مدام کشیده می‌شود
- *   • یک پنجره‌ی ترمینال واقعی (نقطه‌های قرمز/زرد/سبز) که خطهای بایوس یکی‌یکی
- *     تایپ می‌شوند و وضعیت‌شان با رنگ جدا می‌پرَد: OK / RESOLVED / ENCRYPTED …
- *   • نوار پیشرفت و درصدِ لحظه‌ای، و در پایان کپی‌رایت «© بابا ❤ دخترم» و خوش‌آمد
- *
- * راز ①: پنج بار کلیک روی قلب.
- * برای رد شدن: کلیک روی هر جای صفحه (یا Enter / Esc).
- *
- * نکته‌ی فنی: تایمرها کاملاً به همین اجرای افکت تعلق دارند و در cleanup پاک
- * می‌شوند؛ این‌طوری دوبار-مونت‌شدن StrictMode در حالت توسعه حلقه را نمی‌کُشد
- * (در نسخه‌ی قبلی صفحه در همین مرحله فریز می‌شد).
+ * تغییرات جدید:
+ *   • لوگوی قلب+بی‌نهایت با افکت سینمایی کامل: ساخته شدن از ذرات نور
+ *   • جریان نور داخل بی‌نهایت (Infinity Flow)
+ *   • درخشش الماس‌ها روی سمت چپ قلب (مثل آویز نقره‌ای)
+ *   • نمودار ECG که از داخل بی‌نهایت عبور می‌کند
+ *   • نور جارویی روی لوگو (Shimmer Sweep)
+ *   • ذرات شناور و هاله‌های تقویت شده
  */
+
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { LoveOSLogo } from '../shared/Icon'
 import { post } from '../shared/api'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
@@ -32,9 +26,7 @@ interface BootLine {
   label: string
   status: string
   tone?: Tone
-  /** سه نقطه‌ی متحرک کنار وضعیت (مثل LOADING…) */
   ellipsis?: boolean
-  /** آخرین خط: موقع تمام‌شدن به‌جای متن، قلب ❤ می‌تپد */
   final?: boolean
 }
 
@@ -56,6 +48,24 @@ const TONE_COLOR: Record<Tone, string> = {
 const MONO_STACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace"
 const FA_STACK = "'Vazirmatn', 'Segoe UI', Tahoma, sans-serif"
 
+// مسیر قلب+بی‌نهایت - دقیقاً مشابه آویز مرجع
+const HEART_INFINITY_PATH = `M32 22
+           C 24 14, 10 15, 8.5 26
+           C 7 36, 17 43, 26 50
+           C 26 46.5, 29 42.5, 33 41
+           C 36 39.8, 39 40.5, 39 42.8
+           C 39 45.1, 36 46, 33.5 44.8
+           C 31 43.6, 32.5 40.5, 36 39.5
+           C 39.5 38.5, 43 36.8, 45.5 34.2
+           C 48 31.6, 48.5 29, 46.5 27.5
+           C 44.5 26, 42 27, 42 29.2
+           C 42 31.4, 44.5 32.4, 46.5 31.4
+           C 48.5 30.4, 48 28, 45.5 27.2
+           C 43 26.4, 40.5 28.2, 41.5 30.5
+           C 42.5 32.8, 46 31.5, 48.5 29
+           C 51 26.5, 50 15.5, 41 13.5
+           C 37 12.5, 33.5 14.5, 32 22Z`
+
 export function Boot() {
   const { t, i18n } = useTranslation()
   const isFa = i18n.language !== 'en'
@@ -69,7 +79,7 @@ export function Boot() {
   }, [t])
 
   const [done, setDone] = useState(0)
-  const [typed, setTyped] = useState(0) // تعداد کاراکترهای تایپ‌شده‌ی خط جاری
+  const [typed, setTyped] = useState(0)
   const [finished, setFinished] = useState(false)
   const [logoClicks, setLogoClicks] = useState(0)
   const timersRef = useRef<Set<number>>(new Set())
@@ -77,10 +87,7 @@ export function Boot() {
 
   const soundOn = () => useOS.getState().config?.sound_enabled !== false
 
-  // ------------------------------------------------------------- موتور تایپ
   useEffect(() => {
-    // اگر بوت قبلاً تمام شده (مثلاً وسط تعویض زبان ردش کرده بودند) حلقه را
-    // دوباره از صفر شروع نکن.
     if (finishedRef.current) return
     if (!lines.length) return
     const timers = timersRef.current
@@ -114,8 +121,6 @@ export function Boot() {
     }
 
     const tick = () => {
-      // finishedRef مخصوصاً برای حالتی است که skip دقیقاً هم‌زمان با اجرای یک
-      // تایمر صدا زده شود: تایمرِ در حال اجرا نباید تایمر تازه بسازد.
       if (cancelled || finishedRef.current) return
       if (lineIndex >= lines.length) return finish()
       const line = lines[lineIndex]
@@ -145,7 +150,6 @@ export function Boot() {
     }
   }, [lines, setPhase])
 
-  // --------------------------------------------------------------- رد شدن
   const skip = () => {
     if (finishedRef.current) return
     finishedRef.current = true
@@ -170,7 +174,6 @@ export function Boot() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // راز ① — پنج کلیک روی قلب
   const handleLogoClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     const next = logoClicks + 1
@@ -188,7 +191,6 @@ export function Boot() {
     }
   }
 
-  // ------------------------------------------------------------- پیشرفت
   const totalChars = lines.reduce((acc, l) => acc + l.label.length, 0)
   let progress = 1
   if (!finished) {
@@ -197,8 +199,6 @@ export function Boot() {
   }
   const pct = Math.round(progress * 100)
   const bootBg = config?.boot_background || '/backgrounds/boot.jpg'
-  // اگر صفحه کوتاه بود (گوشی کوچک، پنجره‌ی کم‌ارتفاع، فونت بزرگ) محتوا کمی
-  // جمع‌وجور می‌شود تا همه‌چیز داخل صفحه جا شود و هیچ اسکرولی نباشد.
   const { ref: fitRef, scale: fit } = useFitScale<HTMLDivElement>()
 
   return (
@@ -213,7 +213,6 @@ export function Boot() {
       exit={{ opacity: 0, scale: 1.04, filter: 'brightness(1.25)' }}
       transition={{ duration: 0.6 }}
     >
-      {/* لایه‌های پس‌زمینه */}
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-[0.15] mix-blend-screen"
         style={{ backgroundImage: `url(${bootBg})` }}
@@ -248,232 +247,228 @@ export function Boot() {
         aria-hidden
       />
 
-      {/* ستون محتوای بوت — با m-auto وسط می‌ایستد و اگر صفحه کوتاه بود با
-          مقیاسِ محاسبه‌شده جمع می‌شود (هیچ‌وقت اسکرول یا بریدگی). */}
       <div
         ref={fitRef}
         data-fit-column="boot"
         className="relative z-10 flex w-full flex-col items-center"
         style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
       >
-      {/* --------------------------------------------------------- قلب نبض‌دار */}
-      <motion.div
-        className="relative z-10 mb-5 grid h-[150px] w-[150px] place-items-center"
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.9, ease: 'easeOut' }}
-      >
-        <motion.span
-          className="absolute inset-0 rounded-full border-2 border-dashed"
-          style={{ borderColor: 'rgba(247,103,168,.55)' }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.span
-          className="absolute inset-[11px] rounded-full border"
-          style={{ borderColor: 'rgba(187,160,251,.40)', borderStyle: 'dotted' }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 21, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.span
-          className="absolute inset-[24px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(247,103,168,.38), transparent 68%)' }}
-          animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.14, 1] }}
-          transition={{ duration: 1.7, repeat: Infinity }}
-        />
-        <motion.button
-          onClick={handleLogoClick}
-          aria-label="LoveOS"
-          className="relative z-10 grid place-items-center rounded-[28px] outline-none"
-          animate={{ scale: [1, 1.13, 1, 1.06, 1] }}
-          transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1] }}
+        {/* قلب + بی‌نهایت سینمایی */}
+        <motion.div
+          className="relative z-10 mb-5 grid h-[170px] w-[170px] place-items-center"
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.1, ease: 'easeOut' }}
         >
-          {config?.logo ? (
-            <img src={config.logo} alt="LoveOS" className="h-[88px] w-[88px] rounded-3xl object-cover" />
-          ) : (
-            <LoveOSLogo size={92} />
-          )}
-        </motion.button>
-        {finished && <HeartBurst />}
-        <EcgLine />
-      </motion.div>
-
-      {/* ------------------------------------------------------------- عنوان */}
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45, duration: 0.7 }}
-        className="os-title relative z-10 text-center text-[28px] text-white"
-        style={{ textShadow: '0 0 26px rgba(247,103,168,.6)' }}
-      >
-        {t('boot.version')}
-      </motion.p>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.75, duration: 0.8 }}
-        className="os-hand relative z-10 mt-1 text-center text-[13px]"
-        style={{ color: 'rgba(253,231,243,.78)' }}
-      >
-        {t('boot.tagline')}
-      </motion.p>
-
-      {/* ------------------------------------------------------- ترمینال بایوس */}
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.7 }}
-        className="relative z-10 mt-6 w-full max-w-[400px] overflow-hidden rounded-2xl border backdrop-blur-md"
-        style={{
-          background: 'rgba(16,9,26,.68)',
-          borderColor: 'rgba(247,103,168,.26)',
-          boxShadow: '0 34px 90px -34px rgba(247,103,168,.55), inset 0 1px 0 rgba(255,255,255,.06)',
-        }}
-      >
-        {/* نوار عنوان ترمینال */}
-        <div
-          className="flex items-center gap-2 border-b px-4 py-2.5"
-          style={{ borderColor: 'rgba(255,255,255,.08)', background: 'rgba(255,255,255,.03)' }}
-          dir="ltr"
-        >
-          <span className="h-3 w-3 rounded-full" style={{ background: '#ff5f57', boxShadow: '0 0 8px rgba(255,95,87,.6)' }} />
-          <span className="h-3 w-3 rounded-full" style={{ background: '#febc2e', boxShadow: '0 0 8px rgba(254,188,46,.5)' }} />
-          <span className="h-3 w-3 rounded-full" style={{ background: '#28c840', boxShadow: '0 0 8px rgba(40,200,64,.55)' }} />
-          <span
-            className="flex-1 text-center text-[11px]"
-            style={{ fontFamily: MONO_STACK, color: 'rgba(253,231,243,.55)' }}
+          <motion.span
+            className="absolute inset-0 rounded-full border-2 border-dashed"
+            style={{ borderColor: 'rgba(247,103,168,.55)', boxShadow: '0 0 20px rgba(247,103,168,.2)' }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+          />
+          <motion.span
+            className="absolute inset-[11px] rounded-full border"
+            style={{ borderColor: 'rgba(187,160,251,.40)', borderStyle: 'dotted', boxShadow: '0 0 15px rgba(187,160,251,.15)' }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 21, repeat: Infinity, ease: 'linear' }}
+          />
+          <motion.span
+            className="absolute inset-[24px] rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(247,103,168,.38), transparent 68%)' }}
+            animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.14, 1] }}
+            transition={{ duration: 1.7, repeat: Infinity }}
+          />
+          <ParticleFormation />
+          <DiamondSparkles />
+          <motion.button
+            onClick={handleLogoClick}
+            aria-label="LoveOS"
+            className="relative z-10 grid place-items-center rounded-[28px] outline-none"
+            animate={{ scale: [1, 1.13, 1, 1.06, 1] }}
+            transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1] }}
           >
-            {t('boot.terminalTitle')}
-          </span>
-          <span className="w-[44px]" />
-        </div>
+            {config?.logo ? (
+              <img src={config.logo} alt="LoveOS" className="h-[88px] w-[88px] rounded-3xl object-cover" />
+            ) : (
+              <CinematicHeartInfinity size={100} />
+            )}
+          </motion.button>
+          <InfinityFlow />
+          {finished && <HeartBurst />}
+          <EcgLineInfinity />
+          <ShimmerSweep />
+        </motion.div>
 
-        {/* بدنه‌ی خطوط */}
-        <div
-          className="space-y-[7px] px-4 py-4"
-          dir={isFa ? 'rtl' : 'ltr'}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45, duration: 0.7 }}
+          className="os-title relative z-10 text-center text-[28px] text-white"
+          style={{ textShadow: '0 0 26px rgba(247,103,168,.6)' }}
+        >
+          {t('boot.version')}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.75, duration: 0.8 }}
+          className="os-hand relative z-10 mt-1 text-center text-[13px]"
+          style={{ color: 'rgba(253,231,243,.78)' }}
+        >
+          {t('boot.tagline')}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.7 }}
+          className="relative z-10 mt-6 w-full max-w-[400px] overflow-hidden rounded-2xl border backdrop-blur-md"
           style={{
-            fontFamily: isFa ? FA_STACK : MONO_STACK,
-            fontSize: isFa ? 13 : 12.5,
-            minHeight: lines.length * 26 + 10,
+            background: 'rgba(16,9,26,.68)',
+            borderColor: 'rgba(247,103,168,.26)',
+            boxShadow: '0 34px 90px -34px rgba(247,103,168,.55), inset 0 1px 0 rgba(255,255,255,.06)',
           }}
         >
-          {lines.map((line, i) => {
-            const tone: Tone = line.tone || 'ok'
-            const isRtlLine = isFa || /\p{Script=Arabic}/u.test(line.label)
+          <div
+            className="flex items-center gap-2 border-b px-4 py-2.5"
+            style={{ borderColor: 'rgba(255,255,255,.08)', background: 'rgba(255,255,255,.03)' }}
+            dir="ltr"
+          >
+            <span className="h-3 w-3 rounded-full" style={{ background: '#ff5f57', boxShadow: '0 0 8px rgba(255,95,87,.6)' }} />
+            <span className="h-3 w-3 rounded-full" style={{ background: '#febc2e', boxShadow: '0 0 8px rgba(254,188,46,.5)' }} />
+            <span className="h-3 w-3 rounded-full" style={{ background: '#28c840', boxShadow: '0 0 8px rgba(40,200,64,.55)' }} />
+            <span
+              className="flex-1 text-center text-[11px]"
+              style={{ fontFamily: MONO_STACK, color: 'rgba(253,231,243,.55)' }}
+            >
+              {t('boot.terminalTitle')}
+            </span>
+            <span className="w-[44px]" />
+          </div>
 
-            if (i < done) {
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: isRtlLine ? 8 : -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-baseline gap-2"
-                >
-                  <span className="shrink-0 font-medium" style={{ color: 'rgba(246,235,255,.94)' }}>
-                    {line.label}
-                  </span>
-                  <span
-                    className="flex-1 border-b-2 border-dotted"
-                    style={{ borderColor: 'rgba(255,255,255,.13)' }}
-                  />
-                  {line.final ? (
-                    <motion.span
-                      className="shrink-0 text-[15px] leading-none"
-                      style={{ color: TONE_COLOR.heart, textShadow: '0 0 12px rgba(251,122,184,.9)' }}
-                      animate={{ scale: [1, 1.4, 1, 1.18, 1] }}
-                      transition={{ duration: 1.1, repeat: Infinity, times: [0, 0.16, 0.32, 0.48, 1] }}
-                    >
-                      ❤
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      initial={{ scale: 0.6, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 420, damping: 17 }}
-                      className="flex shrink-0 items-center font-bold"
-                      style={{ color: TONE_COLOR[tone], textShadow: `0 0 12px ${TONE_COLOR[tone]}55` }}
-                    >
-                      {line.status}
-                      {line.ellipsis && <BouncingDots color={TONE_COLOR[tone]} />}
-                    </motion.span>
-                  )}
-                </motion.div>
-              )
-            }
-
-            if (i === done && !finished) {
-              const labelDone = typed >= line.label.length
-              return (
-                <div key={i} className="flex items-baseline gap-2">
-                  <span className="shrink-0 font-medium" style={{ color: 'rgba(246,235,255,.94)' }}>
-                    {line.label.slice(0, typed)}
-                    <span className="animate-pulse" style={{ color: TONE_COLOR.heart }}>
-                      ▌
-                    </span>
-                  </span>
-                  <span className="flex-1" />
-                  {labelDone && (
-                    <span className="shrink-0">
-                      <BouncingDots color={line.final ? TONE_COLOR.heart : 'rgba(253,231,243,.7)'} />
-                    </span>
-                  )}
-                </div>
-              )
-            }
-
-            return <div key={i} className="h-[18px]" />
-          })}
-        </div>
-      </motion.div>
-
-      {/* ----------------------------------------------------- نوار پیشرفت */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.1 }}
-        className="relative z-10 mt-6 w-full max-w-[400px]"
-      >
-        <div
-          className="mb-2 flex items-center justify-between text-[11px]"
-          dir="ltr"
-          style={{ fontFamily: MONO_STACK, color: 'rgba(253,231,243,.62)' }}
-        >
-          <span>
-            {t('boot.loadingPhrase')}
-            {!finished && <BouncingDots color="rgba(253,231,243,.62)" />}
-          </span>
-          <span style={{ color: '#f9a8d4', textShadow: '0 0 10px rgba(249,168,212,.6)' }}>
-            {digits(pct)}%
-          </span>
-        </div>
-        <div
-          className="h-[7px] w-full overflow-hidden rounded-full"
-          style={{ background: 'rgba(255,255,255,.08)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.05)' }}
-        >
-          <motion.div
-            className="h-full rounded-full"
+          <div
+            className="space-y-[7px] px-4 py-4"
+            dir={isFa ? 'rtl' : 'ltr'}
             style={{
-              background: 'linear-gradient(90deg,#ff8cc0,#bba0fb)',
-              boxShadow: '0 0 16px rgba(247,103,168,.75)',
+              fontFamily: isFa ? FA_STACK : MONO_STACK,
+              fontSize: isFa ? 13 : 12.5,
+              minHeight: lines.length * 26 + 10,
             }}
-            animate={{ width: `${pct}%` }}
-            transition={{ ease: 'linear', duration: 0.18 }}
-          />
-        </div>
-        <motion.p
-          className="mt-3 text-center text-[10.5px]"
-          style={{ color: 'rgba(253,231,243,.45)' }}
+          >
+            {lines.map((line, i) => {
+              const tone: Tone = line.tone || 'ok'
+              const isRtlLine = isFa || /\p{Script=Arabic}/u.test(line.label)
+
+              if (i < done) {
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: isRtlLine ? 8 : -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-baseline gap-2"
+                  >
+                    <span className="shrink-0 font-medium" style={{ color: 'rgba(246,235,255,.94)' }}>
+                      {line.label}
+                    </span>
+                    <span
+                      className="flex-1 border-b-2 border-dotted"
+                      style={{ borderColor: 'rgba(255,255,255,.13)' }}
+                    />
+                    {line.final ? (
+                      <motion.span
+                        className="shrink-0 text-[15px] leading-none"
+                        style={{ color: TONE_COLOR.heart, textShadow: '0 0 12px rgba(251,122,184,.9)' }}
+                        animate={{ scale: [1, 1.4, 1, 1.18, 1] }}
+                        transition={{ duration: 1.1, repeat: Infinity, times: [0, 0.16, 0.32, 0.48, 1] }}
+                      >
+                        ❤
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 420, damping: 17 }}
+                        className="flex shrink-0 items-center font-bold"
+                        style={{ color: TONE_COLOR[tone], textShadow: `0 0 12px ${TONE_COLOR[tone]}55` }}
+                      >
+                        {line.status}
+                        {line.ellipsis && <BouncingDots color={TONE_COLOR[tone]} />}
+                      </motion.span>
+                    )}
+                  </motion.div>
+                )
+              }
+
+              if (i === done && !finished) {
+                const labelDone = typed >= line.label.length
+                return (
+                  <div key={i} className="flex items-baseline gap-2">
+                    <span className="shrink-0 font-medium" style={{ color: 'rgba(246,235,255,.94)' }}>
+                      {line.label.slice(0, typed)}
+                      <span className="animate-pulse" style={{ color: TONE_COLOR.heart }}>
+                        ▌
+                      </span>
+                    </span>
+                    <span className="flex-1" />
+                    {labelDone && (
+                      <span className="shrink-0">
+                        <BouncingDots color={line.final ? TONE_COLOR.heart : 'rgba(253,231,243,.7)'} />
+                      </span>
+                    )}
+                  </div>
+                )
+              }
+
+              return <div key={i} className="h-[18px]" />
+            })}
+          </div>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.9, 0.9, 0] }}
-          transition={{ duration: 6, times: [0, 0.12, 0.75, 1] }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1 }}
+          className="relative z-10 mt-6 w-full max-w-[400px]"
         >
-          {t('boot.skipHint')}
-        </motion.p>
-      </motion.div>
+          <div
+            className="mb-2 flex items-center justify-between text-[11px]"
+            dir="ltr"
+            style={{ fontFamily: MONO_STACK, color: 'rgba(253,231,243,.62)' }}
+          >
+            <span>
+              {t('boot.loadingPhrase')}
+              {!finished && <BouncingDots color="rgba(253,231,243,.62)" />}
+            </span>
+            <span style={{ color: '#f9a8d4', textShadow: '0 0 10px rgba(249,168,212,.6)' }}>
+              {digits(pct)}%
+            </span>
+          </div>
+          <div
+            className="h-[7px] w-full overflow-hidden rounded-full"
+            style={{ background: 'rgba(255,255,255,.08)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.05)' }}
+          >
+            <motion.div
+              className="h-full rounded-full"
+              style={{
+                background: 'linear-gradient(90deg,#ff8cc0,#bba0fb)',
+                boxShadow: '0 0 16px rgba(247,103,168,.75)',
+              }}
+              animate={{ width: `${pct}%` }}
+              transition={{ ease: 'linear', duration: 0.18 }}
+            />
+          </div>
+          <motion.p
+            className="mt-3 text-center text-[10.5px]"
+            style={{ color: 'rgba(253,231,243,.45)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0.9, 0] }}
+            transition={{ duration: 6, times: [0, 0.12, 0.75, 1] }}
+          >
+            {t('boot.skipHint')}
+          </motion.p>
+        </motion.div>
       </div>
 
-      {/* --------------------------------------------- پرده‌ی پایان و خوش‌آمد */}
       <AnimatePresence>
         {finished && (
           <motion.div
@@ -529,7 +524,6 @@ export function Boot() {
   )
 }
 
-/** سه نقطه‌ی تایپ‌رایتری متحرک */
 function BouncingDots({ color }: { color: string }) {
   return (
     <span className="mx-1 inline-flex items-baseline gap-[2px]" dir="ltr" aria-hidden>
@@ -547,57 +541,353 @@ function BouncingDots({ color }: { color: string }) {
   )
 }
 
-/** نمودار ECG که مدام از چپ به راست کشیده و محو می‌شود */
-function EcgLine() {
+/** لوگوی سینمایی قلب+بی‌نهایت - ساخته شدن از ذرات نور */
+function CinematicHeartInfinity({ size = 100 }: { size?: number }) {
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="relative z-10">
+        <defs>
+          <linearGradient id="boot-heart-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ff9ecb" />
+            <stop offset="55%" stopColor="#f767a8" />
+            <stop offset="100%" stopColor="#bba0fb" />
+          </linearGradient>
+          <linearGradient id="boot-heart-glow" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ff9ecb" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#bba0fb" stopOpacity="0.8" />
+          </linearGradient>
+          <filter id="boot-glow">
+            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {/* سایه و هاله پس‌زمینه */}
+        <path
+          d={HEART_INFINITY_PATH}
+          fill="none"
+          stroke="url(#boot-heart-glow)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.15"
+          filter="url(#boot-glow)"
+        />
+        {/* مسیر اصلی با انیمیشن ساخته شدن */}
+        <motion.path
+          d={HEART_INFINITY_PATH}
+          fill="none"
+          stroke="url(#boot-heart-g)"
+          strokeWidth="2.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 2.2, ease: 'easeInOut', delay: 0.3 }}
+        />
+        {/* لایه درخشان دوم با تاخیر */}
+        <motion.path
+          d={HEART_INFINITY_PATH}
+          fill="none"
+          stroke="url(#boot-heart-glow)"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.6"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 2, ease: 'easeInOut', delay: 0.6 }}
+          style={{ filter: 'blur(0.5px)' }}
+        />
+      </svg>
+      {/* هاله مرکزی تپنده */}
+      <motion.div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: '60%',
+          height: '60%',
+          background: 'radial-gradient(circle, rgba(247,103,168,.25), transparent 70%)',
+        }}
+        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </div>
+  )
+}
+
+/** ذرات نور که از اطراف جمع می‌شوند و لوگو را می‌سازند */
+function ParticleFormation() {
+  const particles = useRef(
+    Array.from({ length: 18 }).map((_, i) => ({
+      id: i,
+      // موقعیت اولیه پراکنده در اطراف
+      x: (Math.random() - 0.5) * 200,
+      y: (Math.random() - 0.5) * 200,
+      size: 1.5 + Math.random() * 2.5,
+      delay: Math.random() * 1.2,
+      duration: 1.5 + Math.random() * 1,
+      color: i % 3 === 0 ? '#ff9ecb' : i % 3 === 1 ? '#f767a8' : '#bba0fb',
+    })),
+  ).current
+
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      {particles.map((p) => (
+        <motion.span
+          key={p.id}
+          className="absolute left-1/2 top-1/2 rounded-full"
+          style={{
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
+          }}
+          initial={{ x: p.x, y: p.y, opacity: 0, scale: 0 }}
+          animate={{ x: 0, y: 0, opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            repeatDelay: 3 + Math.random() * 2,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** درخشش الماس‌ها - سمت چپ قلب (جایی که در آویز نگین دارد) */
+function DiamondSparkles() {
+  const sparkles = useRef(
+    Array.from({ length: 7 }).map((_, i) => ({
+      id: i,
+      // موقعیت روی سمت چپ و بالای قلب
+      left: 18 + (i % 3) * 8 + Math.random() * 4,
+      top: 22 + Math.floor(i / 3) * 12 + Math.random() * 6,
+      delay: i * 0.3 + Math.random() * 0.5,
+      size: 2 + Math.random() * 2.5,
+    })),
+  ).current
+
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      {sparkles.map((s) => (
+        <motion.span
+          key={s.id}
+          className="absolute rounded-full bg-white"
+          style={{
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            width: s.size,
+            height: s.size,
+            boxShadow: '0 0 6px #fff, 0 0 12px #ff9ecb',
+          }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0, 1.4, 0],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 1.2,
+            delay: s.delay,
+            repeat: Infinity,
+            repeatDelay: 1.5 + Math.random() * 2,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+      {/* ستاره‌های کوچک الماسی */}
+      {sparkles.slice(0, 3).map((s) => (
+        <motion.span
+          key={`star-${s.id}`}
+          className="absolute text-[8px]"
+          style={{ left: `${s.left + 2}%`, top: `${s.top - 2}%`, color: '#fff' }}
+          animate={{ opacity: [0, 1, 0], scale: [0, 1.2, 0], rotate: [0, 90] }}
+          transition={{
+            duration: 0.8,
+            delay: s.delay + 0.2,
+            repeat: Infinity,
+            repeatDelay: 2,
+          }}
+        >
+          ✦
+        </motion.span>
+      ))}
+    </div>
+  )
+}
+
+/** جریان نور داخل بی‌نهایت - افکت Flow */
+function InfinityFlow() {
   return (
     <svg
-      viewBox="0 0 240 48"
+      viewBox="0 0 64 64"
       fill="none"
       aria-hidden
-      className="pointer-events-none absolute -bottom-2 left-1/2 h-10 w-[250px] -translate-x-1/2"
+      className="pointer-events-none absolute left-1/2 top-1/2 h-[100px] w-[100px] -translate-x-1/2 -translate-y-1/2"
+      style={{ zIndex: 11 }}
     >
       <defs>
-        <linearGradient id="boot-ecg" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#f767a8" stopOpacity="0" />
-          <stop offset="42%" stopColor="#f767a8" />
-          <stop offset="72%" stopColor="#bba0fb" stopOpacity="0.9" />
+        <linearGradient id="inf-flow" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff9ecb" stopOpacity="0" />
+          <stop offset="20%" stopColor="#ff9ecb" stopOpacity="1" />
+          <stop offset="50%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="80%" stopColor="#bba0fb" stopOpacity="1" />
           <stop offset="100%" stopColor="#bba0fb" stopOpacity="0" />
         </linearGradient>
+        <filter id="inf-glow">
+          <feGaussianBlur stdDeviation="1.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
+      {/* بی‌نهایت کوچک در پایین راست */}
       <motion.path
-        d="M0 26 H74 l8 -1 l9 13 l12 -33 l11 23 l7 -2 H240"
-        stroke="url(#boot-ecg)"
-        strokeWidth="1.8"
+        d="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
+        fill="none"
+        stroke="url(#inf-flow)"
+        strokeWidth="1.5"
         strokeLinecap="round"
-        initial={false}
-        animate={{ pathLength: [0, 1], opacity: [0.95, 0.95, 0] }}
-        transition={{ duration: 1.7, repeat: Infinity, times: [0, 0.72, 1], ease: 'easeInOut' }}
+        strokeLinejoin="round"
+        filter="url(#inf-glow)"
+        strokeDasharray="3 6"
+        initial={{ strokeDashoffset: 0 }}
+        animate={{ strokeDashoffset: -18 }}
+        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
       />
+      {/* نقطه نور متحرک داخل بی‌نهایت */}
+      <motion.circle
+        r="1.8"
+        fill="#fff"
+        style={{ filter: 'drop-shadow(0 0 4px #fff)' }}
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: [0, 1, 1, 0],
+        }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <animateMotion
+          path="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
+          dur="2.5s"
+          repeatCount="indefinite"
+        />
+      </motion.circle>
     </svg>
   )
 }
 
-/** انفجار قلبک‌ها هنگام کامل‌شدن بوت */
+/** نور جارویی روی لوگو */
+function ShimmerSweep() {
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0, 1, 0] }}
+      transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4, times: [0, 0.2, 0.8, 1] }}
+      aria-hidden
+    >
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%)',
+        }}
+        initial={{ x: '-100%' }}
+        animate={{ x: '200%' }}
+        transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
+      />
+    </motion.div>
+  )
+}
+
+/** نمودار ECG که از داخل بی‌نهایت عبور می‌کند - نسخه سینمایی */
+function EcgLineInfinity() {
+  return (
+    <svg
+      viewBox="0 0 280 56"
+      fill="none"
+      aria-hidden
+      className="pointer-events-none absolute -bottom-1 left-1/2 h-12 w-[280px] -translate-x-1/2"
+    >
+      <defs>
+        <linearGradient id="boot-ecg-inf" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#f767a8" stopOpacity="0" />
+          <stop offset="15%" stopColor="#f767a8" stopOpacity="0.6" />
+          <stop offset="35%" stopColor="#ff9ecb" stopOpacity="1" />
+          <stop offset="55%" stopColor="#f767a8" stopOpacity="1" />
+          <stop offset="75%" stopColor="#bba0fb" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#bba0fb" stopOpacity="0" />
+        </linearGradient>
+        <filter id="ecg-glow">
+          <feGaussianBlur stdDeviation="1" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {/* ECG اصلی که از قلب عبور می‌کند و داخل بی‌نهایت می‌پیچد */}
+      <motion.path
+        d="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5
+           C 100 27, 115 22, 125 28
+           C 135 34, 125 40, 115 34
+           C 105 28, 115 22, 125 28
+           C 135 34, 130 40, 120 38
+           C 110 36, 105 32, 108 28
+           L 140 28 H280"
+        stroke="url(#boot-ecg-inf)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#ecg-glow)"
+        initial={false}
+        animate={{ pathLength: [0, 1], opacity: [0.9, 0.9, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.7, 1], ease: 'easeInOut' }}
+      />
+      {/* نقطه ضربان که همراه ECG حرکت می‌کند */}
+      <motion.circle
+        r="2.2"
+        fill="#ff9ecb"
+        style={{ filter: 'drop-shadow(0 0 4px #f767a8)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.1, 0.8, 1] }}
+      >
+        <animateMotion
+          path="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5 C 100 27, 115 22, 125 28 C 135 34, 125 40, 115 34 C 105 28, 115 22, 125 28 C 135 34, 130 40, 120 38 C 110 36, 105 32, 108 28 L 140 28 H280"
+          dur="2.2s"
+          repeatCount="indefinite"
+        />
+      </motion.circle>
+    </svg>
+  )
+}
+
 function HeartBurst() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * Math.PI * 2
+      {Array.from({ length: 14 }).map((_, i) => {
+        const angle = (i / 14) * Math.PI * 2
+        const isInfinity = i % 3 === 0
         return (
           <motion.span
             key={i}
-            className="absolute text-[11px]"
-            style={{ left: '50%', top: '50%', color: i % 2 ? '#f767a8' : '#bba0fb' }}
+            className="absolute text-[12px]"
+            style={{ left: '50%', top: '50%', color: isInfinity ? '#bba0fb' : '#f767a8' }}
             initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
             animate={{
-              x: Math.cos(angle) * 74,
-              y: Math.sin(angle) * 74,
+              x: Math.cos(angle) * (70 + (i % 3) * 10),
+              y: Math.sin(angle) * (70 + (i % 3) * 10),
               opacity: 0,
-              scale: 0.3,
+              scale: 0.2,
             }}
-            transition={{ duration: 1.15, ease: 'easeOut' }}
+            transition={{ duration: 1.3, ease: 'easeOut', delay: i * 0.04 }}
           >
-            ❤
+            {isInfinity ? '∞' : '❤'}
           </motion.span>
         )
       })}
@@ -605,21 +895,20 @@ function HeartBurst() {
   )
 }
 
-/** آسمانِ بوت: ستاره‌های چشمک‌زن، شهاب‌ها و قلب‌های بالارونده */
 function BootSky() {
   const stars = useRef(
-    Array.from({ length: 28 }).map((_, i) => ({
+    Array.from({ length: 32 }).map((_, i) => ({
       id: i,
       left: Math.random() * 100,
       top: Math.random() * 100,
       delay: Math.random() * 4,
       duration: 3 + Math.random() * 4,
-      size: 1.5 + Math.random() * 2.2,
+      size: 1.5 + Math.random() * 2.5,
     })),
   ).current
 
   const hearts = useRef(
-    Array.from({ length: 9 }).map((_, i) => ({
+    Array.from({ length: 10 }).map((_, i) => ({
       id: i,
       left: 6 + Math.random() * 88,
       size: 9 + Math.random() * 9,
@@ -645,6 +934,7 @@ function BootSky() {
       {[
         { top: '12%', delay: 3, duration: 1.6 },
         { top: '30%', delay: 9, duration: 1.9 },
+        { top: '58%', delay: 5, duration: 2.1 },
       ].map((m, i) => (
         <motion.span
           key={i}
@@ -672,6 +962,34 @@ function BootSky() {
           transition={{ duration: h.duration, delay: h.delay, repeat: Infinity, ease: 'linear' }}
         >
           ❤
+        </motion.span>
+      ))}
+
+      {/* ذرات بی‌نهایت شناور */}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <motion.span
+          key={`inf-${i}`}
+          className="absolute text-[10px]"
+          style={{
+            left: `${20 + i * 22}%`,
+            bottom: '-4%',
+            color: '#bba0fb',
+            opacity: 0,
+          }}
+          animate={{
+            y: ['0vh', '-110vh'],
+            x: [0, 10, -10, 0],
+            opacity: [0, 0.5, 0.5, 0],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 12 + i * 2,
+            delay: i * 3,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        >
+          ∞
         </motion.span>
       ))}
     </div>

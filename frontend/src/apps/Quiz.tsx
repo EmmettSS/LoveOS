@@ -96,7 +96,7 @@ export default function Quiz() {
   const last = idx === items.length - 1
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 os-no-select">
       <div className="flex items-center gap-2">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--os-border)' }}>
           <motion.div className="h-full rounded-full" style={{ background: 'var(--os-accent)' }} animate={{ width: `${((idx + 1) / items.length) * 100}%` }} />

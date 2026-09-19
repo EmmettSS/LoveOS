@@ -205,7 +205,7 @@ export default function Hug() {
   const warmColor = settings.warm_color || '#ffd6a5'
 
   return (
-    <div className="relative flex flex-col items-center gap-5 overflow-hidden py-4">
+    <div className="relative flex flex-col items-center gap-5 overflow-hidden py-4 os-no-select">
       <AmbientHearts />
 
       {/* هاله‌ی گرم هنگام بغل */}

@@ -93,7 +93,7 @@ export default function GiftBook() {
   const s = stats.data
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       {/* ------------------------------------------------------------ آمار */}
       {s && (
         <div className="grid grid-cols-2 gap-2">

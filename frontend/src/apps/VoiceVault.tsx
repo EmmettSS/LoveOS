@@ -43,7 +43,7 @@ export default function VoiceVault() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <Chips<Cat>
         items={CATEGORIES.map((c) => ({ key: c, label: t(`voice.categories.${c}`) }))}
         value={cat}

@@ -113,7 +113,7 @@ export default function ReadTogether() {
   const data = overview.data
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
           { label: t('reading.stat.books'), value: digits(data.stats.books_total) },

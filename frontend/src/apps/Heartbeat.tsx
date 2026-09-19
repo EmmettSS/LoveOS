@@ -43,7 +43,7 @@ export default function Heartbeat() {
   }, [bpm])
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-6">
+    <div className="flex flex-col items-center justify-center gap-4 py-6 os-no-select">
       <p className="os-title text-lg" style={{ color: 'var(--os-accent)' }}>{t('heartbeat.feelIt')}</p>
 
       <motion.button

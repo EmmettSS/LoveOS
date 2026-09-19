@@ -51,7 +51,7 @@ export default function Memories() {
   if (loading || error) return <ApiStatus loading={loading} error={error} onRetry={() => void reload()} />
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 os-allow-select">
       <div className="flex items-center gap-2">
         <Chips<Tab>
           items={[

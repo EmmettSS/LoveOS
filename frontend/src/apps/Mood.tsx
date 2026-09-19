@@ -35,7 +35,7 @@ export default function Mood() {
   if (items.length === 0) return <Empty />
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 os-no-select">
       <p className="os-title text-center text-lg">{t('mood.question')}</p>
 
       <div className="grid grid-cols-3 gap-3">
