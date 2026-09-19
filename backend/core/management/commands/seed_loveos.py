@@ -4,7 +4,9 @@ manage.py seed_loveos — پر کردن LoveOS با محتوای اولیه
 """
 from datetime import date, time, timedelta
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connection
+from django.db.utils import OperationalError
 from django.utils import timezone
 
 from accounts.models import UserConfig
@@ -208,6 +210,7 @@ class Command(BaseCommand):
         parser.add_argument("--vault", default="0000", help="رمز صندوقچه")
 
     def handle(self, *args, **opts):
+        self._ensure_schema_ready()
         cfg = UserConfig.get_solo()
         if not cfg.passcode_hash:
             cfg.set_passcode(opts["passcode"])
@@ -344,6 +347,29 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"✅ LoveOS آماده شد. رمز ورود: {opts['passcode']} | رمز صندوقچه: {opts['vault']}"
         ))
+
+    @staticmethod
+    def _ensure_schema_ready() -> None:
+        """نگهبانِ طرحِ دیتابیس: اگر ستونِ یتیمِ ``kind`` (یادگارِ مهاجرتِ
+        برگردانده‌شده‌ی ۱۶ سپتامبر) هنوز روی جدولِ آسمان هست، به‌جای
+        tracebackِ گنگِ IntegrityError راهِ درست را بگو: اول migrate."""
+        try:
+            with connection.cursor() as cursor:
+                cols = {
+                    f.name
+                    for f in connection.introspection.get_table_description(
+                        cursor, Constellation._meta.db_table
+                    )
+                }
+        except OperationalError:
+            raise CommandError(
+                "جدول‌های LoveOS ساخته نشده‌اند؛ اول این را اجرا کن: python manage.py migrate"
+            )
+        if "kind" in cols:
+            raise CommandError(
+                "دیتابیس قدیمی است (ستونِ یتیمِ kind از مهاجرتِ برگردانده‌شده هنوز هست). "
+                "اول این را اجرا کن تا خودکار ترمیم شود: python manage.py migrate"
+            )
 
     # ------------------------------------------- اپ ۱: هماهنگ‌کننده تماس ---
     def seed_call_sync(self, cfg) -> None:
