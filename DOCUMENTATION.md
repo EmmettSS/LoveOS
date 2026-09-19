@@ -209,16 +209,17 @@ LoveOS/
 
 ### 3.1 The symbol
 
-The symbol is a copy of the **silver gift necklace**: an open heart whose lower-right stroke, inside
-the body, becomes an infinity. The loop is small relative to the heart and sits exactly on the heart
-line, so the eye reads **one continuous line** — that is the whole idea, so I never draw the ∞ as a
-separate shape floating next to the heart.
+The symbol is a copy of the **silver gift necklace**: an open heart whose lower-right stroke, on its
+way down, grows the two loops of an infinity **on its own body** — two nearby attachment points and an
+angled crossing at the waist — and then keeps going to the bottom tip. The ∞ is therefore part of the
+right-side stroke, never a shape floating inside the heart, and each lobe crosses the line once —
+exactly like the pendant.
 
 | Where | What |
 |---|---|
 | `frontend/public/favicon.svg`, `frontend/public/icons/*` | favicon, PWA (`app-192`, `app-512`, `maskable-512`), apple-touch |
 | `frontend/index.html` | boot splash — the same paths, drawn then pulsed, with diamond sparkles |
-| `frontend/src/shared/loveosMark.ts` | generated geometry (`HEART_PATH`, `INF_PATH`, `MARK_SPARKLES`) |
+| `frontend/src/shared/loveosMark.ts` | generated geometry (`HEART_PATH`, `BODY_PATH`, `MARK_SPARKLES`) |
 | `frontend/src/shared/Icon.tsx` → `LoveOSLogo` | every in-app use: boot screen, lock screen, About, dock start button, app menu header |
 | `backend/templates/admin_gate.html` | the Daddy Panel passcode gate — same mark inline (plus a data-URI favicon), no extra request |
 | `docs/branding/` | the finished pack, the four first-round candidates, and the generator |

@@ -5,7 +5,7 @@
 import { useId } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
 
-import { HEART_PATH, INF_PATH, MARK_SPARKLES, MARK_STROKE, MARK_VIEW } from './loveosMark'
+import { BODY_PATH, HEART_PATH, MARK_SPARKLES, MARK_STROKE, MARK_VIEW } from './loveosMark'
 
 export type IconName =
   | 'map' | 'voice' | 'music' | 'memories' | 'whisper' | 'countdown' | 'weather'
@@ -447,17 +447,32 @@ export function Icon({ name, size = 22, className = '', style, strokeWidth = 1.7
 }
 
 /**
- * لوگوی LoveOS — نشانِ «قلبِ باز که خطِ پایین‌راستش داخلِ بدنه به ∞ می‌رسد»
+ * لوگوی LoveOS — نشانِ «قلب که خطِ پایین‌راستش روی بدنه به ∞ می‌رسد»
  * (همان نشانِ فاوآیکون و اسپلش؛ هندسه در loveosMark.ts و تولیدش دستِ
  * docs/branding/generate-logo.mjs است). روبانِ گرادیانی + نگین‌های الماس.
+ *
+ * دو مسیر از یک نقطه (نوکِ پایین) شروع می‌شوند و به هم می‌رسند، پس چشم یک خطِ
+ * پیوسته می‌بیند: مسیرِ قلب از نوک تا سمتِ راست، و مسیرِ بدنه که روی خودش ∞ را
+ * می‌سازد و برمی‌گردد به نوک — دقیقاً ساختارِ گردنبندِ مرجع.
  */
-export function LoveOSLogo({ size = 64, className = '' }: { size?: number; className?: string }) {
+export function LoveOSLogo({
+  size = 64,
+  className = '',
+  glow,
+}: {
+  size?: number
+  className?: string
+  glow?: boolean
+}) {
   const stroke = MARK_STROKE
   // شناسه‌ی یکتا: اگر چند لوگو هم‌زمان در صفحه باشند، گرادیان‌ها قاطی نمی‌شوند
   const uid = useId().replace(/:/g, '')
   const gid = `loveos-g-${uid}`
   const bid = `loveos-bg-${uid}`
   const cid = `loveos-clip-${uid}`
+  const fid = `loveos-glow-${uid}`
+  // درخشش فقط برای لوگوهای بزرگ (سبک ماندنِ صفحه در فهرست‌ها)
+  const withGlow = glow ?? size >= 72
   return (
     <svg
       width={size}
@@ -469,12 +484,12 @@ export function LoveOSLogo({ size = 64, className = '' }: { size?: number; class
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#ffd9ee" />
-          <stop offset="18%" stopColor="#ff9ecb" />
+          <stop offset="26%" stopColor="#ff9ecb" />
           <stop offset="52%" stopColor="#f767a8" />
           <stop offset="78%" stopColor="#d982f0" />
           <stop offset="100%" stopColor="#bba0fb" />
         </linearGradient>
-        <linearGradient id={bid} x1="0" y1="0" x2="0.4" y2="1">
+        <linearGradient id={bid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#2a1030" />
           <stop offset="55%" stopColor="#160a1e" />
           <stop offset="100%" stopColor="#0b0410" />
@@ -482,46 +497,27 @@ export function LoveOSLogo({ size = 64, className = '' }: { size?: number; class
         <clipPath id={cid}>
           <rect width={MARK_VIEW} height={MARK_VIEW} rx="112" />
         </clipPath>
+        <filter id={fid} x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur stdDeviation={stroke * 0.42} result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <rect width={MARK_VIEW} height={MARK_VIEW} rx="112" fill={`url(#${bid})`} />
       <g clipPath={`url(#${cid})`}>
-        {/* قلب و بینهایت جدا کشیده می‌شوند ولی در دو نقطه روی هم می‌افتند،
-            پس چشم یک خطِ پیوسته می‌بیند. */}
-        <path
-          d={HEART_PATH}
-          fill="none"
-          stroke={`url(#${gid})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={INF_PATH}
-          fill="none"
-          stroke={`url(#${gid})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        {withGlow && (
+          <g filter={`url(#${fid})`} opacity="0.55">
+            <path d={HEART_PATH} fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={BODY_PATH} fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        )}
+        <path d={HEART_PATH} fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={BODY_PATH} fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
         {/* رگه‌ی روشنِ وسطِ روبان، همان حسِ براقیِ گردنبند */}
-        <path
-          d={HEART_PATH}
-          fill="none"
-          stroke="#fff"
-          strokeOpacity="0.26"
-          strokeWidth={stroke * 0.3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={INF_PATH}
-          fill="none"
-          stroke="#fff"
-          strokeOpacity="0.24"
-          strokeWidth={stroke * 0.26}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <path d={HEART_PATH} fill="none" stroke="#fff" strokeOpacity="0.26" strokeWidth={stroke * 0.3} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={BODY_PATH} fill="none" stroke="#fff" strokeOpacity="0.24" strokeWidth={stroke * 0.26} strokeLinecap="round" strokeLinejoin="round" />
         {MARK_SPARKLES.map((s) => (
           <g key={`${s.x}-${s.y}`} transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}>
             <path
