@@ -5,7 +5,7 @@
 
 ![backend](https://img.shields.io/badge/backend-Django%205.2%20%2B%20DRF-0C4B33)
 ![frontend](https://img.shields.io/badge/frontend-React%2019%20%2B%20Vite%208-61DAFB)
-![tests](https://img.shields.io/badge/tests-83%20backend%20%2B%2012%20UI%20suites-ec4899)
+![tests](https://img.shields.io/badge/tests-89%20backend%20%2B%2012%20UI%20suites-ec4899)
 
 LoveOS boots, asks for a passcode, shows a desktop with widgets and a dock, and opens **30 small
 apps** — voice notes, letters, memories, a shared map, a garden, a star sky, chat, hugs, quizzes,
@@ -53,7 +53,7 @@ Every step for every host type is in [DOCUMENTATION.md § 10](./DOCUMENTATION.md
 ## Tests
 
 ```bash
-./scripts/dev.sh test         # 83 backend tests + type check + lint + build + 12 UI suites
+./scripts/dev.sh test         # 89 backend tests + type check + lint + build + 12 UI suites
 ```
 
 ## Layout

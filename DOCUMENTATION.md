@@ -220,6 +220,7 @@ separate shape floating next to the heart.
 | `frontend/index.html` | boot splash — the same paths, drawn then pulsed, with diamond sparkles |
 | `frontend/src/shared/loveosMark.ts` | generated geometry (`HEART_PATH`, `INF_PATH`, `MARK_SPARKLES`) |
 | `frontend/src/shared/Icon.tsx` → `LoveOSLogo` | every in-app use: boot screen, lock screen, About, dock start button, app menu header |
+| `backend/templates/admin_gate.html` | the Daddy Panel passcode gate — same mark inline (plus a data-URI favicon), no extra request |
 | `docs/branding/` | the finished pack, the four first-round candidates, and the generator |
 
 Everything above comes from one file, so the mark can never drift between the splash, the favicon
@@ -231,8 +232,10 @@ npm i -D @resvg/resvg-js                    # optional, for the PNG icons
 node docs/branding/generate-logo.mjs
 ```
 
-The generator replaces only the `<svg class="ls-mark">` block of `frontend/index.html`, so the splash
-CSS and keyframes stay hand-editable. The reference photo (`Logo-idea.jpg`, repo root) is **not**
+The generator replaces only the `<svg class="ls-mark">` block of `frontend/index.html` and the
+contents of the `{# LOVEOS-LOGO #}` / `{# LOVEOS-FAVICON #}` markers in `admin_gate.html`, so the
+splash CSS/keyframes and the rest of the gate template stay hand-editable. `backend/core/tests.py`
+asserts the gate really renders the mark. The reference photo (`Logo-idea.jpg`, repo root) is **not**
 used in the UI anywhere — the UI is vector only.
 
 ---
@@ -939,7 +942,7 @@ Manual order, if I ever need it: `git pull` → `npm run build` → `pip install
 | `./scripts/dev.sh` / `run` | setup if needed, then backend on :8000 and frontend on :5173 |
 | `setup` | venv, requirements, `.env` with dev defaults, migrate, seed, `npm ci` |
 | `test` | backend tests + frontend checks (below) |
-| `test:be` | `manage.py check` + `manage.py test` (83 tests) |
+| `test:be` | `manage.py check` + `manage.py test` (89 tests) |
 | `test:fe` | `tsc -b` + `oxlint src` + `npm run build` + `npm run test:ui` |
 | `check` | `manage.py check`, `makemigrations --check`, `tsc`, `oxlint` — fast pre-commit check |
 | `reset` | delete the SQLite file, migrate, seed again |
@@ -976,7 +979,7 @@ level M, versions 1–10).
 ./scripts/dev.sh test          # everything
 ```
 
-### Backend — 83 tests (`manage.py test`)
+### Backend — 89 tests (`manage.py test`)
 
 Per app `tests.py`: session lifecycle and expiry, boot endpoint hiding secrets, unlock attempt
 limit, settings round-trip, effective location (live vs. panel vs. stale), Persian-tolerant search,
@@ -1005,8 +1008,10 @@ The UI tests run under **jsdom** with esbuild — no browser needed (`frontend/t
 | `pdf-book` | PDF export of the library book |
 | `desktop-drag` | icon reordering by drag and drop |
 | `viewport-fit` | full-height shell without inner scroll on boot/lock/desktop |
-| `starmap-sky` | star sky renders edge-to-edge with the real 8 constellations, tap → message, "light the whole name" |
+| `starmap-sky` | star sky renders edge-to-edge with the real 8 constellations, tap → message, "light the whole name", and the old top caption stays gone |
 | `starmap-broken-stars` | corrupt `stars` rows never blank or crash the sky |
+| `boot-timeout` | a backend that never answers ends on a warm "try again" screen with a PWA-cache hint, never a blank page |
+| `error-boundary-wrapper` | the crash guard renders the warm message, remounts clean, and adds no wrapper div |
 | `starmap-mobile` | two-row layout math (symbols 1.3×, no overlap, RTL mirror), phone portrait → rotated full-screen portal above the dock, landscape → no extra rotation, ✕ closes the window, other windows on top hide the overlay |
 
 `tests/fixtures.json` was captured from the live API; if an endpoint contract changes, these

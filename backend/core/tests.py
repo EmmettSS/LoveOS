@@ -299,6 +299,26 @@ class AdminPanelTests(TestCase):
             checked += 1
         self.assertGreater(checked, 20, "تعداد مدل‌های ثبت‌شده کمتر از انتظار است")
 
+    def test_admin_gate_shows_the_brand_mark(self):
+        """دروازه‌ی پنل باید نشانِ LoveOS را نشان بدهد (نه ایموجی).
+
+        نشان از docs/branding/generate-logo.mjs ساخته می‌شود و بینِ نشانه‌های
+        LOVEOS-LOGO/LOVEOS-FAVICON داخلِ قالب می‌نشیند؛ اگر آن نشانه‌ها پاک شوند،
+        این تست می‌گیرد.
+        """
+        from django.conf import settings
+        from django.test import override_settings
+
+        with override_settings(ADMIN_GATE_PASSCODE="gate-test-pass"):
+            res = self.client.get(f"/{settings.ADMIN_PATH}/")
+
+        self.assertEqual(res.status_code, 401)
+        html = res.content.decode()
+        self.assertIn('<svg class="loveos-mark"', html, "نشانِ LoveOS در دروازه‌ی پنل نیست")
+        self.assertIn("data:image/svg+xml", html, "فاوآیکونِ دروازه ست نشده")
+        self.assertNotIn("\U0001F497", html, "ایموجیِ قلب هنوز در دروازه هست")
+        self.assertGreater(len(html), 4000, "قالبِ دروازه ناقص رندر شده")
+
     def test_calls_admin_shows_weekday_and_time(self):
         from calls.models import CallFreeSlot
 

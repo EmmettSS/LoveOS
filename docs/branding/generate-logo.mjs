@@ -19,6 +19,7 @@
  *   frontend/public/icons/apple-touch-icon.png  آیکن iOS (۱۸۰px، تمام‌مربع)
  *   frontend/src/shared/loveosMark.ts           مسیرهای قلب/∞ و نگین‌ها برای React
  *   frontend/index.html                         فقط بلوکِ اسپلش به‌روزرسانی می‌شود
+ *   backend/templates/admin_gate.html           نشانِ دروازه‌ی پنل بابا (بین نشانه‌ها)
  *
  * PNGها با @resvg/resvg-js ساخته می‌شوند. اگر نصب نبود، SVGها ساخته می‌شوند و
  * برای PNGها پیام راهنما چاپ می‌شود:
@@ -340,6 +341,63 @@ if (start === -1) {
   writeFileSync(indexPath, html)
 }
 
+// ------------------------------------------- دروازه‌ی پنل بابا (Django template)
+// نسخه‌ی فشرده‌ی نشان: بدون درخشش، نمونه‌برداری درشت‌تر و چند نگین — چون داخلِ
+// HTML می‌نشیند و باید سبک بماند. نمایشش ۷۶ پیکسل است، پس درشتیِ نمونه‌ها دیده نمی‌شود.
+/** عددها را به یک رقم اعشار گرد می‌کند تا مسیرِ داخلِ HTML سبک بماند */
+const coarse = (d) =>
+  d.replace(/-?\d+(?:\.\d+)?/g, (m) => {
+    const v = Math.round(parseFloat(m) * 10) / 10
+    return Number.isInteger(v) ? String(v) : v.toFixed(1)
+  })
+
+const GG = geometry({ pad: 58 })
+const gateHeart = coarse(smooth(subsample(GG.outline, 7), true))
+const gateInf = coarse(smooth(subsample(GG.inf, 8)))
+const gateW = GG.strokeW
+const gateSparkles = pave(subsample(GG.outline, 3), { count: 5, r: GG.strokeW * 0.32 })
+
+// آیکنِ فاوآیکونِ دروازه: ریزتر دیده می‌شود، پس درشت‌تر و بدونِ نگین
+const GI = geometry({ pad: 46 })
+const iconHeart = coarse(smooth(subsample(GI.outline, 13), true))
+const iconInf = coarse(smooth(subsample(GI.inf, 14)))
+const iconW = GI.strokeW
+
+const gateBody = (sparkles) => `<defs>
+      <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ffd9ee"/><stop offset="18%" stop-color="#ff9ecb"/><stop offset="52%" stop-color="#f767a8"/><stop offset="78%" stop-color="#d982f0"/><stop offset="100%" stop-color="#bba0fb"/>
+      </linearGradient>
+      <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0%" stop-color="#2a1030"/><stop offset="55%" stop-color="#160a1e"/><stop offset="100%" stop-color="#0b0410"/></linearGradient>
+    </defs>
+    <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+    <path d="${gateHeart}" fill="none" stroke="url(#lg)" stroke-width="${fmt(gateW)}" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${gateInf}" fill="none" stroke="url(#lg)" stroke-width="${fmt(gateW)}" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${gateHeart}" fill="none" stroke="#fff" stroke-opacity=".26" stroke-width="${fmt(gateW * 0.3)}" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${gateInf}" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="${fmt(gateW * 0.26)}" stroke-linejoin="round" stroke-linecap="round"/>${sparkles
+      ? '\n    ' + gateSparkles.map((sp, i) => `<g transform="translate(${fmt(sp.x, 1)} ${fmt(sp.y, 1)}) rotate(${fmt((sp.rot * 180) / Math.PI, 1)})"><path d="M${fmt(-sp.r, 1)} 0 L0 ${fmt(-sp.r * 0.36, 1)} L${fmt(sp.r, 1)} 0 L0 ${fmt(sp.r * 0.36, 1)} Z" fill="#fff" opacity=".9"/></g>`).join('\n    ')
+      : ''}`
+
+const gateSVG = `<svg class="loveos-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="76" height="76" role="img" aria-label="LoveOS">${gateBody(true)}</svg>`
+const gateIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffd9ee"/><stop offset="18%" stop-color="#ff9ecb"/><stop offset="52%" stop-color="#f767a8"/><stop offset="78%" stop-color="#d982f0"/><stop offset="100%" stop-color="#bba0fb"/></linearGradient><linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0%" stop-color="#2a1030"/><stop offset="55%" stop-color="#160a1e"/><stop offset="100%" stop-color="#0b0410"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#bg)"/><path d="${iconHeart}" fill="none" stroke="url(#lg)" stroke-width="${fmt(iconW)}" stroke-linejoin="round" stroke-linecap="round"/><path d="${iconInf}" fill="none" stroke="url(#lg)" stroke-width="${fmt(iconW)}" stroke-linejoin="round" stroke-linecap="round"/><path d="${iconHeart}" fill="none" stroke="#fff" stroke-opacity=".26" stroke-width="${fmt(iconW * 0.3)}" stroke-linejoin="round" stroke-linecap="round"/><path d="${iconInf}" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="${fmt(iconW * 0.26)}" stroke-linejoin="round" stroke-linecap="round"/></svg>`
+const gateIconUri = `data:image/svg+xml,${encodeURIComponent(gateIcon)}`
+
+const gatePath = resolve(ROOT, 'backend/templates/admin_gate.html')
+{
+  let gate = readFileSync(gatePath, 'utf8')
+  const inject = (text, name, payload) => {
+    const start = `{# ${name}:START #}`, end = `{# ${name}:END #}`
+    const i = text.indexOf(start), j = text.indexOf(end)
+    if (i === -1 || j === -1) {
+      console.warn(`هشدار: نشانه‌ی ${name} در admin_gate.html پیدا نشد؛ همان بخش دست‌نخورده ماند.`)
+      return text
+    }
+    return text.slice(0, i + start.length) + payload + text.slice(j)
+  }
+  gate = inject(gate, 'LOVEOS-FAVICON', `\n  <link rel="icon" type="image/svg+xml" href="${gateIconUri}">\n  `)
+  gate = inject(gate, 'LOVEOS-LOGO', gateSVG)
+  writeFileSync(gatePath, gate)
+}
+
 // ------------------------------------------------------------------- PNGها
 let Resvg = null
 try {
@@ -383,3 +441,4 @@ if (Resvg) {
 console.log('نشان ساخته شد:')
 console.log(`  قلب ${hLen}px خط · ∞ ${iLen}px خط · ضخامت ${G.strokeW} (اسپلش) / ${hs} (روبان)`)
 console.log('  frontend/public/favicon.svg · icons/logo.svg · icons/*.png · src/shared/loveosMark.ts')
+console.log('  docs/branding/logo-*.svg · backend/templates/admin_gate.html')

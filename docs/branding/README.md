@@ -26,9 +26,11 @@ node docs/branding/generate-logo.mjs
 ```
 
 خروجی: `frontend/public/favicon.svg`، `frontend/public/icons/{logo.svg,app-192.png,
-app-512.png,maskable-512.png,apple-touch-icon.png}`، همین پوشه، و
+app-512.png,maskable-512.png,apple-touch-icon.png}`، همین پوشه،
 `frontend/src/shared/loveosMark.ts` (هندسه‌ای که کامپوننت React و اسپلش از آن
-استفاده می‌کنند).
+استفاده می‌کنند) و نشانِ داخلِ دروازه‌ی پنل بابا
+(`backend/templates/admin_gate.html`، بین نشانه‌های `{# LOVEOS-LOGO #}` و
+`{# LOVEOS-FAVICON #}`).
 
 اسپلشِ صفحه‌ی اول هم از همان هندسه ساخته می‌شود: `generate-logo.mjs` فقط بلوکِ
 `<svg class="ls-mark">` را در `frontend/index.html` جایگزین می‌کند و طولِ

@@ -7,7 +7,7 @@
 #    ./scripts/dev.sh              set up (if needed) and run backend + frontend
 #    ./scripts/dev.sh setup        only install dependencies, migrate and seed
 #    ./scripts/dev.sh test         run the full test suite (backend + frontend)
-#    ./scripts/dev.sh test:be      backend tests only  (Django, 83 tests)
+#    ./scripts/dev.sh test:be      backend tests only  (Django, 89 tests)
 #    ./scripts/dev.sh test:fe      frontend checks only (tsc + oxlint + build + UI tests)
 #    ./scripts/dev.sh check        quick health check (django check + tsc + oxlint)
 #    ./scripts/dev.sh reset        delete the local SQLite DB and re-seed
