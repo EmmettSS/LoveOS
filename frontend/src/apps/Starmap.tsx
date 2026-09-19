@@ -429,13 +429,7 @@ function SkyScene({ items, className, mobile = false, rotated = false, onClose }
         </svg>
       )}
 
-      {/* متن راهنما — شناور روی آسمان */}
-      <p
-        className={`absolute left-1/2 z-10 max-w-[92%] -translate-x-1/2 rounded-full px-4 py-1.5 text-center text-white/90 ${mobile ? 'text-xs' : 'text-sm'}`}
-        style={{ ...GLASS, top: `calc(${mobile ? 8 : 16}px + var(--sky-t))` }}
-      >
-        {t('starmap.caption')}
-      </p>
+      {/* کپشن «اسمت رو با ستاره‌ها نوشتم» حذف شد — درخواست کاربر */}
 
       {/* اگر هیچ صورتی ستاره‌ی سالم نداشت، به‌جای آسمانِ بی‌حال یک راهنمای کوچک */}
       {!hasAnyValidStars && (

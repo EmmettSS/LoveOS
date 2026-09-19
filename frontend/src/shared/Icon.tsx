@@ -443,7 +443,7 @@ export function Icon({ name, size = 22, className = '', style, strokeWidth = 1.7
   )
 }
 
-/** لوگوی LoveOS: قلب + پنجره‌ی سیستم‌عامل */
+/** لوگوی LoveOS: قلب + بی‌نهایت + پنجره‌ی سیستم‌عامل - ساختار دقیقاً مشابه آویز نقره‌ای مرجع */
 export function LoveOSLogo({ size = 64, className = '' }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden="true">
@@ -459,9 +459,29 @@ export function LoveOSLogo({ size = 64, className = '' }: { size?: number; class
       <circle cx="13" cy="16" r="1.8" fill="#f767a8" />
       <circle cx="19" cy="16" r="1.8" fill="#efc478" />
       <circle cx="25" cy="16" r="1.8" fill="#bba0fb" />
+      {/* قلب + بی‌نهایت - ساختار دقیقاً مشابه آویز نقره‌ای مرجع */}
       <path
-        d="M32 45s-13-7.8-13-16.2A6.9 6.9 0 0 1 32 24.6a6.9 6.9 0 0 1 13 4.2C45 37.2 32 45 32 45Z"
-        fill="url(#loveos-g)"
+        d="M32 22
+           C 24 14, 10 15, 8.5 26
+           C 7 36, 17 43, 26 50
+           C 26 46.5, 29 42.5, 33 41
+           C 36 39.8, 39 40.5, 39 42.8
+           C 39 45.1, 36 46, 33.5 44.8
+           C 31 43.6, 32.5 40.5, 36 39.5
+           C 39.5 38.5, 43 36.8, 45.5 34.2
+           C 48 31.6, 48.5 29, 46.5 27.5
+           C 44.5 26, 42 27, 42 29.2
+           C 42 31.4, 44.5 32.4, 46.5 31.4
+           C 48.5 30.4, 48 28, 45.5 27.2
+           C 43 26.4, 40.5 28.2, 41.5 30.5
+           C 42.5 32.8, 46 31.5, 48.5 29
+           C 51 26.5, 50 15.5, 41 13.5
+           C 37 12.5, 33.5 14.5, 32 22Z"
+        fill="none"
+        stroke="url(#loveos-g)"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )

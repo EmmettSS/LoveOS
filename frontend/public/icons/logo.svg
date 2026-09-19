@@ -1,10 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#ff9ecb"/><stop offset="55%" stop-color="#f767a8"/><stop offset="100%" stop-color="#bba0fb"/>
-  </linearGradient></defs>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff9ecb"/>
+      <stop offset="55%" stop-color="#f767a8"/>
+      <stop offset="100%" stop-color="#bba0fb"/>
+    </linearGradient>
+  </defs>
   <rect x="2" y="2" width="60" height="60" rx="16" fill="#fff5f9"/>
   <rect x="7" y="10" width="50" height="42" rx="13" fill="url(#g)" opacity=".18"/>
   <rect x="7" y="10" width="50" height="42" rx="13" fill="none" stroke="url(#g)" stroke-width="2.4"/>
-  <circle cx="15" cy="18" r="1.8" fill="#f767a8"/><circle cx="21" cy="18" r="1.8" fill="#efc478"/><circle cx="27" cy="18" r="1.8" fill="#bba0fb"/>
-  <path d="M32 45s-12-7.4-12-15.4A6.6 6.6 0 0 1 32 25.6a6.6 6.6 0 0 1 12 4C44 37.6 32 45 32 45Z" fill="url(#g)"/>
+  <circle cx="15" cy="18" r="1.8" fill="#f767a8"/>
+  <circle cx="21" cy="18" r="1.8" fill="#efc478"/>
+  <circle cx="27" cy="18" r="1.8" fill="#bba0fb"/>
+  <!-- قلب + بی‌نهایت - ساختار دقیقاً مشابه آویز نقره‌ای مرجع -->
+  <path d="M32 22
+           C 24 14, 10 15, 8.5 26
+           C 7 36, 17 43, 26 50
+           C 26 46.5, 29 42.5, 33 41
+           C 36 39.8, 39 40.5, 39 42.8
+           C 39 45.1, 36 46, 33.5 44.8
+           C 31 43.6, 32.5 40.5, 36 39.5
+           C 39.5 38.5, 43 36.8, 45.5 34.2
+           C 48 31.6, 48.5 29, 46.5 27.5
+           C 44.5 26, 42 27, 42 29.2
+           C 42 31.4, 44.5 32.4, 46.5 31.4
+           C 48.5 30.4, 48 28, 45.5 27.2
+           C 43 26.4, 40.5 28.2, 41.5 30.5
+           C 42.5 32.8, 46 31.5, 48.5 29
+           C 51 26.5, 50 15.5, 41 13.5
+           C 37 12.5, 33.5 14.5, 32 22Z"
+        fill="none" stroke="url(#g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
