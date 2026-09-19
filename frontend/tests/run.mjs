@@ -29,6 +29,7 @@ const ALL = {
   'viewport-fit': join(here, 'viewport-fit.tsx'),
   'starmap-sky': join(here, 'starmap-sky.tsx'),
   'starmap-broken-stars': join(here, 'starmap-broken-stars.tsx'),
+  'starmap-mobile': join(here, 'starmap-mobile.tsx'),
   'boot-timeout': join(here, 'boot-timeout.tsx'),
   'error-boundary-wrapper': join(here, 'error-boundary-wrapper.tsx'),
 }

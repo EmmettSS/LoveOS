@@ -360,7 +360,7 @@ and drop.
 | **Weather** | Both cities side by side with a loving line based on the temperature gap. |
 | **Heartbeat** | "My heart beats for you" — a synthesized pulse on every tap. |
 | **Our Garden** | Water the flowers; each watering opens one bloom. |
-| **Star Sky** | Her name drawn as a constellation plus wish stars. |
+| **Star Sky** | Her name written in constellations (letters on one line, ❤ and ♾ on a second, larger line) over a cinematic canvas sky: twinkling stars, shooting stars, Milky Way, crescent moon, mouse parallax. On phones it becomes a full-screen "cinema": the sky rotates 90° so she holds the phone sideways (no rotation if the browser is already landscape); a floating ✕ closes it. |
 | **Chat with Daddy** | Direct messages, short and affectionate. |
 | **My Mood** | Log today's mood and receive a matching message from me. |
 | **Our Quiz** | Quizzes I write about our memories, with rewards. |
@@ -975,6 +975,9 @@ The UI tests run under **jsdom** with esbuild — no browser needed (`frontend/t
 | `pdf-book` | PDF export of the library book |
 | `desktop-drag` | icon reordering by drag and drop |
 | `viewport-fit` | full-height shell without inner scroll on boot/lock/desktop |
+| `starmap-sky` | star sky renders edge-to-edge with the real 8 constellations, tap → message, "light the whole name" |
+| `starmap-broken-stars` | corrupt `stars` rows never blank or crash the sky |
+| `starmap-mobile` | two-row layout math (symbols 1.3×, no overlap, RTL mirror), phone portrait → rotated full-screen portal above the dock, landscape → no extra rotation, ✕ closes the window, other windows on top hide the overlay |
 
 `tests/fixtures.json` was captured from the live API; if an endpoint contract changes, these
 fail before she notices.

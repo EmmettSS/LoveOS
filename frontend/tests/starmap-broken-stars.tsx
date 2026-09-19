@@ -42,6 +42,8 @@ g.ResizeObserver = class {
   unobserve() {}
   disconnect() {}
 }
+// jsdom بوم canvas ندارد؛ پس‌زمینه‌ی سینمایی باید بی‌سروصدا از آن بگذرد (نه خطای «Not implemented»)
+w.HTMLCanvasElement.prototype.getContext = () => null
 g.IS_REACT_ACT_ENVIRONMENT = true
 
 let failCount = 0

@@ -40,6 +40,8 @@ g.ResizeObserver = class {
   unobserve() {}
   disconnect() {}
 }
+// jsdom بوم canvas ندارد؛ پس‌زمینه‌ی سینمایی باید بی‌سروصدا از آن بگذرد (نه خطای «Not implemented»)
+w.HTMLCanvasElement.prototype.getContext = () => null
 g.IS_REACT_ACT_ENVIRONMENT = true
 
 let failCount = 0
@@ -106,9 +108,10 @@ check('بدون هیچ خطای کنسولی رندر شد', consoleErrors.lengt
 
 const sky = rootEl.firstElementChild as HTMLElement
 check('کادر آسمان رندر شد', !!sky)
-// مارجین منفی که پدینگِ بدنه‌ی پنجره را خنثی می‌کند تا آسمان لبه‌به‌لبه شود
-check('آسمان با مارجین منفی لبه‌به‌لبه است', !!sky && sky.className.includes('-m-4') && sky.className.includes('-mb-28'))
-check('ارتفاع آسمان کل بدنه‌ی پنجره را می‌گیرد', !!sky && sky.className.includes('h-[calc(100%+8rem)]'))
+// مارجین منفی که پدینگِ بدنه‌ی پنجره را خنثی می‌کند تا آسمان لبه‌به‌لبه شود (دسکتاپ: پنجره‌ی ۱۰۲۴px جی‌اس‌دام)
+check('آسمان با مارجین منفی لبه‌به‌لبه است', !!sky && sky.className.includes('-m-4'))
+check('ارتفاع آسمان کل بدنه‌ی پنجره را می‌گیرد', !!sky && sky.className.includes('h-[calc(100%+2rem)]'))
+check('پس‌زمینه‌ی سینمایی (canvas) زیر آسمان هست', !!rootEl.querySelector('canvas'))
 
 const svg = rootEl.querySelector('svg')
 check('SVG آسمان بعد از اندازه‌گیری رندر شد', !!svg)
