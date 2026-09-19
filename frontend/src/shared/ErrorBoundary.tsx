@@ -6,7 +6,7 @@
  * این دقیقاً همان حالتی را پوشش می‌دهد که یک اپ باز می‌شود ولی محتوایش هیچ‌وقت نمی‌آید
  * (مثلاً نسخه‌ی قدیمی کش‌شده‌ی PWA که فایل جدیدش روی سرور نیست).
  */
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, Fragment, type ErrorInfo, type ReactNode } from 'react'
 
 import { Icon } from './Icon'
 
@@ -18,6 +18,13 @@ interface Props {
    * (main.tsx) باید `h-full w-full` بگیرد، وگرنه این `div` وسطِ زنجیره‌ی
    * ارتفاع می‌ایستد و پوسته‌ی سیستم (`h-full`) به‌جای تمام‌صفحه، به‌اندازه‌ی
    * محتوایش جمع می‌شود.
+   *
+   * برعکسش هم مهم است: وقتی className داده نمی‌شود (مثل Window.tsx) نباید
+   * هیچ باکسِ DOMای دور بچه‌ها بسازیم؛ چون یک div ساده با ارتفاع auto وسط
+   * زنجیره، ارتفاعِ درصدیِ بچه‌ها را می‌شکند — مثلاً آسمانِ «آسمان ستاره‌ها»
+   * با h-[calc(100%+…)] پشت چنین divیی صفر می‌شد و بدنه‌ی پنجره کاملاً سفید
+   * دیده می‌شد. برای همین در حالت بی‌کلاس، Fragment (بدون باکس) با همان key
+   * رندر می‌شود تا ری‌مونتِ دکمه‌ی «دوباره» هم عیناً حفظ شود.
    */
   className?: string
 }
@@ -50,6 +57,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) {
+      // بدون className هیچ باکس DOMای درست نمی‌کنیم (توضیح بالای فایل)؛
+      // Fragment با همان key، ری‌مونتِ «دوباره» را عیناً نگه می‌دارد.
+      if (!this.props.className) {
+        return <Fragment key={this.state.tries}>{this.props.children}</Fragment>
+      }
       return (
         <div key={this.state.tries} className={this.props.className}>
           {this.props.children}

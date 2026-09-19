@@ -30,6 +30,7 @@ const ALL = {
   'starmap-sky': join(here, 'starmap-sky.tsx'),
   'starmap-broken-stars': join(here, 'starmap-broken-stars.tsx'),
   'boot-timeout': join(here, 'boot-timeout.tsx'),
+  'error-boundary-wrapper': join(here, 'error-boundary-wrapper.tsx'),
 }
 
 const only = process.argv.slice(2)
