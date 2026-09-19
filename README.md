@@ -20,6 +20,7 @@ through a Soroush bot.
 | [`DOCUMENTATION.md`](./DOCUMENTATION.md) | **Complete documentation (English)** — architecture, apps, panel, API, deployment on VPS / cPanel / Docker / Plesk / PaaS, scripts, tests, maintenance |
 | [`DOCUMENTATION_FA.md`](./DOCUMENTATION_FA.md) | مستندات کامل به فارسی |
 | [`docs/soroush-api-reference.md`](./docs/soroush-api-reference.md) | Soroush Plus bot API reference |
+| [`docs/branding/`](./docs/branding/) | The symbol — heart + infinity in one line, straight from the gift necklace (pack, preview, generator) |
 
 ## Run it on your machine
 
@@ -62,7 +63,15 @@ backend/    Django 5 + DRF — 12 apps, admin panel, scheduler (manage.py sweep)
 frontend/   React 19 + Vite 8 + TypeScript — the OS shell and 30 apps, PWA
 deploy/     Nginx / systemd templates, Dockerfile + compose + Caddy
 scripts/    dev.sh · deploy.sh · qr.py
+docs/       Soroush bot API reference · branding pack + logo generator
 ```
+
+## The symbol
+
+The logo is a drawing of the silver necklace — an open heart whose lower-right stroke, inside the
+body, becomes an infinity, so the whole mark is **one continuous line**. Run
+`node docs/branding/generate-logo.mjs` and it regenerates the favicon, the PWA icons, the boot
+splash animation and the React component from that single geometry.
 
 ---
 

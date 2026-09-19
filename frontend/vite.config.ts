@@ -9,7 +9,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // بالا ببرید تا سرویس‌ورکرِ تازه حتماً جای نسخه‌ی کش‌شده‌ی قدیمی بنشیند و
 // کش‌های قدیمی پاک شوند (با skipWaiting + clientsClaim + cleanupOutdatedCaches).
 // اگر کاربری روی نسخه‌ی قدیمی گیر کرد: حذف و نصب مجدد PWA همان اثر را دارد.
-const PWA_CACHE_VERSION = 'v2026-09-19'
+const PWA_CACHE_VERSION = 'v2026-09-19-brand'
 
 export default defineConfig({
   plugins: [
@@ -29,8 +29,10 @@ export default defineConfig({
         background_color: '#fdf2f8',
         theme_color: '#ec4899',
         icons: [
-          { src: '/icons/app-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: '/icons/app-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icons/app-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/app-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          // نسخه‌ی maskable حاشیه‌ی امن بیشتری دارد تا در گوشه‌های گردِ اندروید بریده نشود
+          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

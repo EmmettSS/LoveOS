@@ -22,6 +22,7 @@ export default function About() {
       <p className="os-title text-xl" style={{ color: 'var(--os-accent)' }}>LoveOS</p>
       <p className="text-xs os-muted">{t('about.version')} ۱.۰</p>
       <p className="text-sm">{t('about.madeBy')}</p>
+      <p className="max-w-xs text-xs leading-6 os-muted">{t('about.symbol')}</p>
       {config?.about_text && <p className="max-w-sm whitespace-pre-line text-sm leading-8 os-hand">{config.about_text}</p>}
       <p className="mt-2 text-xs os-muted">
         {config?.daddy_name} ❤ {config?.daughter_name}

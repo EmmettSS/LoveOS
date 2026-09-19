@@ -14,6 +14,7 @@
 1. [What LoveOS is](#1-what-loveos-is)
 2. [Architecture](#2-architecture)
 3. [Project layout](#3-project-layout)
+    - [3.1 The symbol](#31-the-symbol)
 4. [Development environment](#4-development-environment)
 5. [Configuration (`backend/.env`)](#5-configuration-backendenv)
 6. [The apps](#6-the-apps)
@@ -199,11 +200,40 @@ LoveOS/
 │   ├── deploy.sh                 everything for servers (build, vps, cpanel, docker, update, package, backup, verify)
 │   └── qr.py                     generates the QR code of the secret domain (no dependencies)
 ├── docs/soroush-api-reference.md the Soroush Plus bot API reference I work from
+├── docs/branding/                the symbol: final pack + generate-logo.mjs (see § 3.1)
 ├── passenger_wsgi.py             entry point for cPanel / Passenger
 ├── DOCUMENTATION.md              this file
 ├── DOCUMENTATION_FA.md           the same in Persian
 └── README.md
 ```
+
+### 3.1 The symbol
+
+The symbol is a copy of the **silver gift necklace**: an open heart whose lower-right stroke, inside
+the body, becomes an infinity. The loop is small relative to the heart and sits exactly on the heart
+line, so the eye reads **one continuous line** — that is the whole idea, so I never draw the ∞ as a
+separate shape floating next to the heart.
+
+| Where | What |
+|---|---|
+| `frontend/public/favicon.svg`, `frontend/public/icons/*` | favicon, PWA (`app-192`, `app-512`, `maskable-512`), apple-touch |
+| `frontend/index.html` | boot splash — the same paths, drawn then pulsed, with diamond sparkles |
+| `frontend/src/shared/loveosMark.ts` | generated geometry (`HEART_PATH`, `INF_PATH`, `MARK_SPARKLES`) |
+| `frontend/src/shared/Icon.tsx` → `LoveOSLogo` | every in-app use: boot screen, lock screen, About, dock start button, app menu header |
+| `docs/branding/` | the finished pack, the four first-round candidates, and the generator |
+
+Everything above comes from one file, so the mark can never drift between the splash, the favicon
+and the app:
+
+```bash
+node docs/branding/generate-logo.mjs        # SVG only
+npm i -D @resvg/resvg-js                    # optional, for the PNG icons
+node docs/branding/generate-logo.mjs
+```
+
+The generator replaces only the `<svg class="ls-mark">` block of `frontend/index.html`, so the splash
+CSS and keyframes stay hand-editable. The reference photo (`Logo-idea.jpg`, repo root) is **not**
+used in the UI anywhere — the UI is vector only.
 
 ---
 

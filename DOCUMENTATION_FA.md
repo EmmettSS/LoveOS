@@ -14,6 +14,7 @@
 1. [LoveOS چیست](#۱-loveos-چیست)
 2. [معماری](#۲-معماری)
 3. [ساختار پروژه](#۳-ساختار-پروژه)
+    - [۳.۱ نشان](#۳۱-نشان)
 4. [محیط توسعه](#۴-محیط-توسعه)
 5. [پیکربندی (`backend/.env`)](#۵-پیکربندی-backendenv)
 6. [اپ‌ها](#۶-اپها)
@@ -197,11 +198,38 @@ LoveOS/
 │   ├── deploy.sh                 همه‌چیز برای سرور (build، vps، cpanel، docker، update، package، backup، verify)
 │   └── qr.py                     ساخت QR دامنه‌ی مخفی (بدون وابستگی)
 ├── docs/soroush-api-reference.md مرجع API بات سروش‌پلاس که با آن کار می‌کنم
+├── docs/branding/                نشان: بسته‌ی نهایی + generate-logo.mjs (بند ۳.۱)
 ├── passenger_wsgi.py             نقطه‌ی ورود cPanel / Passenger
 ├── DOCUMENTATION.md              نسخه‌ی انگلیسی این سند
 ├── DOCUMENTATION_FA.md           همین فایل
 └── README.md
 ```
+
+### ۳.۱ نشان
+
+نشان، همان **گردنبندِ نقره‌ی هدیه** است: قلبِ بازی که خطِ پایین‌راستش، داخلِ بدنه، به ∞ می‌رسد.
+بینهایت نسبت به قلب کوچک است و دقیقاً روی خطِ قلب می‌نشیند تا چشم **یک خطِ پیوسته** ببیند —
+کلِ ایده همین است، پس هیچ‌وقت ∞ را جدا و کنارِ قلب نمی‌کشم.
+
+| کجا | چه چیزی |
+|---|---|
+| `frontend/public/favicon.svg` و `frontend/public/icons/*` | فاوآیکون، PWA (`app-192`، `app-512`، `maskable-512`)، apple-touch |
+| `frontend/index.html` | اسپلشِ روشن‌شدن — همان مسیرها، اول کشیده می‌شوند بعد نبض می‌گیرند، با نگین‌های الماس |
+| `frontend/src/shared/loveosMark.ts` | هندسه‌ی تولیدشده (`HEART_PATH`، `INF_PATH`، `MARK_SPARKLES`) |
+| `frontend/src/shared/Icon.tsx` → `LoveOSLogo` | همه‌ی کاربردهای داخلِ اپ: اسپلش، صفحه‌ی قفل، «درباره»، دکمه‌ی منو در داک، سرِ منوی اپ‌ها |
+| `docs/branding/` | بسته‌ی نهایی، چهار طرحِ اولیه‌ی مرحله‌ی انتخاب، و تولیدکننده |
+
+همه‌ی این‌ها از یک فایل می‌آیند، پس نشان بین اسپلش، فاوآیکون و اپ هیچ‌وقت فرق نمی‌کند:
+
+```bash
+node docs/branding/generate-logo.mjs        # فقط SVG
+npm i -D @resvg/resvg-js                    # اختیاری، برای آیکن‌های PNG
+node docs/branding/generate-logo.mjs
+```
+
+تولیدکننده فقط بلوکِ `<svg class="ls-mark">` را در `frontend/index.html` عوض می‌کند؛ CSS و
+کی‌فریم‌های اسپلش دست‌نخورده و قابل‌ویرایش دستی می‌مانند. عکسِ مرجع (`Logo-idea.jpg` در ریشه)
+**هیچ‌جا** در رابط کاربری استفاده نشده؛ رابط فقط وکتور است.
 
 ---
 
