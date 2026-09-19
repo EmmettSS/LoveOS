@@ -216,7 +216,7 @@ LoveOS/
 |---|---|
 | `frontend/public/favicon.svg` و `frontend/public/icons/*` | فاوآیکون، PWA (`app-192`، `app-512`، `maskable-512`)، apple-touch |
 | `frontend/index.html` | اسپلشِ روشن‌شدن — همان مسیرها، اول کشیده می‌شوند بعد نبض می‌گیرند، با نگین‌های الماس |
-| `frontend/src/shared/loveosMark.ts` | هندسه‌ی تولیدشده (`HEART_PATH`، `INF_PATH`، `MARK_SPARKLES`) |
+| `frontend/src/shared/loveosMark.ts` | هندسه‌ی تولیدشده (`HEART_PATH`، `BODY_PATH`، `MARK_SPARKLES`) |
 | `frontend/src/shared/Icon.tsx` → `LoveOSLogo` | همه‌ی کاربردهای داخلِ اپ: اسپلش، صفحه‌ی قفل، «درباره»، دکمه‌ی منو در داک، سرِ منوی اپ‌ها |
 | `backend/templates/admin_gate.html` | دروازه‌ی رمزِ پنل بابا — همان نشان به‌صورت inline (و یک فاوآیکونِ data-URI)، بدون درخواستِ اضافه |
 | `docs/branding/` | بسته‌ی نهایی، چهار طرحِ اولیه‌ی مرحله‌ی انتخاب، و تولیدکننده |

@@ -68,10 +68,11 @@ docs/       Soroush bot API reference · branding pack + logo generator
 
 ## The symbol
 
-The logo is a drawing of the silver necklace — an open heart whose lower-right stroke, inside the
-body, becomes an infinity, so the whole mark is **one continuous line**. Run
-`node docs/branding/generate-logo.mjs` and it regenerates the favicon, the PWA icons, the boot
-splash animation and the React component from that single geometry.
+The logo is a drawing of the silver necklace — an open heart whose lower-right stroke grows the two
+loops of an infinity **on its own body** (two nearby attachment points and an angled crossing at the
+waist), then carries on to the bottom tip, so the whole mark is **one continuous line**. Run
+`node docs/branding/generate-logo.mjs` and it regenerates the favicon, the PWA icons, the boot splash
+animation, the admin-panel gate mark and the React component from that single geometry.
 
 ---
 
