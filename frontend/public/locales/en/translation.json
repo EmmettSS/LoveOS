@@ -267,7 +267,6 @@
         "caption": "Every visit makes it grow a little."
     },
     "starmap": {
-        "caption": "I wrote your name with stars.",
         "tapLetter": "Tap each letter",
         "fullName": "Light up the whole name",
         "layoutRtl": "Layout: right to left",
@@ -545,7 +544,8 @@
     },
     "about": {
         "madeBy": "Made by Daddy for his daughter",
-        "version": "Version"
+        "version": "Version",
+        "symbol": "This symbol comes from your gift necklace: a heart and an infinity in one continuous line — \"always one\"."
     },
     "common": {
         "tryAgain": "Try again in a moment ❤"

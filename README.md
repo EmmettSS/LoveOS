@@ -5,7 +5,7 @@
 
 ![backend](https://img.shields.io/badge/backend-Django%205.2%20%2B%20DRF-0C4B33)
 ![frontend](https://img.shields.io/badge/frontend-React%2019%20%2B%20Vite%208-61DAFB)
-![tests](https://img.shields.io/badge/tests-83%20backend%20%2B%2012%20UI%20suites-ec4899)
+![tests](https://img.shields.io/badge/tests-89%20backend%20%2B%2012%20UI%20suites-ec4899)
 
 LoveOS boots, asks for a passcode, shows a desktop with widgets and a dock, and opens **30 small
 apps** — voice notes, letters, memories, a shared map, a garden, a star sky, chat, hugs, quizzes,
@@ -20,6 +20,7 @@ through a Soroush bot.
 | [`DOCUMENTATION.md`](./DOCUMENTATION.md) | **Complete documentation (English)** — architecture, apps, panel, API, deployment on VPS / cPanel / Docker / Plesk / PaaS, scripts, tests, maintenance |
 | [`DOCUMENTATION_FA.md`](./DOCUMENTATION_FA.md) | مستندات کامل به فارسی |
 | [`docs/soroush-api-reference.md`](./docs/soroush-api-reference.md) | Soroush Plus bot API reference |
+| [`docs/branding/`](./docs/branding/) | The symbol — heart + infinity in one line, straight from the gift necklace (pack, preview, generator) |
 
 ## Run it on your machine
 
@@ -52,7 +53,7 @@ Every step for every host type is in [DOCUMENTATION.md § 10](./DOCUMENTATION.md
 ## Tests
 
 ```bash
-./scripts/dev.sh test         # 83 backend tests + type check + lint + build + 12 UI suites
+./scripts/dev.sh test         # 89 backend tests + type check + lint + build + 12 UI suites
 ```
 
 ## Layout
@@ -62,7 +63,15 @@ backend/    Django 5 + DRF — 12 apps, admin panel, scheduler (manage.py sweep)
 frontend/   React 19 + Vite 8 + TypeScript — the OS shell and 30 apps, PWA
 deploy/     Nginx / systemd templates, Dockerfile + compose + Caddy
 scripts/    dev.sh · deploy.sh · qr.py
+docs/       Soroush bot API reference · branding pack + logo generator
 ```
+
+## The symbol
+
+The logo is a drawing of the silver necklace — an open heart whose lower-right stroke, inside the
+body, becomes an infinity, so the whole mark is **one continuous line**. Run
+`node docs/branding/generate-logo.mjs` and it regenerates the favicon, the PWA icons, the boot
+splash animation and the React component from that single geometry.
 
 ---
 

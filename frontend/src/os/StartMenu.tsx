@@ -5,7 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Icon } from '../shared/Icon'
+import { Icon, LoveOSLogo } from '../shared/Icon'
+import { digits } from '../shared/format'
 import { playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { APPS } from './appRegistry'
@@ -57,6 +58,11 @@ export function StartMenu() {
             className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center"
           >
             <div className="os-card pointer-events-auto mx-3 max-h-[65vh] w-full max-w-[620px] overflow-hidden p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <LoveOSLogo size={26} />
+              <span className="os-title text-[13px]">{t('os.name')}</span>
+              <span className="ms-auto text-[10px] os-muted">{digits(items.length)}</span>
+            </div>
             <div className="mb-3 flex items-center gap-2">
               <Icon name="search" size={18} />
               <input

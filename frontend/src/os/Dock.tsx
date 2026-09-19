@@ -4,7 +4,7 @@
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
-import { Icon } from '../shared/Icon'
+import { Icon, LoveOSLogo } from '../shared/Icon'
 import { digits } from '../shared/format'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -33,10 +33,11 @@ export function Dock() {
         <button
           onClick={() => { playClick(); toggleStartMenu() }}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition active:scale-90"
-          style={{ background: 'linear-gradient(135deg,#ff9ecb44,#bba0fb44)', color: 'var(--os-accent)' }}
           aria-label={t('desktop.startMenu')}
+          title={t('desktop.startMenu')}
         >
-          <Icon name="grid" size={21} />
+          {/* خودِ نشان جای آیکنِ «منو» نشسته: نمادِ هدیه در همه‌ی صفحه‌ها دیده می‌شود */}
+          <LoveOSLogo size={38} />
         </button>
 
         <button

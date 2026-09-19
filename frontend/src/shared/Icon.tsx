@@ -2,7 +2,10 @@
  * Icon.tsx — کیت آیکن دست‌ساز LoveOS
  * همه‌ی آیکن‌ها با خط گرد و نرم، یک زبان بصری واحد. بدون کتابخانه‌ی خارجی.
  */
+import { useId } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
+
+import { HEART_PATH, INF_PATH, MARK_SPARKLES, MARK_STROKE, MARK_VIEW } from './loveosMark'
 
 export type IconName =
   | 'map' | 'voice' | 'music' | 'memories' | 'whisper' | 'countdown' | 'weather'
@@ -443,26 +446,92 @@ export function Icon({ name, size = 22, className = '', style, strokeWidth = 1.7
   )
 }
 
-/** لوگوی LoveOS: قلب + پنجره‌ی سیستم‌عامل */
+/**
+ * لوگوی LoveOS — نشانِ «قلبِ باز که خطِ پایین‌راستش داخلِ بدنه به ∞ می‌رسد»
+ * (همان نشانِ فاوآیکون و اسپلش؛ هندسه در loveosMark.ts و تولیدش دستِ
+ * docs/branding/generate-logo.mjs است). روبانِ گرادیانی + نگین‌های الماس.
+ */
 export function LoveOSLogo({ size = 64, className = '' }: { size?: number; className?: string }) {
+  const stroke = MARK_STROKE
+  // شناسه‌ی یکتا: اگر چند لوگو هم‌زمان در صفحه باشند، گرادیان‌ها قاطی نمی‌شوند
+  const uid = useId().replace(/:/g, '')
+  const gid = `loveos-g-${uid}`
+  const bid = `loveos-bg-${uid}`
+  const cid = `loveos-clip-${uid}`
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${MARK_VIEW} ${MARK_VIEW}`}
+      className={className}
+      aria-hidden="true"
+    >
       <defs>
-        <linearGradient id="loveos-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ff9ecb" />
-          <stop offset="55%" stopColor="#f767a8" />
+        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffd9ee" />
+          <stop offset="18%" stopColor="#ff9ecb" />
+          <stop offset="52%" stopColor="#f767a8" />
+          <stop offset="78%" stopColor="#d982f0" />
           <stop offset="100%" stopColor="#bba0fb" />
         </linearGradient>
+        <linearGradient id={bid} x1="0" y1="0" x2="0.4" y2="1">
+          <stop offset="0%" stopColor="#2a1030" />
+          <stop offset="55%" stopColor="#160a1e" />
+          <stop offset="100%" stopColor="#0b0410" />
+        </linearGradient>
+        <clipPath id={cid}>
+          <rect width={MARK_VIEW} height={MARK_VIEW} rx="112" />
+        </clipPath>
       </defs>
-      <rect x="5" y="8" width="54" height="46" rx="14" fill="url(#loveos-g)" opacity="0.18" />
-      <rect x="5" y="8" width="54" height="46" rx="14" stroke="url(#loveos-g)" strokeWidth="2.4" fill="none" />
-      <circle cx="13" cy="16" r="1.8" fill="#f767a8" />
-      <circle cx="19" cy="16" r="1.8" fill="#efc478" />
-      <circle cx="25" cy="16" r="1.8" fill="#bba0fb" />
-      <path
-        d="M32 45s-13-7.8-13-16.2A6.9 6.9 0 0 1 32 24.6a6.9 6.9 0 0 1 13 4.2C45 37.2 32 45 32 45Z"
-        fill="url(#loveos-g)"
-      />
+      <rect width={MARK_VIEW} height={MARK_VIEW} rx="112" fill={`url(#${bid})`} />
+      <g clipPath={`url(#${cid})`}>
+        {/* قلب و بینهایت جدا کشیده می‌شوند ولی در دو نقطه روی هم می‌افتند،
+            پس چشم یک خطِ پیوسته می‌بیند. */}
+        <path
+          d={HEART_PATH}
+          fill="none"
+          stroke={`url(#${gid})`}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={INF_PATH}
+          fill="none"
+          stroke={`url(#${gid})`}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* رگه‌ی روشنِ وسطِ روبان، همان حسِ براقیِ گردنبند */}
+        <path
+          d={HEART_PATH}
+          fill="none"
+          stroke="#fff"
+          strokeOpacity="0.26"
+          strokeWidth={stroke * 0.3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={INF_PATH}
+          fill="none"
+          stroke="#fff"
+          strokeOpacity="0.24"
+          strokeWidth={stroke * 0.26}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {MARK_SPARKLES.map((s) => (
+          <g key={`${s.x}-${s.y}`} transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}>
+            <path
+              d={`M${-s.r} 0 L0 ${-s.r * 0.36} L${s.r} 0 L0 ${s.r * 0.36} Z`}
+              fill="#fff"
+              opacity="0.9"
+            />
+          </g>
+        ))}
+      </g>
     </svg>
   )
 }
