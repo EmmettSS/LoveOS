@@ -50,6 +50,20 @@ from library.models import Book, Chapter, Page, Paragraph
 from social.models import HugSettings
 
 # ---------------------------------------------------------------- داده‌ها ---
+# مختصات نسبی (۰ تا ۱) ستاره‌های دو صورت فلکی تازه؛ مسیر از نقطه‌ی اول شروع و
+# با برگشت به همان نقطه بسته می‌شود تا خط فاصله‌ای در شکل نیفتد.
+HEART_STARS = [
+    [0.5, 0.761], [0.544, 0.877], [0.758, 1.0], [1.0, 0.865], [1.0, 0.579],
+    [0.758, 0.315], [0.544, 0.098], [0.5, 0.0], [0.456, 0.098], [0.242, 0.315],
+    [0.0, 0.579], [0.0, 0.865], [0.242, 1.0], [0.456, 0.877], [0.5, 0.761],
+]
+INFINITY_STARS = [
+    [1.0, 0.5], [0.962, 0.677], [0.854, 0.75], [0.691, 0.677], [0.5, 0.5],
+    [0.309, 0.323], [0.146, 0.25], [0.038, 0.323], [0.0, 0.5], [0.038, 0.677],
+    [0.146, 0.75], [0.309, 0.677], [0.5, 0.5], [0.691, 0.323], [0.854, 0.25],
+    [0.962, 0.323], [1.0, 0.5],
+]
+
 ACHIEVEMENTS = [
     ("first_login", "اولین ورود", "اولین باری که در LoveOS رو باز کردی", "door", 1, "خوش اومدی دخترم. اینجا خونه‌ی توئه."),
     ("first_voice", "اولین ویس", "اولین صدای بابا رو گوش دادی", "mic", 1, "صدام همیشه اینجاست، هر وقت دلت خواست."),
@@ -263,6 +277,17 @@ class Command(BaseCommand):
             Constellation.objects.get_or_create(
                 order=i,
                 defaults={"letter": letter, "message": msg, "stars": self.letter_stars(letter, i)},
+            )
+
+        # ❤ و ♾ — دو صورت فلکی تازه، بعد از حروف اسم
+        specials = [
+            ("❤", "❤ — قلبی که فقط برای تو می‌تپه؛ همیشه کنار اسم تو می‌درخشه.", HEART_STARS),
+            ("♾", "♾ — عشق ما مثل این علامت؛ نه اول داره، نه آخر.", INFINITY_STARS),
+        ]
+        for j, (letter, msg, stars) in enumerate(specials):
+            Constellation.objects.get_or_create(
+                order=len(letters) + j,
+                defaults={"letter": letter, "message": msg, "stars": stars},
             )
 
         for text, hour, minute in CARE_DEFAULTS:
