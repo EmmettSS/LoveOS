@@ -1,20 +1,22 @@
 /**
- * Boot.tsx — صفحه‌ی بوت سینمایی LoveOS - نسخه قلب+بی‌نهایت
+ * Boot.tsx — صفحه‌ی بوت سینمایی LoveOS — نسخه‌ی قلب + بی‌نهایت
  *
- * تغییرات جدید:
- *   • لوگوی قلب+بی‌نهایت با افکت سینمایی کامل: ساخته شدن از ذرات نور
- *   • جریان نور داخل بی‌نهایت (Infinity Flow)
- *   • درخشش الماس‌ها روی سمت چپ قلب (مثل آویز نقره‌ای)
- *   • نمودار ECG که از داخل بی‌نهایت عبور می‌کند
- *   • نور جارویی روی لوگو (Shimmer Sweep)
- *   • ذرات شناور و هاله‌های تقویت شده
+ * لوگو همان مسیر تمیزِ favicon/Icon.tsx است (ساختار مطابق آویز مرجع) و همه‌ی
+ * افکت‌ها داخل یک SVG واحد روی خودِ منحنی اجرا می‌شوند تا با ضربان لوگو هم‌مقیاس بمانند:
+ *   • ذرات نور که از اطراف می‌آیند و روی خطِ قلب و بی‌نهایت می‌نشینند (Particle Formation)
+ *   • کشیده شدن خط لوگو با یک سرِ نورانی که روی منحنی حرکت می‌کند (Draw-in)
+ *   • درخشش نگین‌ها روی سمت چپ قلب — جایی که آویز مرجع نگین دارد (Diamond Sparkles)
+ *   • جریان نور داخل بی‌نهایت + نقطه‌ی نوری که در مسیر ∞ می‌چرخد (Infinity Flow)
+ *   • نمودار ECG که داخل قلب می‌تپد و از نقطه‌ی تقاطع بی‌نهایت عبور می‌کند (ECG)
+ *   • نور جارویی که در طول خودِ خطِ لوگو می‌گذرد (Shimmer Sweep)
  */
 
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, easeInOut, motion, useAnimationFrame } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { post } from '../shared/api'
+import { LOGO_INFINITY_CENTER, LOGO_INFINITY_PATH, LOGO_PATH } from '../shared/Icon'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -47,24 +49,6 @@ const TONE_COLOR: Record<Tone, string> = {
 
 const MONO_STACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace"
 const FA_STACK = "'Vazirmatn', 'Segoe UI', Tahoma, sans-serif"
-
-// مسیر قلب+بی‌نهایت - دقیقاً مشابه آویز مرجع
-const HEART_INFINITY_PATH = `M32 22
-           C 24 14, 10 15, 8.5 26
-           C 7 36, 17 43, 26 50
-           C 26 46.5, 29 42.5, 33 41
-           C 36 39.8, 39 40.5, 39 42.8
-           C 39 45.1, 36 46, 33.5 44.8
-           C 31 43.6, 32.5 40.5, 36 39.5
-           C 39.5 38.5, 43 36.8, 45.5 34.2
-           C 48 31.6, 48.5 29, 46.5 27.5
-           C 44.5 26, 42 27, 42 29.2
-           C 42 31.4, 44.5 32.4, 46.5 31.4
-           C 48.5 30.4, 48 28, 45.5 27.2
-           C 43 26.4, 40.5 28.2, 41.5 30.5
-           C 42.5 32.8, 46 31.5, 48.5 29
-           C 51 26.5, 50 15.5, 41 13.5
-           C 37 12.5, 33.5 14.5, 32 22Z`
 
 export function Boot() {
   const { t, i18n } = useTranslation()
@@ -205,7 +189,7 @@ export function Boot() {
     <motion.div
       onClick={skip}
       dir={isFa ? 'rtl' : 'ltr'}
-      className="os-screen relative flex cursor-pointer select-none flex-col items-center justify-center px-5 py-6"
+      className="os-screen relative flex cursor-pointer flex-col items-center justify-center px-5 py-6 os-no-select"
       style={{
         background:
           'radial-gradient(110% 80% at 50% 0%, #241030 0%, #160a20 48%, #0a0410 100%)',
@@ -278,14 +262,13 @@ export function Boot() {
             animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.14, 1] }}
             transition={{ duration: 1.7, repeat: Infinity }}
           />
-          <ParticleFormation />
-          <DiamondSparkles />
           <motion.button
             onClick={handleLogoClick}
             aria-label="LoveOS"
             className="relative z-10 grid place-items-center rounded-[28px] outline-none"
+            // ضربان بعد از این‌که خطِ لوگو کامل کشیده شد شروع می‌شود
             animate={{ scale: [1, 1.13, 1, 1.06, 1] }}
-            transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1] }}
+            transition={{ duration: 1.35, repeat: Infinity, times: [0, 0.14, 0.3, 0.44, 1], delay: DRAW_DELAY + DRAW_DURATION }}
           >
             {config?.logo ? (
               <img src={config.logo} alt="LoveOS" className="h-[88px] w-[88px] rounded-3xl object-cover" />
@@ -293,10 +276,7 @@ export function Boot() {
               <CinematicHeartInfinity size={100} />
             )}
           </motion.button>
-          <InfinityFlow />
           {finished && <HeartBurst />}
-          <EcgLineInfinity />
-          <ShimmerSweep />
         </motion.div>
 
         <motion.p
@@ -541,328 +521,278 @@ function BouncingDots({ color }: { color: string }) {
   )
 }
 
-/** لوگوی سینمایی قلب+بی‌نهایت - ساخته شدن از ذرات نور */
+/* ------------------------------------------------------------ لوگوی سینمایی ---
+ * نقاط زیر روی خودِ منحنی لوگو (viewBox 0 0 64 64) نمونه‌برداری شده‌اند. */
+
+/** نگین‌ها: سمت چپ و بالای قلب — همان جایی که آویز مرجع نگین‌کاری دارد */
+const GEMS: ReadonlyArray<readonly [number, number]> = [
+  [27.1, 51.1], [18.7, 43.2], [10.6, 35.1], [5.1, 25], [5, 13.7], [12.4, 5.2], [23.6, 4.3],
+]
+/** مقصد ذرات نور: نقاطی روی قلب و بی‌نهایت */
+const PARTICLE_TARGETS: ReadonlyArray<readonly [number, number]> = [
+  [33.9, 60.4], [29.5, 53.8], [24, 48], [18.1, 42.7], [12.4, 37.1], [7.6, 30.8], [4.7, 23.4], [4.5, 15.5],
+  [8, 8.5], [14.7, 4.3], [22.5, 4], [29.3, 7.9], [33.8, 9], [40.1, 4.4], [48, 3.9], [55, 7.5], [59.2, 14.1],
+  [59.5, 22], [55.1, 39], [48.8, 32.6], [44.6, 43.2], [40.4, 53.7], [34, 47.4],
+]
+const [INF_CX, INF_CY] = LOGO_INFINITY_CENTER
+/** خط ECG: از چپ می‌آید، داخل قلب می‌تپد و از نقطه‌ی تقاطع بی‌نهایت رد می‌شود */
+const ECG_PATH = `M-10 ${INF_CY} H21 l2.5 -0.8 l2.5 7 l3.5 -15 l3 12.5 l2.5 -3.7 H${INF_CX} H76`
+const DRAW_DELAY = 0.35
+const DRAW_DURATION = 2.4
+const STAR = (x: number, y: number, r: number) =>
+  `M${x} ${y - r} L${x + r * 0.27} ${y - r * 0.27} L${x + r} ${y} L${x + r * 0.27} ${y + r * 0.27} L${x} ${y + r} L${x - r * 0.27} ${y + r * 0.27} L${x - r} ${y} L${x - r * 0.27} ${y - r * 0.27} Z`
+
+/** لوگوی سینمایی قلب+بی‌نهایت — همه‌ی افکت‌ها داخل یک SVG، روی خودِ منحنی */
 function CinematicHeartInfinity({ size = 100 }: { size?: number }) {
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="relative z-10">
-        <defs>
-          <linearGradient id="boot-heart-g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ff9ecb" />
-            <stop offset="55%" stopColor="#f767a8" />
-            <stop offset="100%" stopColor="#bba0fb" />
-          </linearGradient>
-          <linearGradient id="boot-heart-glow" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ff9ecb" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#bba0fb" stopOpacity="0.8" />
-          </linearGradient>
-          <filter id="boot-glow">
-            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        {/* سایه و هاله پس‌زمینه */}
-        <path
-          d={HEART_INFINITY_PATH}
-          fill="none"
-          stroke="url(#boot-heart-glow)"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.15"
-          filter="url(#boot-glow)"
-        />
-        {/* مسیر اصلی با انیمیشن ساخته شدن */}
-        <motion.path
-          d={HEART_INFINITY_PATH}
-          fill="none"
-          stroke="url(#boot-heart-g)"
-          strokeWidth="2.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 2.2, ease: 'easeInOut', delay: 0.3 }}
-        />
-        {/* لایه درخشان دوم با تاخیر */}
-        <motion.path
-          d={HEART_INFINITY_PATH}
-          fill="none"
-          stroke="url(#boot-heart-glow)"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.6"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 2, ease: 'easeInOut', delay: 0.6 }}
-          style={{ filter: 'blur(0.5px)' }}
-        />
-      </svg>
-      {/* هاله مرکزی تپنده */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          width: '60%',
-          height: '60%',
-          background: 'radial-gradient(circle, rgba(247,103,168,.25), transparent 70%)',
-        }}
-        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-      />
-    </div>
+  // موقعیت‌ها و زمان‌بندی تصادفی ذرات/نگین‌ها فقط یک بار (در مونت) ساخته می‌شوند
+  const particles = useMemo(
+    () => PARTICLE_TARGETS.map(([tx, ty], i) => {
+      const angle = Math.random() * Math.PI * 2
+      const dist = 26 + Math.random() * 22
+      return {
+        id: i,
+        tx,
+        ty,
+        sx: tx + Math.cos(angle) * dist,
+        sy: ty + Math.sin(angle) * dist,
+        r: 0.7 + Math.random() * 0.9,
+        delay: Math.random() * 1.4,
+        duration: 1.3 + Math.random() * 0.9,
+        pause: 2.4 + Math.random() * 2.2,
+        color: i % 3 === 0 ? '#ffd1e6' : i % 3 === 1 ? '#ff9ecb' : '#d4c5ff',
+      }
+    }),
+    [],
   )
-}
-
-/** ذرات نور که از اطراف جمع می‌شوند و لوگو را می‌سازند */
-function ParticleFormation() {
-  const particles = useRef(
-    Array.from({ length: 18 }).map((_, i) => ({
+  const gems = useMemo(
+    () => GEMS.map(([x, y], i) => ({
       id: i,
-      // موقعیت اولیه پراکنده در اطراف
-      x: (Math.random() - 0.5) * 200,
-      y: (Math.random() - 0.5) * 200,
-      size: 1.5 + Math.random() * 2.5,
-      delay: Math.random() * 1.2,
-      duration: 1.5 + Math.random() * 1,
-      color: i % 3 === 0 ? '#ff9ecb' : i % 3 === 1 ? '#f767a8' : '#bba0fb',
+      x,
+      y,
+      r: 1.9 + Math.random() * 0.9,
+      delay: 2.6 + i * 0.27 + Math.random() * 0.4,
+      pause: 1.4 + Math.random() * 1.8,
     })),
-  ).current
-
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {particles.map((p) => (
-        <motion.span
-          key={p.id}
-          className="absolute left-1/2 top-1/2 rounded-full"
-          style={{
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-          }}
-          initial={{ x: p.x, y: p.y, opacity: 0, scale: 0 }}
-          animate={{ x: 0, y: 0, opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            repeatDelay: 3 + Math.random() * 2,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
-    </div>
+    [],
   )
-}
 
-/** درخشش الماس‌ها - سمت چپ قلب (جایی که در آویز نگین دارد) */
-function DiamondSparkles() {
-  const sparkles = useRef(
-    Array.from({ length: 7 }).map((_, i) => ({
-      id: i,
-      // موقعیت روی سمت چپ و بالای قلب
-      left: 18 + (i % 3) * 8 + Math.random() * 4,
-      top: 22 + Math.floor(i / 3) * 12 + Math.random() * 6,
-      delay: i * 0.3 + Math.random() * 0.5,
-      size: 2 + Math.random() * 2.5,
-    })),
-  ).current
+  // سرِ نورانی که هم‌زمان با کشیده شدن خط روی منحنی جلو می‌رود
+  const pathRef = useRef<SVGPathElement | null>(null)
+  const headRef = useRef<SVGCircleElement | null>(null)
+  const startRef = useRef<number | null>(null)
+  useAnimationFrame((t) => {
+    const path = pathRef.current
+    const head = headRef.current
+    // (در محیط‌های بدون هندسه‌ی SVG مثل jsdom، بی‌سروصدا رد می‌شویم)
+    if (!path || !head || typeof path.getTotalLength !== 'function') return
+    if (startRef.current === null) startRef.current = t
+    const elapsed = (t - startRef.current) / 1000 - DRAW_DELAY
+    if (elapsed < 0) return
+    const u = Math.min(1, elapsed / DRAW_DURATION)
+    if (u >= 1) {
+      head.setAttribute('opacity', '0')
+      return
+    }
+    const total = path.getTotalLength()
+    const pt = path.getPointAtLength(easeInOut(u) * total)
+    head.setAttribute('cx', pt.x.toFixed(2))
+    head.setAttribute('cy', pt.y.toFixed(2))
+    head.setAttribute('opacity', u < 0.04 ? String(u / 0.04) : '1')
+  })
 
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      {sparkles.map((s) => (
-        <motion.span
-          key={s.id}
-          className="absolute rounded-full bg-white"
-          style={{
-            left: `${s.left}%`,
-            top: `${s.top}%`,
-            width: s.size,
-            height: s.size,
-            boxShadow: '0 0 6px #fff, 0 0 12px #ff9ecb',
-          }}
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0, 1.4, 0],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 1.2,
-            delay: s.delay,
-            repeat: Infinity,
-            repeatDelay: 1.5 + Math.random() * 2,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
-      {/* ستاره‌های کوچک الماسی */}
-      {sparkles.slice(0, 3).map((s) => (
-        <motion.span
-          key={`star-${s.id}`}
-          className="absolute text-[8px]"
-          style={{ left: `${s.left + 2}%`, top: `${s.top - 2}%`, color: '#fff' }}
-          animate={{ opacity: [0, 1, 0], scale: [0, 1.2, 0], rotate: [0, 90] }}
-          transition={{
-            duration: 0.8,
-            delay: s.delay + 0.2,
-            repeat: Infinity,
-            repeatDelay: 2,
-          }}
-        >
-          ✦
-        </motion.span>
-      ))}
-    </div>
-  )
-}
-
-/** جریان نور داخل بی‌نهایت - افکت Flow */
-function InfinityFlow() {
   return (
     <svg
+      width={size}
+      height={size}
       viewBox="0 0 64 64"
-      fill="none"
-      aria-hidden
-      className="pointer-events-none absolute left-1/2 top-1/2 h-[100px] w-[100px] -translate-x-1/2 -translate-y-1/2"
-      style={{ zIndex: 11 }}
+      overflow="visible"
+      aria-hidden="true"
+      className="relative z-10"
+      style={{ overflow: 'visible' }}
     >
       <defs>
-        <linearGradient id="inf-flow" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff9ecb" stopOpacity="0" />
-          <stop offset="20%" stopColor="#ff9ecb" stopOpacity="1" />
-          <stop offset="50%" stopColor="#fff" stopOpacity="1" />
+        <linearGradient id="boot-heart-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ff9ecb" />
+          <stop offset="55%" stopColor="#f767a8" />
+          <stop offset="100%" stopColor="#bba0fb" />
+        </linearGradient>
+        <linearGradient id="boot-halo-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ff9ecb" />
+          <stop offset="100%" stopColor="#bba0fb" />
+        </linearGradient>
+        {/* نور جارویی: باند سفید که در طول خودِ خط حرکت می‌کند */}
+        <linearGradient id="boot-shine-g" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0" />
+          <stop offset="42%" stopColor="#fff" stopOpacity="0" />
+          <stop offset="50%" stopColor="#fff" stopOpacity="0.95" />
+          <stop offset="58%" stopColor="#fff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          <animateTransform
+            attributeName="gradientTransform"
+            type="translate"
+            from="-1.1 0"
+            to="1.1 0"
+            dur="3.4s"
+            repeatCount="indefinite"
+          />
+        </linearGradient>
+        <linearGradient id="boot-flow-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="50%" stopColor="#ffd1e6" />
+          <stop offset="100%" stopColor="#fff" />
+        </linearGradient>
+        <linearGradient id="boot-ecg-g" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#f767a8" stopOpacity="0" />
+          <stop offset="30%" stopColor="#ff9ecb" stopOpacity="1" />
+          <stop offset="55%" stopColor="#fff" stopOpacity="1" />
           <stop offset="80%" stopColor="#bba0fb" stopOpacity="1" />
           <stop offset="100%" stopColor="#bba0fb" stopOpacity="0" />
         </linearGradient>
-        <filter id="inf-glow">
-          <feGaussianBlur stdDeviation="1.2" result="blur" />
+        <filter id="boot-halo" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
+        <filter id="boot-soft" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="0.7" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
-      {/* بی‌نهایت کوچک در پایین راست */}
+
+      {/* ذرات نور که از اطراف می‌آیند و روی خط لوگو می‌نشینند */}
+      {particles.map((p) => (
+        <motion.circle
+          key={p.id}
+          fill={p.color}
+          initial={{ cx: p.sx, cy: p.sy, r: 0, opacity: 0 }}
+          animate={{ cx: [p.sx, p.tx], cy: [p.sy, p.ty], r: [0, p.r, p.r, 0], opacity: [0, 1, 0.9, 0] }}
+          transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, repeatDelay: p.pause, ease: 'easeInOut' }}
+          style={{ filter: 'drop-shadow(0 0 1.2px #fff)' }}
+        />
+      ))}
+
+      {/* هاله‌ی پشت لوگو */}
       <motion.path
-        d="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
+        d={LOGO_PATH}
         fill="none"
-        stroke="url(#inf-flow)"
+        stroke="url(#boot-halo-g)"
+        strokeWidth="6.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#boot-halo)"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0.28, 0.5, 0.28] }}
+        transition={{ duration: 1.7, delay: DRAW_DELAY + DRAW_DURATION * 0.6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* خط اصلی — کشیده می‌شود */}
+      <motion.path
+        ref={pathRef}
+        d={LOGO_PATH}
+        fill="none"
+        stroke="url(#boot-heart-g)"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{
+          pathLength: { duration: DRAW_DURATION, ease: 'easeInOut', delay: DRAW_DELAY },
+          opacity: { duration: 0.25, delay: DRAW_DELAY },
+        }}
+      />
+      {/* سرِ نورانی روی منحنی، هنگام کشیده شدن */}
+      <circle ref={headRef} r="2.1" fill="#fff" opacity="0" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #ff9ecb)' }} />
+
+      {/* نور جارویی در طول خودِ خط */}
+      <motion.path
+        d={LOGO_PATH}
+        fill="none"
+        stroke="url(#boot-shine-g)"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.85 }}
+        transition={{ duration: 0.6, delay: DRAW_DELAY + DRAW_DURATION }}
+        style={{ mixBlendMode: 'screen' }}
+      />
+
+      {/* جریان نور داخل بی‌نهایت */}
+      <motion.path
+        d={LOGO_INFINITY_PATH}
+        fill="none"
+        stroke="url(#boot-flow-g)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        filter="url(#inf-glow)"
-        strokeDasharray="3 6"
-        initial={{ strokeDashoffset: 0 }}
-        animate={{ strokeDashoffset: -18 }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+        filter="url(#boot-soft)"
+        initial={{ opacity: 0, pathLength: 0.22, pathOffset: 0 }}
+        animate={{ opacity: [0, 0.9, 0.9, 0], pathOffset: [0, 1] }}
+        transition={{
+          opacity: { duration: 2.6, delay: DRAW_DELAY + DRAW_DURATION + 0.2, repeat: Infinity, repeatDelay: 0.4, times: [0, 0.15, 0.85, 1] },
+          pathOffset: { duration: 2.6, delay: DRAW_DELAY + DRAW_DURATION + 0.2, repeat: Infinity, repeatDelay: 0.4, ease: 'easeInOut' },
+        }}
       />
-      {/* نقطه نور متحرک داخل بی‌نهایت */}
       <motion.circle
-        r="1.8"
+        r="1.4"
         fill="#fff"
-        style={{ filter: 'drop-shadow(0 0 4px #fff)' }}
-        initial={{ opacity: 0 }}
-        animate={{
-          opacity: [0, 1, 1, 0],
-        }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <animateMotion
-          path="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
-          dur="2.5s"
-          repeatCount="indefinite"
-        />
-      </motion.circle>
-    </svg>
-  )
-}
-
-/** نور جارویی روی لوگو */
-function ShimmerSweep() {
-  return (
-    <motion.div
-      className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-full"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 0, 1, 0] }}
-      transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4, times: [0, 0.2, 0.8, 1] }}
-      aria-hidden
-    >
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%)',
-        }}
-        initial={{ x: '-100%' }}
-        animate={{ x: '200%' }}
-        transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-      />
-    </motion.div>
-  )
-}
-
-/** نمودار ECG که از داخل بی‌نهایت عبور می‌کند - نسخه سینمایی */
-function EcgLineInfinity() {
-  return (
-    <svg
-      viewBox="0 0 280 56"
-      fill="none"
-      aria-hidden
-      className="pointer-events-none absolute -bottom-1 left-1/2 h-12 w-[280px] -translate-x-1/2"
-    >
-      <defs>
-        <linearGradient id="boot-ecg-inf" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#f767a8" stopOpacity="0" />
-          <stop offset="15%" stopColor="#f767a8" stopOpacity="0.6" />
-          <stop offset="35%" stopColor="#ff9ecb" stopOpacity="1" />
-          <stop offset="55%" stopColor="#f767a8" stopOpacity="1" />
-          <stop offset="75%" stopColor="#bba0fb" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#bba0fb" stopOpacity="0" />
-        </linearGradient>
-        <filter id="ecg-glow">
-          <feGaussianBlur stdDeviation="1" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      {/* ECG اصلی که از قلب عبور می‌کند و داخل بی‌نهایت می‌پیچد */}
-      <motion.path
-        d="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5
-           C 100 27, 115 22, 125 28
-           C 135 34, 125 40, 115 34
-           C 105 28, 115 22, 125 28
-           C 135 34, 130 40, 120 38
-           C 110 36, 105 32, 108 28
-           L 140 28 H280"
-        stroke="url(#boot-ecg-inf)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        filter="url(#ecg-glow)"
-        initial={false}
-        animate={{ pathLength: [0, 1], opacity: [0.9, 0.9, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.7, 1], ease: 'easeInOut' }}
-      />
-      {/* نقطه ضربان که همراه ECG حرکت می‌کند */}
-      <motion.circle
-        r="2.2"
-        fill="#ff9ecb"
-        style={{ filter: 'drop-shadow(0 0 4px #f767a8)' }}
+        style={{ filter: 'drop-shadow(0 0 2.5px #fff) drop-shadow(0 0 5px #bba0fb)' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.1, 0.8, 1] }}
+        transition={{ duration: 3, delay: DRAW_DELAY + DRAW_DURATION + 0.2, repeat: Infinity, times: [0, 0.1, 0.9, 1] }}
       >
-        <animateMotion
-          path="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5 C 100 27, 115 22, 125 28 C 135 34, 125 40, 115 34 C 105 28, 115 22, 125 28 C 135 34, 130 40, 120 38 C 110 36, 105 32, 108 28 L 140 28 H280"
-          dur="2.2s"
-          repeatCount="indefinite"
-        />
+        <animateMotion dur="3s" repeatCount="indefinite" path={LOGO_INFINITY_PATH} />
       </motion.circle>
+
+      {/* نگین‌های سمت چپ قلب */}
+      {gems.map((g) => (
+        <g key={g.id}>
+          <motion.circle
+            cx={g.x}
+            cy={g.y}
+            fill="#fff"
+            initial={{ r: 0, opacity: 0 }}
+            animate={{ r: [0, g.r * 0.55, 0], opacity: [0, 0.95, 0] }}
+            transition={{ duration: 1.25, delay: g.delay, repeat: Infinity, repeatDelay: g.pause, ease: 'easeInOut' }}
+            style={{ filter: 'drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #ff9ecb)' }}
+          />
+          <motion.path
+            d={STAR(g.x, g.y, g.r)}
+            fill="#fff"
+            initial={{ opacity: 0, scale: 0.2 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.2, 1, 0.2], rotate: [0, 90] }}
+            transition={{ duration: 1.25, delay: g.delay, repeat: Infinity, repeatDelay: g.pause, ease: 'easeInOut' }}
+          />
+        </g>
+      ))}
+
+      {/* ECG: از چپ وارد می‌شود، داخل قلب می‌تپد و از نقطه‌ی تقاطع بی‌نهایت می‌گذرد */}
+      <motion.path
+        d={ECG_PATH}
+        fill="none"
+        stroke="url(#boot-ecg-g)"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#boot-soft)"
+        initial={{ opacity: 0, pathLength: 0.34, pathOffset: -0.34 }}
+        animate={{ opacity: [0, 1, 1, 0], pathOffset: [-0.34, 1] }}
+        transition={{
+          opacity: { duration: 2.4, delay: DRAW_DELAY + DRAW_DURATION + 0.9, repeat: Infinity, repeatDelay: 1.3, times: [0, 0.1, 0.85, 1] },
+          pathOffset: { duration: 2.4, delay: DRAW_DELAY + DRAW_DURATION + 0.9, repeat: Infinity, repeatDelay: 1.3, ease: 'easeInOut' },
+        }}
+      />
+      {/* نبض روی نقطه‌ی تقاطع بی‌نهایت — هر بار که ECG از آن می‌گذرد */}
+      <motion.circle
+        cx={INF_CX}
+        cy={INF_CY}
+        fill="#fff"
+        initial={{ r: 0, opacity: 0 }}
+        animate={{ r: [0, 3.2, 0], opacity: [0, 0.65, 0] }}
+        transition={{ duration: 0.9, delay: DRAW_DELAY + DRAW_DURATION + 0.9 + 1.55, repeat: Infinity, repeatDelay: 2.8, ease: 'easeOut' }}
+      />
     </svg>
   )
 }

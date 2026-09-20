@@ -28,38 +28,35 @@ html[data-theme='night'] {
 
 * { -webkit-tap-highlight-color: transparent; }
 
-/* --------------------------------------------------- جلوگیری از انتخاب متن و منوی لمس طولانی ---- */
-/* برای اپ‌های تعاملی مثل ضربان قلب، بغل، باغچه که لمس طولانی نیاز دارند */
-.os-no-select,
-.os-no-select * {
-  -webkit-touch-callout: none !important;
-  -webkit-user-select: none !important;
-  -khtml-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  user-select: none !important;
-  -webkit-tap-highlight-color: transparent !important;
+/* ------------------------------------- انتخاب متن، کلیک راست و منوی لمس طولانی ----
+   دو کلاس تودرتو (nearest ancestor برنده است — هم در CSS و هم در App.tsx):
+     .os-no-select    → دسکتاپ و اپ‌های تعاملی (ضربان قلب، بغل، باغچه، پازل، نقشه،
+                        آسمان ستاره‌ها، مود، کوییز): نه انتخاب متن، نه منوی لمس طولانی
+     .os-allow-select → بدنه‌ی پنجره‌ها و اپ‌های محتوایی (چت، نامه‌ها، کتابخانه،
+                        خاطره‌ها...): انتخاب/کپی متن آزاد است
+   عمداً بدون «*» و !important نوشته شده‌اند: user-select: auto از والد ارث می‌برد،
+   پس یک اپ تعاملیِ داخل پنجره‌ی مجاز، دوباره غیرقابل‌انتخاب می‌شود. */
+.os-no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* مناطقی که انتخاب متن مجاز است (چت، نامه‌ها، کتابخانه) */
-.os-allow-select,
-.os-allow-select * {
-  -webkit-touch-callout: default !important;
-  -webkit-user-select: text !important;
-  -khtml-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-  user-select: text !important;
+.os-allow-select {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
-/* ورودی‌ها همیشه قابل انتخاب */
+/* ورودی‌ها همیشه قابل انتخاب و ویرایش */
 input,
 textarea,
 [contenteditable="true"],
 [contenteditable="true"] * {
-  -webkit-touch-callout: default !important;
-  -webkit-user-select: text !important;
-  user-select: text !important;
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ------------------------------------------- پوسته‌ی تمام‌صفحه (بدون اسکرول) --

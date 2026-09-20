@@ -264,7 +264,9 @@ export function Desktop() {
 
   return (
     <div
-      className="os-screen relative"
+      // os-no-select: روی دسکتاپ (آیکن‌ها، ویجت‌ها، داک، منوی شروع) کلیک راست، نگه‌داشتن و
+      // انتخاب متن بسته است؛ بدنه‌ی پنجره‌ها با os-allow-select دوباره آزادش می‌کند (Window.tsx)
+      className="os-screen relative os-no-select"
       style={{
         // overlay کم‌رنگ‌تر شد تا والپیپر دیده شود — یک‌سومِ قبل (درخواست کاربر)
         backgroundImage: `linear-gradient(${

@@ -130,9 +130,10 @@ const texts = Array.from(rootEl.querySelectorAll('svg text')).map((el) => el.tex
 check('برچسب ❤ روی آسمان هست', texts.includes('❤'))
 check('برچسب ♾ روی آسمان هست', texts.includes('♾'))
 
-// عناصر شناور روی آسمان
-const caption = rootEl.querySelector('p.absolute') as HTMLElement
-check('متن راهنما به‌صورت شناور روی آسمان است', !!caption && caption.className.includes('absolute'))
+// جعبه‌ی «اسمت رو با ستاره‌ها نوشتم» به درخواست کاربر حذف شده؛ هیچ کپشنی روی آسمان نباید باشد
+const caption = rootEl.querySelector('p.absolute') as HTMLElement | null
+check('کپشن بالای آسمان دیگر رندر نمی‌شود', !caption, caption ? `text=${caption.textContent}` : '')
+check('متن «اسمت رو با ستاره‌ها نوشتم» جایی روی آسمان نیست', !rootEl.textContent!.includes('با ستاره‌ها'))
 
 // چهارم: زدن روی ❤ → پیامش نمایش داده شود
 await act(async () => { (groups[6] as unknown as HTMLElement).dispatchEvent(new w.MouseEvent('click', { bubbles: true })) })

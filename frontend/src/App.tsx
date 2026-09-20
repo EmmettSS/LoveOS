@@ -171,60 +171,29 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, showEgg])
 
-  // جلوگیری از کلیک راست و انتخاب متن در اپ‌های تعاملی (ضربان قلب، بغل، باغچه...)
-  // فقط در مناطق .os-no-select اعمال می‌شود، مناطق .os-allow-select مستثنی هستند
+  // کلیک راست، نگه‌داشتن (منوی لمس طولانی) و انتخاب/کشیدن متن:
+  //   • در دسکتاپ (آیکن‌ها، ویجت‌ها، داک، منوی شروع) و اپ‌های تعاملی (.os-no-select) بسته است
+  //   • در اپ‌های محتوایی (.os-allow-select: چت، نامه‌ها، کتابخانه، خاطره‌ها...) آزاد است
+  //   • نزدیک‌ترین کلاس در زنجیره‌ی والدها برنده است؛ فیلدهای ورودی همیشه مستثنا هستند
   useEffect(() => {
-    const isNoSelect = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) return false
-      // اگر داخل منطقه مجاز انتخاب است، اجازه بده
-      if (target.closest('.os-allow-select')) return false
-      // اگر داخل input/textarea/contenteditable است، اجازه بده
-      if (target.closest('input, textarea, [contenteditable="true"]')) return false
-      // فقط در مناطق no-select جلوگیری کن
-      return !!target.closest('.os-no-select')
+    const isBlocked = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return false
+      if (target.closest('input, textarea, select, [contenteditable="true"]')) return false
+      const zone = target.closest('.os-no-select, .os-allow-select')
+      return !!zone && zone.classList.contains('os-no-select')
     }
-
-    const onContextMenu = (e: MouseEvent) => {
-      if (isNoSelect(e.target)) {
-        e.preventDefault()
-      }
+    const block = (e: Event) => {
+      if (isBlocked(e.target)) e.preventDefault()
     }
-
-    const onSelectStart = (e: Event) => {
-      if (isNoSelect(e.target)) {
-        e.preventDefault()
-      }
-    }
-
-    const onDragStart = (e: DragEvent) => {
-      if (isNoSelect(e.target)) {
-        e.preventDefault()
-      }
-    }
-
-    // جلوگیری از منوی لمس طولانی در iOS/Android
-    const onTouchCallout = (e: TouchEvent) => {
-      if (e.touches.length > 1) return
-      const target = e.target as HTMLElement
-      if (isNoSelect(target)) {
-        // جلوگیری از انتخاب متن در لمس طولانی با تاخیر
-        const el = target.closest('.os-no-select') as HTMLElement | null
-        if (el) {
-          ;(el.style as any).webkitTouchCallout = 'none'
-        }
-      }
-    }
-
-    document.addEventListener('contextmenu', onContextMenu)
-    document.addEventListener('selectstart', onSelectStart)
-    document.addEventListener('dragstart', onDragStart)
-    document.addEventListener('touchstart', onTouchCallout, { passive: true })
-
+    // contextmenu: کلیک راست دسکتاپ و منوی نگه‌داشتن اندروید؛
+    // selectstart/dragstart: شروع انتخاب یا کشیدن متن و تصویر با موس و لمس (iOS با CSS هم پوشش داده شده)
+    document.addEventListener('contextmenu', block)
+    document.addEventListener('selectstart', block)
+    document.addEventListener('dragstart', block)
     return () => {
-      document.removeEventListener('contextmenu', onContextMenu)
-      document.removeEventListener('selectstart', onSelectStart)
-      document.removeEventListener('dragstart', onDragStart)
-      document.removeEventListener('touchstart', onTouchCallout)
+      document.removeEventListener('contextmenu', block)
+      document.removeEventListener('selectstart', block)
+      document.removeEventListener('dragstart', block)
     }
   }, [])
 

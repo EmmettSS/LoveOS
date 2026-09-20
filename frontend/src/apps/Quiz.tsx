@@ -47,7 +47,7 @@ export default function Quiz() {
 
   if (!started) {
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
+      <div className="flex flex-col items-center gap-4 py-10 text-center os-no-select">
         <span className="text-5xl animate-float">🧠</span>
         <p className="os-title text-lg">{t('apps.quiz')}</p>
         <p className="text-sm os-muted">{digits(items.length)} {t('os.more')}</p>
@@ -58,7 +58,7 @@ export default function Quiz() {
 
   if (result) {
     return (
-      <div className="flex flex-col items-center gap-4 py-8 text-center">
+      <div className="flex flex-col items-center gap-4 py-8 text-center os-no-select">
         <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-5xl">
           {result.perfect ? '💯' : '💗'}
         </motion.span>

@@ -119,7 +119,7 @@ export default function Starmap() {
   return createPortal(
     <motion.div
       data-starmap-overlay={rotated ? 'rotated' : 'landscape'}
-      className="fixed inset-0 overflow-hidden"
+      className="fixed inset-0 overflow-hidden os-no-select"
       style={{ zIndex: overlayZ, background: '#05081a', overscrollBehavior: 'none', touchAction: 'manipulation' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: present ? 1 : 0 }}
