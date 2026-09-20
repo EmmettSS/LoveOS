@@ -41,9 +41,14 @@ html[data-theme='night'] {
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* مناطقی که انتخاب متن مجاز است (چت، نامه‌ها، کتابخانه) */
+/* مناطقی که انتخاب متن مجاز است (چت، نامه‌ها، کتابخانه).
+   حالت‌های تو‌در‌تو عمداً صریح‌اند: .os-no-select * specificity بیشتری از
+   .os-allow-select تنها دارد و بدون این override، ریشه‌ی ناحیه‌ی مجاز روی
+   دسکتاپ قابل انتخاب نبود. */
 .os-allow-select,
-.os-allow-select * {
+.os-allow-select *,
+.os-no-select .os-allow-select,
+.os-no-select .os-allow-select * {
   -webkit-touch-callout: default !important;
   -webkit-user-select: text !important;
   -khtml-user-select: text !important;
@@ -52,11 +57,15 @@ html[data-theme='night'] {
   user-select: text !important;
 }
 
-/* ورودی‌ها همیشه قابل انتخاب */
+/* ورودی‌ها همیشه قابل انتخاب‌اند، حتی وقتی داخل پوسته‌ی os-no-select هستند. */
 input,
 textarea,
 [contenteditable="true"],
-[contenteditable="true"] * {
+[contenteditable="true"] *,
+.os-no-select input,
+.os-no-select textarea,
+.os-no-select [contenteditable="true"],
+.os-no-select [contenteditable="true"] * {
   -webkit-touch-callout: default !important;
   -webkit-user-select: text !important;
   user-select: text !important;
