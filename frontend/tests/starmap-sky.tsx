@@ -130,9 +130,11 @@ const texts = Array.from(rootEl.querySelectorAll('svg text')).map((el) => el.tex
 check('برچسب ❤ روی آسمان هست', texts.includes('❤'))
 check('برچسب ♾ روی آسمان هست', texts.includes('♾'))
 
-// عناصر شناور روی آسمان
-const caption = rootEl.querySelector('p.absolute') as HTMLElement
-check('متن راهنما به‌صورت شناور روی آسمان است', !!caption && caption.className.includes('absolute'))
+// عناصر شناور روی آسمان — کپشن قدیمی عمداً حذف شده؛ نوار کنترل باید شناور بماند
+const floatingControls = Array.from(rootEl.querySelectorAll('div.absolute')).find((el) =>
+  el.className.includes('inset-x-2') && el.className.includes('justify-center'),
+) as HTMLElement | undefined
+check('نوار کنترل به‌صورت شناور روی آسمان است', !!floatingControls)
 
 // چهارم: زدن روی ❤ → پیامش نمایش داده شود
 await act(async () => { (groups[6] as unknown as HTMLElement).dispatchEvent(new w.MouseEvent('click', { bubbles: true })) })
