@@ -4,6 +4,8 @@
  */
 import type { CSSProperties, ReactElement } from 'react'
 
+import { FRAMED_HEART_PATH, FRAMED_INFINITY_PATH, LOGO_PATH } from './logo'
+
 export type IconName =
   | 'map' | 'voice' | 'music' | 'memories' | 'whisper' | 'countdown' | 'weather'
   | 'heartbeat' | 'garden' | 'starmap' | 'chat' | 'mood' | 'quiz' | 'plans'
@@ -443,35 +445,9 @@ export function Icon({ name, size = 22, className = '', style, strokeWidth = 1.7
   )
 }
 
-/* ----------------------------------------------------------- لوگوی LoveOS ---
- * قلب + بی‌نهایت — ساختار دقیقاً مطابق آویز مرجع (Logo-idea.jpg):
- *   • قلب توخالی با خط ضخیم گرد؛ نوکش پایین است و سمت راستش کوتاه‌تر تمام می‌شود
- *   • در گوشه‌ی پایین‌راست، یک بی‌نهایت کوچکِ مورب ۴۵° نشسته: حلقه‌ی پایینی‌اش
- *     کنار نوک قلب و حلقه‌ی بالایی‌اش کنار بدنه‌ی راست قلب است
- *   • بین قلب و بی‌نهایت فاصله‌ی کوچکی هست تا دو شکل جدا ولی به‌هم‌پیوسته دیده شوند
- * مسیرها از روی رندر برداری تمیز trace شده‌اند (نه حدس دستی): یک مسیر با دو
- * زیرمسیر — قلب (از نوک، بالا از سمت چپ، فرورفتگی، پایین از سمت راست) و
- * بی‌نهایت (بسته، از نقطه‌ی تقاطع شروع می‌شود). viewBox همیشه 0 0 64 64 است.
- * --------------------------------------------------------------------------- */
+/* لوگوی LoveOS — ثابت‌های هندسه در ./logo (قلب + بی‌نهایت، ساختار مطابق آویز مرجع) */
 
-/** زیرمسیر قلب — نسخه‌ی بدون قاب (فاوآیکون، اسپلش، بوت) */
-export const LOGO_HEART_PATH =
-  'M33.9 60.4 C30.32 53.56 24.45 48.25 18.74 43.19 C12.38 37.55 5.89 31.23 4.5 22.44 C3.87 18.47 4.23 14.14 6.36 10.65 C10.62 3.69 20.55 1.32 27.31 6.11 C29.33 7.54 30.78 9.57 32.01 11.71 C33.53 9.09 35.35 6.75 38.01 5.3 C44.79 1.6 53.93 4.17 57.77 10.84 C61.15 16.72 59.8 23.78 57.13 29.61'
-/** زیرمسیر بی‌نهایت — نسخه‌ی بدون قاب؛ از نقطه‌ی تقاطع (44.57, 43.18) شروع می‌شود */
-export const LOGO_INFINITY_PATH =
-  'M44.57 43.18 C47.9 42.56 53.09 42.64 54.98 39.18 C57.41 34.73 52.51 30.22 48.26 32.9 C46.75 33.86 46 35.67 45.53 37.32 C44.49 40.92 44.68 44.83 43.76 48.47 C43.19 50.74 42.13 53.35 39.62 54 C35.16 55.15 31.6 50.48 34.48 46.68 C36.73 43.72 41.27 43.8 44.57 43.18 Z'
-/** مسیر کامل لوگو (قلب + بی‌نهایت) — بدون قاب */
-export const LOGO_PATH = `${LOGO_HEART_PATH} ${LOGO_INFINITY_PATH}`
-/** نقطه‌ی تقاطع بی‌نهایت — برای افکت‌هایی که از «داخل بی‌نهایت» می‌گذرند */
-export const LOGO_INFINITY_CENTER: readonly [number, number] = [44.57, 43.18]
-
-/* همان شکل، کوچک‌شده برای داخل قاب پنجره‌ی LoveOSLogo (rect 5,8,54,46) */
-const FRAMED_HEART_PATH =
-  'M33.01 50.5 C31.11 46.89 28.01 44.08 25 41.41 C21.64 38.43 18.21 35.09 17.47 30.45 C17.14 28.35 17.33 26.07 18.46 24.22 C20.71 20.55 25.95 19.3 29.52 21.82 C30.59 22.58 31.35 23.65 32.01 24.78 C32.81 23.4 33.77 22.16 35.17 21.4 C38.75 19.45 43.58 20.8 45.61 24.33 C47.4 27.43 46.68 31.16 45.27 34.24'
-const FRAMED_INFINITY_PATH =
-  'M38.64 41.41 C40.4 41.08 43.14 41.12 44.14 39.29 C45.42 36.94 42.83 34.56 40.59 35.98 C39.79 36.48 39.4 37.44 39.14 38.31 C38.59 40.21 38.7 42.28 38.21 44.2 C37.91 45.4 37.35 46.78 36.03 47.12 C33.67 47.73 31.79 45.26 33.31 43.26 C34.5 41.69 36.9 41.73 38.64 41.41 Z'
-
-/** لوگوی LoveOS: پنجره‌ی سیستم‌عامل + قلب و بی‌نهایت (ساختار مطابق آویز مرجع) */
+/** لوگوی LoveOS: پنجره‌ی سیستم‌عامل + قلب و بی‌نهایت (همان icons/logo.svg) */
 export function LoveOSLogo({ size = 64, className = '' }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden="true">
@@ -482,17 +458,17 @@ export function LoveOSLogo({ size = 64, className = '' }: { size?: number; class
           <stop offset="100%" stopColor="#bba0fb" />
         </linearGradient>
       </defs>
-      <rect x="5" y="8" width="54" height="46" rx="14" fill="url(#loveos-g)" opacity="0.18" />
-      <rect x="5" y="8" width="54" height="46" rx="14" stroke="url(#loveos-g)" strokeWidth="2.4" fill="none" />
-      <circle cx="13" cy="16" r="1.8" fill="#f767a8" />
-      <circle cx="19" cy="16" r="1.8" fill="#efc478" />
-      <circle cx="25" cy="16" r="1.8" fill="#bba0fb" />
+      <rect x="7" y="10" width="50" height="42" rx="13" fill="url(#loveos-g)" opacity="0.18" />
+      <rect x="7" y="10" width="50" height="42" rx="13" stroke="url(#loveos-g)" strokeWidth="2.4" fill="none" />
+      <circle cx="15" cy="18" r="1.8" fill="#f767a8" />
+      <circle cx="21" cy="18" r="1.8" fill="#efc478" />
+      <circle cx="27" cy="18" r="1.8" fill="#bba0fb" />
       {/* قلب + بی‌نهایت — یک مسیر تمیز با دو زیرمسیر */}
       <path
         d={`${FRAMED_HEART_PATH} ${FRAMED_INFINITY_PATH}`}
         fill="none"
         stroke="url(#loveos-g)"
-        strokeWidth="2.4"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

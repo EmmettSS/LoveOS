@@ -266,7 +266,10 @@ export default function App() {
 
   return (
     <div
-      className="os-screen"
+      // os-no-select در ریشه: کل پوسته (بوت، قفل، دسکتاپ، اورلی‌ها و توست) به‌طور پیش‌فرض
+      // نه انتخاب متن دارد، نه کلیک راست و نه منوی نگه‌داشتن؛ فقط بدنه‌ی پنجره‌ها و اپ‌های
+      // محتوایی با os-allow-select دوباره آزادش می‌کنند (نزدیک‌ترین کلاس برنده است).
+      className="os-screen os-no-select"
       // موقع خروج انیمیشن بوت، پس‌زمینه هم تیره بماند تا فلش سفید پیدا نشود
       style={phase === 'boot' ? { background: '#0a0410' } : undefined}
     >

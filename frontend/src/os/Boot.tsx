@@ -1,7 +1,7 @@
 /**
  * Boot.tsx — صفحه‌ی بوت سینمایی LoveOS — نسخه‌ی قلب + بی‌نهایت
  *
- * لوگو همان مسیر تمیزِ favicon/Icon.tsx است (ساختار مطابق آویز مرجع) و همه‌ی
+ * لوگو همان مسیر تمیزِ favicon/shared/logo.ts است (ساختار مطابق آویز مرجع) و همه‌ی
  * افکت‌ها داخل یک SVG واحد روی خودِ منحنی اجرا می‌شوند تا با ضربان لوگو هم‌مقیاس بمانند:
  *   • ذرات نور که از اطراف می‌آیند و روی خطِ قلب و بی‌نهایت می‌نشینند (Particle Formation)
  *   • کشیده شدن خط لوگو با یک سرِ نورانی که روی منحنی حرکت می‌کند (Draw-in)
@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { post } from '../shared/api'
-import { LOGO_INFINITY_CENTER, LOGO_INFINITY_PATH, LOGO_PATH } from '../shared/Icon'
+import { LOGO_CURVE_POINTS, LOGO_GEM_POINTS, LOGO_INFINITY_CENTER, LOGO_INFINITY_PATH, LOGO_PATH } from '../shared/logo'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -522,21 +522,17 @@ function BouncingDots({ color }: { color: string }) {
 }
 
 /* ------------------------------------------------------------ لوگوی سینمایی ---
- * نقاط زیر روی خودِ منحنی لوگو (viewBox 0 0 64 64) نمونه‌برداری شده‌اند. */
+ * همه‌ی نقاط از خودِ هندسه‌ی لوگو (shared/logo.ts، viewBox 0 0 64 64) می‌آیند تا با هر
+ * تغییر مسیر، افکت‌ها هم دقیقاً روی منحنی بمانند. */
 
-/** نگین‌ها: سمت چپ و بالای قلب — همان جایی که آویز مرجع نگین‌کاری دارد */
-const GEMS: ReadonlyArray<readonly [number, number]> = [
-  [27.1, 51.1], [18.7, 43.2], [10.6, 35.1], [5.1, 25], [5, 13.7], [12.4, 5.2], [23.6, 4.3],
-]
+/** نگین‌ها: پهلوی چپ و بالای قلب — همان جایی که آویز مرجع نگین‌کاری دارد */
+const GEMS = LOGO_GEM_POINTS
 /** مقصد ذرات نور: نقاطی روی قلب و بی‌نهایت */
-const PARTICLE_TARGETS: ReadonlyArray<readonly [number, number]> = [
-  [33.9, 60.4], [29.5, 53.8], [24, 48], [18.1, 42.7], [12.4, 37.1], [7.6, 30.8], [4.7, 23.4], [4.5, 15.5],
-  [8, 8.5], [14.7, 4.3], [22.5, 4], [29.3, 7.9], [33.8, 9], [40.1, 4.4], [48, 3.9], [55, 7.5], [59.2, 14.1],
-  [59.5, 22], [55.1, 39], [48.8, 32.6], [44.6, 43.2], [40.4, 53.7], [34, 47.4],
-]
+const PARTICLE_TARGETS = LOGO_CURVE_POINTS
 const [INF_CX, INF_CY] = LOGO_INFINITY_CENTER
-/** خط ECG: از چپ می‌آید، داخل قلب می‌تپد و از نقطه‌ی تقاطع بی‌نهایت رد می‌شود */
-const ECG_PATH = `M-10 ${INF_CY} H21 l2.5 -0.8 l2.5 7 l3.5 -15 l3 12.5 l2.5 -3.7 H${INF_CX} H76`
+/** خط ECG: از چپ می‌آید، داخل قلب می‌تپد و دقیقاً از نقطه‌ی تقاطع بی‌نهایت رد می‌شود
+ *  (قله و دره‌ی ضربان داخل فضای خالی قلب می‌مانند) */
+const ECG_PATH = `M-10 ${INF_CY} H26 l2 -0.6 l2 2.6 l3.4 -13.5 l3 12.5 l2.2 -1 H${INF_CX} H76`
 const DRAW_DELAY = 0.35
 const DRAW_DURATION = 2.4
 const STAR = (x: number, y: number, r: number) =>
