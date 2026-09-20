@@ -32,6 +32,7 @@ const ALL = {
   'starmap-mobile': join(here, 'starmap-mobile.tsx'),
   'boot-timeout': join(here, 'boot-timeout.tsx'),
   'error-boundary-wrapper': join(here, 'error-boundary-wrapper.tsx'),
+  'dreamhome-map-gestures': join(here, 'dreamhome-map-gestures.tsx'),
 }
 
 const only = process.argv.slice(2)

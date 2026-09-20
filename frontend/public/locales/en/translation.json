@@ -163,7 +163,8 @@
         "useMyLocation": "Use my location",
         "refresh": "Refresh",
         "accuracy": "Accuracy",
-        "meters": "m"
+        "meters": "m",
+        "flying": "Flying… ✨"
     },
     "voice": {
         "random": "A random voice note",
@@ -723,7 +724,7 @@
         "noCategory": "No category",
         "emptyFeatures": "No features yet",
         "emptyMap": "Add rooms to shape our home…",
-        "mapHint": "Drag any room around — I save it for you 🏠",
+        "mapHint": "Tap a room once to edit it ✏️ — to move it, press and hold, then drag 🏠",
         "roomPlaceholder": "Room name",
         "floors": {
             "ground": "Ground floor",
@@ -741,7 +742,9 @@
         "pickPhoto": "Pick a photo",
         "noPhoto": "Pick a photo first",
         "emptyGallery": "The gallery is empty. Add a lovely photo 🖼",
-        "commentPlaceholder": "Your thoughts…"
+        "commentPlaceholder": "Your thoughts…",
+        "mapHintSelected": "This room is selected ✏️ Rename it or change its color; to move it, just grab and drag 🏠",
+        "mapMoving": "Moving…"
     },
     "language": {
         "title": "Language bridge",

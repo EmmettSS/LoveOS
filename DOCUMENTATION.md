@@ -351,7 +351,7 @@ and drop.
 
 | App | What it does |
 |---|---|
-| **Map of Us** | Two pins (my home, her place) with distance, time difference, a "fly along the path" button and a live-location badge. |
+| **Map of Us** | A real 3D globe (spinnable, starfield + atmosphere halo), two heart pins, a glowing arc thread, distance & time difference, a "fly along the path" button with a cinematic sequence (hearts and ♾ bursting from both homes, a spark heart traveling the route) and a live-location badge. |
 | **Voice Vault** | Categorised archive of my voice notes, plus a "random voice" button. |
 | **Our Music** | Songs with "why this song" and lyrics; she can upload songs too when I allow it. |
 | **Memories** | Shared memories; some stay locked until a chosen date (future memories). |
@@ -389,7 +389,7 @@ and drop.
 | **Call Sync** | We publish our weekly free windows; the system finds the overlap. Propose, approve, decline or reschedule calls, then log each call with duration, moods and a note. |
 | **Gift Book** | Every gift: occasion, price band, photo and "the reaction in that moment", plus yearly stats. |
 | **Read Together** | A shared shelf. Per chapter: notes with a star rating, quotes and a conversation thread. Progress tracked for both of us. |
-| **Dream Home** | Checklist with importance levels, a room layout you drag around, an inspiration gallery with comments. |
+| **Dream Home** | Checklist with importance levels, a room layout (tap = edit, press-and-hold or grab the selected room = move), an inspiration gallery with comments. |
 | **Language Bridge** | Our four-language dictionary (Mazandarani, Turkish, Persian, English), flashcards with a streak, pronunciation recording, quizzes from my panel. |
 
 ### System pieces
