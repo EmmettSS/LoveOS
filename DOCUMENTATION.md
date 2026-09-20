@@ -351,7 +351,7 @@ and drop.
 
 | App | What it does |
 |---|---|
-| **Map of Us** | A real 3D globe (spinnable, starfield + atmosphere halo), two heart pins, a glowing arc thread, distance & time difference, a "fly along the path" button with a cinematic sequence (hearts and ♾ bursting from both homes, a spark heart traveling the route) and a live-location badge. |
+| **Map of Us** | A real 3D globe (spinnable, starfield + atmosphere halo) whose resting frame is **all of Iran, from the Caspian Sea to the Persian Gulf**; two heart pins, a glowing arc thread, distance & time difference and a live-location badge. The "fly along the path" button plays a ~20-second, non-skippable cinematic sequence: cinema bars plus a pull-back to the full globe with meteors and an atmosphere-halo bloom, a dive to Daddy's home with an orbit and a meaningful pause, lift-off with a whoosh, a slow flight along the arc with a spark heart leaving a trail of fading hearts, a live kilometre counter and a light comet crawling the thread, a four-wave landing celebration with the final message, then a soft return to the same Iran frame. The thread pulses in sync with a heartbeat (light and sound together) and short bilingual captions run across the map. The sequence caps at zoom 11.6 so secret ⑨ can never be consumed by accident; the framing maths and the whole timeline live in `mapOfUsCinema.ts` and are covered by a jsdom test. |
 | **Voice Vault** | Categorised archive of my voice notes, plus a "random voice" button. |
 | **Our Music** | Songs with "why this song" and lyrics; she can upload songs too when I allow it. |
 | **Memories** | Shared memories; some stay locked until a chosen date (future memories). |
