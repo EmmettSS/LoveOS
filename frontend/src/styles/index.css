@@ -105,6 +105,19 @@ body {
   overflow: hidden;
 }
 
+/* در حالت نصب‌شده (standalone) یا تمام‌صفحه، صفحه تا لبه‌ی گوشی می‌رود؛ پس
+   حاشیه‌ی امنِ نُچ/نوار وضعیت و نشانگرِ پایین باید به‌عنوان padding اضافه شود،
+   وگرنه ساعتِ گوشی روی محتوا می‌افتد و نوارِ خانه‌ی آیفون روی داکِ LoveOS
+   می‌نشیند. (در حالت مرورگرِ معمولی این مقدارها صفرند و چیزی عوض نمی‌شود.) */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .os-screen {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Vazirmatn', system-ui, sans-serif;

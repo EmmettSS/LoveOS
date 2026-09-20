@@ -254,7 +254,32 @@ class FuturePlan(TimeStamped):
 
 
 # -------------------------------------------------------------- حال دل ----
+# ایموجیِ پیش‌فرضِ حال‌های آماده؛ اگر بابا یا دخترم ایموجیِ خودش را بدهد،
+# همان اولویت دارد. (فرانت هم همین‌ها را به‌عنوان پشتیبان دارد.)
+MOOD_EMOJI = {
+    "happy": "😊",
+    "missing": "🥺",
+    "tired": "😴",
+    "sad": "😢",
+    "excited": "🤩",
+    "sleepy": "🌙",
+    "loved": "🥰",
+    "angry": "😤",
+    "sick": "🤒",
+    "proud": "🌟",
+}
+MOOD_FALLBACK_EMOJI = "💗"
+MOOD_OWNERS = [("daddy", "بابا"), ("daughter", "دخترم")]
+
+
 class MoodMessage(TimeStamped):
+    """یک حال در فهرست «حال دلم» + پیام و ویسِ بابا برای همان حال.
+
+    حال‌های آماده (خوشحال/دلتنگ/…) را ``seed_loveos`` می‌سازد و بابا از پنل
+    کاملش می‌کند. حال‌های تازه را خودِ دخترم از اپ می‌سازد (``added_by``)،
+    و در همان لحظه هم برای بابا خبر می‌رود.
+    """
+
     MOODS = [
         ("happy", "خوشحال"),
         ("missing", "دلتنگ"),
@@ -263,26 +288,66 @@ class MoodMessage(TimeStamped):
         ("excited", "پر انرژی"),
         ("sleepy", "خواب‌آلود"),
     ]
-    mood = models.CharField("حال", max_length=12, choices=MOODS, unique=True)
-    message = models.TextField("پیام بابا")
+    mood = models.CharField("کلید حال", max_length=32, choices=MOODS, unique=True)
+    label = models.CharField(
+        "برچسب حال",
+        max_length=40,
+        blank=True,
+        help_text="اگر خالی باشد، برچسبِ پیش‌فرضِ همان حال نشان داده می‌شود.",
+    )
+    emoji = models.CharField("ایموجی", max_length=8, blank=True)
+    message = models.TextField("پیام بابا", blank=True)
     voice = models.ForeignKey(Voice, verbose_name="ویس", null=True, blank=True, on_delete=models.SET_NULL)
+    added_by = models.CharField("ساخته‌ی", max_length=10, choices=MOOD_OWNERS, default="daddy")
     is_active = models.BooleanField("فعال", default=True)
 
     class Meta:
         verbose_name = "پیام حال دل"
         verbose_name_plural = "۱۲) پیام‌های حال دل"
 
+    @property
+    def display_label(self) -> str:
+        """برچسبِ نمایش: برچسبِ دستی ← ترجمه‌ی حالِ آماده ← خودِ کلید."""
+        return self.label or self.get_mood_display() or self.mood
+
+    @property
+    def display_emoji(self) -> str:
+        return self.emoji or MOOD_EMOJI.get(self.mood, MOOD_FALLBACK_EMOJI)
+
+    @property
+    def is_custom(self) -> bool:
+        """حالی که خودِ دخترم ساخته (برچسب/ایموجیِ دلخواه)."""
+        return self.added_by == "daughter"
+
     def __str__(self) -> str:
-        return self.get_mood_display()
+        return self.display_label
 
 
 class MoodLog(TimeStamped):
-    mood = models.CharField("حال", max_length=12)
+    """هر بار که دخترم حالش را می‌گوید، اینجا ثبت می‌شود.
+
+    ``mood`` کلیدِ حال است (مثل ``happy`` یا ``custom-3f9a2b71``)، ``label`` و
+    ``emoji`` همان لحظه‌ی ثبت کنارِ هم نگه داشته می‌شوند تا اگر روزی حال از
+    فهرست حذف شد، تاریخچه‌اش خوانا بماند. ``note`` هم یادداشتِ خودش است.
+    """
+
+    mood = models.CharField("کلید حال", max_length=32)
+    label = models.CharField("برچسب حال", max_length=40, blank=True)
+    emoji = models.CharField("ایموجی", max_length=8, blank=True)
+    note = models.TextField("یادداشت دخترم", blank=True, default="")
+    added_by = models.CharField("ثبت‌شده توسط", max_length=10, choices=MOOD_OWNERS, default="daughter")
 
     class Meta:
         verbose_name = "ثبت حال"
         verbose_name_plural = "ثبت حال‌ها"
         ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.display_label} ({self.created_at:%Y-%m-%d %H:%M})"
+
+    @property
+    def display_label(self) -> str:
+        return self.label or self.mood
 
 
 # ------------------------------------------------------------ صندوقچه -----

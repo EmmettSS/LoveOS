@@ -17,9 +17,37 @@ import { getStoredSettings, setStoredSetting, syncSettings } from '../shared/pre
 import { setLanguage } from '../shared/i18n'
 import { digits } from '../shared/format'
 import { enableLiveLocation, getCurrentPosition, readCachedLocation } from '../shared/geo'
+import {
+  PERMISSION_EMOJI,
+  PERMISSION_ORDER,
+  autoFullscreenEnabled,
+  clearSetupSkip,
+  enterFullscreen,
+  exitFullscreen,
+  installAvailable,
+  isFullscreen,
+  isStandalone,
+  onFullscreenChange,
+  permissionStateLabel,
+  permissionStates,
+  promptInstall,
+  requestPermission,
+  setAutoFullscreen,
+  type PermissionKey,
+  type PermissionMap,
+  type PermissionState,
+} from '../shared/permissions'
 import { playClick, playError, setSoundEnabled, vibrate } from '../shared/sound'
 import { Toggle } from '../shared/ui'
 import { useOS, type Config, type Theme } from '../shared/store'
+
+/** رنگِ چیپِ هر وضعیتِ مجوز (سبز/زرد/قرمز) */
+function permTone(state?: PermissionState): string {
+  if (state === 'granted') return '#3f9161'
+  if (state === 'denied') return '#e2557f'
+  if (state === 'unsupported' || state === 'skipped') return 'var(--os-border)'
+  return '#c58a1a'
+}
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -43,17 +71,48 @@ export default function Settings() {
   const openApp = useOS((s) => s.openApp)
   const showToast = useOS((s) => s.showToast)
 
-  const [installEvent, setInstallEvent] = useState<any>(null)
   const [vibrationOn, setVibrationOn] = useState(() => localStorage.getItem('loveos_vibration') !== 'off')
+  const [perms, setPerms] = useState<PermissionMap | null>(null)
+  const [askingPerm, setAskingPerm] = useState<PermissionKey | null>(null)
+  const [fsActive, setFsActive] = useState(() => isFullscreen())
+  const [autoFs, setAutoFs] = useState(() => autoFullscreenEnabled())
+  const [canInstall, setCanInstall] = useState(() => installAvailable())
   const [locating, setLocating] = useState(false)
   const [locationHint, setLocationHint] = useState('')
   const live = config?.live_location
 
+  // وضعیتِ مجوزها با هر بار باز شدنِ تنظیمات تازه خوانده می‌شود (بدونِ پنجره)
   useEffect(() => {
-    const onPrompt = (e: Event) => { e.preventDefault(); setInstallEvent(e) }
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+    let cancelled = false
+    void permissionStates().then((next) => {
+      if (!cancelled) setPerms(next)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
+
+  useEffect(() => onFullscreenChange(() => setFsActive(isFullscreen())), [])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setCanInstall(installAvailable()), 1500)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const permStateLabel = (state: PermissionState) => permissionStateLabel(state, t)
+
+  const askPermission = async (key: PermissionKey) => {
+    setAskingPerm(key)
+    try {
+      const state = await requestPermission(key)
+      setPerms((prev) => (prev ? { ...prev, [key]: state } : prev))
+      setFsActive(isFullscreen())
+      if (state === 'granted') showToast(t('os.saved'))
+      else if (state === 'denied') showToast(t('settings.permDeniedHint'))
+    } finally {
+      setAskingPerm(null)
+    }
+  }
 
   // اگر در تنظیمات محلی چیزی مانده که ذخیره‌اش شکست خورده بود، همان‌جا سرِ فرصت سینک شود
   useEffect(() => {
@@ -226,27 +285,93 @@ export default function Settings() {
         </div>
       </Row>
 
-      <Row label={t('settings.notificationsPerm')}>
+      {/* ------------------------------------------------- مجوزهای دستگاه --- */}
+      <Row label={t('settings.perms')} hint={t('settings.permsHint')}>
         <button
           className="os-chip"
-          onClick={async () => {
-            if ('Notification' in window) {
-              const p = await Notification.requestPermission()
-              showToast(p === 'granted' ? t('os.saved') : t('os.error'))
-            }
+          onClick={() => {
+            playClick()
+            clearSetupSkip()
+            useOS.getState().setPhase('setup')
           }}
         >
-          <span className="inline-flex items-center gap-1"><Icon name="bell" size={13} /> {t('os.yes')}</span>
+          <span className="inline-flex items-center gap-1"><Icon name="sparkle" size={13} /> {t('settings.openSetup')}</span>
         </button>
       </Row>
 
-      {installEvent && (
-        <Row label={t('settings.install')}>
-          <button className="os-chip" onClick={() => { installEvent.prompt(); setInstallEvent(null) }}>
+      <div className="os-card space-y-2 p-3">
+        {PERMISSION_ORDER.map((key) => (
+          <div key={key} className="flex items-center gap-2">
+            <span className="text-base">{PERMISSION_EMOJI[key]}</span>
+            <span className="min-w-0 flex-1 text-[12px] leading-5">{t(`setup.items.${key}.short`)}</span>
+            <span
+              className="shrink-0 rounded-full px-2 py-0.5 text-[10px]"
+              style={{
+                border: `1px solid ${permTone(perms?.[key])}`,
+                color: permTone(perms?.[key]),
+              }}
+            >
+              {permStateLabel(perms?.[key] || 'unknown')}
+            </span>
+            <button
+              className="os-chip shrink-0 !px-2 !py-1 text-[10px]"
+              disabled={perms?.[key] === 'unsupported' || askingPerm === key}
+              onClick={() => void askPermission(key)}
+            >
+              {askingPerm === key ? '…' : t('settings.askPerm')}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <Row label={t('settings.fullscreen')} hint={t('settings.fullscreenHint')}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className="os-chip"
+            onClick={async () => {
+              playClick()
+              if (fsActive) await exitFullscreen()
+              else await enterFullscreen()
+              setFsActive(isFullscreen())
+            }}
+          >
+            <span className="inline-flex items-center gap-1">
+              <Icon name={fsActive ? 'minus' : 'grid'} size={13} />
+              {fsActive ? t('settings.fsExit') : t('settings.fsEnter')}
+            </span>
+          </button>
+          <label className="inline-flex items-center gap-2 text-[11px]">
+            <Toggle
+              on={autoFs}
+              onChange={(v) => {
+                setAutoFullscreen(v)
+                setAutoFs(v)
+                if (!v) void exitFullscreen()
+              }}
+            />
+            {t('settings.fsAuto')}
+          </label>
+        </div>
+      </Row>
+
+      <Row label={t('settings.install')} hint={t('settings.installHint')}>
+        {canInstall ? (
+          <button
+            className="os-chip"
+            onClick={async () => {
+              playClick()
+              await promptInstall()
+              setCanInstall(installAvailable())
+            }}
+          >
             <span className="inline-flex items-center gap-1"><Icon name="upload" size={13} /> {t('settings.install')}</span>
           </button>
-        </Row>
-      )}
+        ) : (
+          <span className="text-[11px] os-muted">
+            {isStandalone() ? t('setup.state.granted') : t('settings.installManual')}
+          </span>
+        )}
+      </Row>
 
       <div className="os-card p-3 text-[11px] leading-6 os-muted">{t('settings.privacy')}</div>
 

@@ -107,12 +107,29 @@ class FuturePlanAdmin(admin.ModelAdmin):
 
 @admin.register(MoodMessage)
 class MoodMessageAdmin(admin.ModelAdmin):
-    list_display = ("mood", "is_active")
+    list_display = ("emoji", "label_or_mood", "added_by", "has_message", "is_active")
+    list_filter = ("added_by", "is_active")
+    search_fields = ("mood", "label", "message")
+
+    @admin.display(description="حال")
+    def label_or_mood(self, obj):
+        return obj.display_label
+
+    @admin.display(description="پیام بابا", boolean=True)
+    def has_message(self, obj):
+        """حال‌هایی که دخترم ساخته و هنوز پیامی ندارند با یک نگاه پیدا می‌شوند."""
+        return bool((obj.message or "").strip())
 
 
 @admin.register(MoodLog)
 class MoodLogAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "mood")
+    list_display = ("created_at", "emoji", "display_label", "note", "added_by")
+    list_filter = ("added_by",)
+    search_fields = ("mood", "label", "note")
+
+    @admin.display(description="حال")
+    def display_label(self, obj):
+        return obj.display_label
 
 
 @admin.register(VaultItem)

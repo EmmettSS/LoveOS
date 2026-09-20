@@ -34,6 +34,10 @@ const ALL = {
   'error-boundary-wrapper': join(here, 'error-boundary-wrapper.tsx'),
   'dreamhome-map-gestures': join(here, 'dreamhome-map-gestures.tsx'),
   'mapofus-iran-cinema': join(here, 'mapofus-iran-cinema.tsx'),
+  'setup-permissions': join(here, 'setup-permissions.tsx'),
+  'language-bridge-quiz': join(here, 'language-bridge-quiz.tsx'),
+  'mood-custom': join(here, 'mood-custom.tsx'),
+  'phone-notifications': join(here, 'phone-notifications.tsx'),
 }
 
 const only = process.argv.slice(2)

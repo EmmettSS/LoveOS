@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { Icon, LoveOSLogo } from '../shared/Icon'
 import { post } from '../shared/api'
 import { digits } from '../shared/format'
+import { autoFullscreen } from '../shared/permissions'
 import { playError, playSuccess, vibrate } from '../shared/sound'
 import { useOS } from '../shared/store'
 import { useFitScale } from '../shared/useFitScale'
@@ -37,6 +38,9 @@ export function Lock() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (busy || !code) return
+    // همین لمسِ «باز کن» فرصتِ طلایی است: مرورگر فقط داخلِ لمسِ کاربر اجازه‌ی
+    // تمام‌صفحه (و بعدش حالتِ بدونِ نوار) می‌دهد.
+    void autoFullscreen()
     setBusy(true)
     try {
       const res = await post<{ ok: boolean; token?: string; message?: string; failed_attempts?: number; show_help_button?: boolean }>(
@@ -73,6 +77,7 @@ export function Lock() {
 
   const submitAnswer = async (e: React.FormEvent) => {
     e.preventDefault()
+    void autoFullscreen()
     const res = await post<{ ok: boolean; token?: string; message?: string }>('/auth/forgot', { answer })
     if (res.ok && res.token) {
       playSuccess()

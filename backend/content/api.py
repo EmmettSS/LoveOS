@@ -2,8 +2,11 @@
 API محتوای احساسی: ویس، موسیقی، خاطره، نامه، شمارش معکوس، باغچه، ستاره‌ها،
 سینما، کوییز، آرزوها، حال دل، صندوقچه، آموزش.
 """
+import logging
 import random
+from uuid import uuid4
 
+from django.db import DatabaseError
 from django.utils import timezone
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -33,6 +36,8 @@ from core.auth import require_session
 from core.services import bump, log_activity, push_notification
 from core.soroush import notify_daddy
 from core.utils import bounded_int, file_url, validate_upload
+
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------ ویس ----
@@ -551,25 +556,183 @@ def plan_item(request, pk: int):
 
 
 # -------------------------------------------------------------- حال دل ----
+# پیامی که وقتی بابا برای همان حال چیزی ننوشته، به دخترم نشان داده می‌شود.
+MOOD_DEFAULT_REPLY = "حالت رو دیدم دخترم؛ همین حالا به بابا خبر دادم ❤"
+
+
+def _mood_json(m: MoodMessage) -> dict:
+    return {
+        "mood": m.mood,
+        "label": m.display_label,
+        "emoji": m.display_emoji,
+        "added_by": m.added_by,
+        "is_custom": m.is_custom,
+        "has_message": bool((m.message or "").strip()),
+        "has_voice": bool(m.voice_id),
+    }
+
+
+def _log_mood(*, key: str, label: str, emoji: str, note: str = "") -> MoodLog:
+    """ثبتِ حالِ دخترم — اگر دیتابیسِ قدیمی ستونِ یتیم داشته باشد، خودش را ترمیم
+    می‌کند و یک‌بار دیگر تلاش می‌کند.
+
+    چرا این‌جا هم ترمیم هست و مایگریشن ``content.0003`` کافی نیست؟ چون اگر
+    کسی بعد از آپدیت، ``migrate`` را فراموش کند (یا سرور بدون دیپلویِ کامل
+    ری‌استارت شود)، نباید اپ با «هیچ واکنشی» روبرو شود. این ترمیم دقیقاً همان
+    کارِ مایگریشن را می‌کند و اولین بار یک‌بار در عمرِ پروسه اجرا می‌شود.
+    """
+    from django.db import connections
+
+    payload = {"mood": key[:32], "label": label[:40], "emoji": emoji[:8], "note": note}
+    try:
+        return MoodLog.objects.create(**payload)
+    except DatabaseError as exc:
+        from content.legacy import ensure_moodlog_writable
+
+        dropped = ensure_moodlog_writable(connections["default"], exc)
+        if not dropped:
+            raise
+        return MoodLog.objects.create(**payload)
+
+
+def _mood_reply(mm: MoodMessage | None) -> dict:
+    if mm is None:
+        return {"message": "", "voice": None}
+    return {
+        "message": mm.message.strip() if mm.message else "",
+        "voice": file_url(mm.voice.audio) if mm.voice else None,
+    }
+
+
 @api_view(["GET"])
 @require_session
 def moods(request):
-    return Response({"items": [{"mood": m.mood, "label": m.get_mood_display()} for m in MoodMessage.objects.filter(is_active=True)]})
+    """فهرستِ حال‌ها: حال‌های آماده‌ی بابا + حال‌های تازه‌ای که دخترم ساخته."""
+    items = MoodMessage.objects.filter(is_active=True).order_by("id")
+    return Response({"items": [_mood_json(m) for m in items]})
 
 
 @api_view(["POST"])
 @require_session
 def mood_set(request):
-    mood = request.data.get("mood", "")
-    MoodLog.objects.create(mood=mood)
-    mm = MoodMessage.objects.filter(mood=mood, is_active=True).first()
-    notify_daddy("mood", f"حال دل دخترت الان: {mm.get_mood_display() if mm else mood}")
-    log_activity("ثبت حال", "mood", mood)
+    """دخترم یک حال را انتخاب می‌کند (حال‌های آماده یا حالِ ساخته‌ی خودش).
+
+    بدنه: ``{"mood": "happy", "note": "امروز خیلی خوش گذشت"}`` — هر دو اختیاری
+    ولی اگر نه کلیدی باشد و نه برچسبی، درخواست رد می‌شود.
+    """
+    data = request.data if isinstance(request.data, dict) else {}
+    key = str(data.get("mood") or "").strip()[:64]
+    wanted_label = str(data.get("label") or "").strip()[:40]
+    note = str(data.get("note") or "").strip()[:500]
+
+    mm = MoodMessage.objects.filter(mood=key, is_active=True).first() if key else None
+    if mm is None and wanted_label:
+        mm = MoodMessage.objects.filter(label=wanted_label, is_active=True).first()
+    if mm is None and not key and not wanted_label:
+        return Response(
+            {"ok": False, "message": "اول یه حال انتخاب کن دخترم"}, status=400
+        )
+
+    label = mm.display_label if mm else (wanted_label or key)
+    emoji = mm.display_emoji if mm else "💗"
+
+    try:
+        _log_mood(key=(mm.mood if mm else (key or wanted_label)), label=label, emoji=emoji, note=note)
+    except DatabaseError as exc:
+        from content.legacy import diagnose_write_failure
+        from django.db import connections
+
+        logger.exception(
+            "LoveOS: ثبتِ حالِ دل نشد (دیتابیس). %s",
+            diagnose_write_failure(connections["default"], exc),
+        )
+        return Response(
+            {
+                "ok": False,
+                "message": "الان نشد حالت رو ثبت کنم دخترم؛ یه لحظه بعد دوباره امتحان کن.",
+            },
+            status=503,
+        )
+
+    notify_daddy("mood", f"حال دل دخترت الان: {emoji} {label}")
+    log_activity("ثبت حال", "mood", label)
+    reply = _mood_reply(mm)
     return Response(
         {
             "ok": True,
-            "message": mm.message if mm else "",
-            "voice": file_url(mm.voice.audio) if (mm and mm.voice) else None,
+            "mood": mm.mood if mm else key,
+            "label": label,
+            "emoji": emoji,
+            **reply,
+        }
+    )
+
+
+@api_view(["POST"])
+@require_session
+def mood_add(request):
+    """حالِ تازه‌ای که خودِ دخترم می‌سازد: ایموجی + برچسب + یادداشت.
+
+    بلافاصله هم به‌عنوان «حالِ همین لحظه‌اش» ثبت می‌شود، هم در فهرستِ
+    «حال دلم» می‌ماند، هم برای بابا (پنل + سروش) خبر می‌رود. اگر همان برچسب
+    را قبلاً ساخته باشد، حالِ قبلی دوباره استفاده می‌شود (بدونِ تکرار).
+    """
+    data = request.data if isinstance(request.data, dict) else {}
+    label = str(data.get("label") or "").strip()[:40]
+    emoji = (str(data.get("emoji") or "").strip() or "💗")[:8]
+    note = str(data.get("note") or "").strip()[:500]
+    if not label:
+        return Response(
+            {"ok": False, "message": "یه اسم کوچیک برای حالت بنویس دخترم"},
+            status=400,
+        )
+
+    mm = MoodMessage.objects.filter(
+        label=label, added_by="daughter", is_active=True
+    ).first()
+    if mm is None:
+        mm = MoodMessage.objects.create(
+            mood=f"custom-{uuid4().hex[:10]}",
+            label=label,
+            emoji=emoji,
+            message="",
+            added_by="daughter",
+            is_active=True,
+        )
+
+    try:
+        _log_mood(key=mm.mood, label=mm.display_label, emoji=mm.display_emoji, note=note)
+    except DatabaseError as exc:
+        from content.legacy import diagnose_write_failure
+        from django.db import connections
+
+        logger.exception(
+            "LoveOS: ثبتِ حالِ تازه نشد (دیتابیس). %s",
+            diagnose_write_failure(connections["default"], exc),
+        )
+        # خودِ حال (کارتِ تازه در فهرست) ساخته شده؛ فقط ثبتِ تاریخچه شکست خورد.
+        return Response(
+            {
+                "ok": False,
+                "item": _mood_json(mm),
+                "message": "حالت ساخته شد ولی ثبتش نشد؛ یه لحظه بعد دوباره بزن.",
+            },
+            status=503,
+        )
+
+    bump("mood_custom")
+    log_activity("حال تازه", "mood", label)
+    notify_daddy(
+        "mood_add",
+        f"💗 دخترت یه حالِ تازه ساخت: {mm.display_emoji} {label}"
+        + (f" — یادداشتش: {note}" if note else ""),
+    )
+    return Response(
+        {
+            "ok": True,
+            "item": _mood_json(mm),
+            "message": "حالت ساخته شد و به بابا خبر دادم ❤",
+            "voice": None,
         }
     )
 

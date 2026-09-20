@@ -362,7 +362,7 @@ and drop.
 | **Our Garden** | Water the flowers; each watering opens one bloom. |
 | **Star Sky** | Her name written in constellations (letters on one line, ❤ and ♾ on a second, larger line) over a cinematic canvas sky: twinkling stars, shooting stars, Milky Way, crescent moon, mouse parallax. On phones it becomes a full-screen "cinema": the sky rotates 90° so she holds the phone sideways (no rotation if the browser is already landscape); a floating ✕ closes it. |
 | **Chat with Daddy** | Direct messages, short and affectionate. |
-| **My Mood** | Log today's mood and receive a matching message from me. |
+| **My Mood** | Log today's mood and receive a matching message from me. She can also build her own moods: pick an emoji, name it and leave a note — it is saved immediately, stays in her mood list, and I get a Soroush ping. If the server is unreachable she gets a clear message and a retry button instead of silence. |
 | **Our Quiz** | Quizzes I write about our memories, with rewards. |
 | **Our Wishes** | Shared wish list with categories and a "done" tick. |
 | **Our Cinema** | Watch list with "watched / want to watch". |
@@ -400,7 +400,8 @@ and drop.
 | **Notification centre** | Every in-app notification for her, with an unread badge. |
 | **Easter eggs** | 15 secrets (midnight sky, Konami code, `rm -rf tanhayi`, five clicks on the logo, …). |
 | **Error boundary** | If one app breaks, only that window shows a gentle "try again". |
-
+| **Setup & permissions** | Between the lock screen and the desktop, a "Getting LoveOS ready" screen collects every permission with her own tap: fullscreen, notifications, location, microphone, camera and persistent storage. "Later" only quiets it for the rest of that app session — every fresh launch asks again for whatever is still missing. On phones fullscreen is re-taken on the next tap so the browser bars stay away, and where the browser cannot do it (iOS) the screen offers "Add to Home Screen". Everything stays editable from Settings → Permissions. |
+| **Phone notifications** | While the app sits in the background, a fresh letter, voice note or reminder is also delivered as a real phone notification (through the service worker — the only path Android accepts), and tapping it brings LoveOS back to the front. |
 ---
 
 ## 7. The Daddy Panel
@@ -487,7 +488,7 @@ All private routes require `Authorization: Token <token>`; responses are JSON.
 `/api/voices` (`/random`, `/<id>/played`) · `/api/songs` (`/upload`, `/<id>`, `/<id>/played`) ·
 `/api/memories` (`/<id>`) · `/api/letters` (`/random`, `/<id>/open`) · `/api/countdowns` (`/<id>`) ·
 `/api/garden` (`/reset`, `/<id>/water`) · `/api/starmap` · `/api/cinema` (`/<id>`) · `/api/quiz`
-(`/submit`) · `/api/plans` (`/<id>`) · `/api/moods` (`/set`) · `/api/vault` · `/api/tutorial`
+(`/submit`) · `/api/plans` (`/<id>`) · `/api/moods` (`/set`, `/add`) · `/api/vault` · `/api/tutorial`
 
 ### Social
 `/api/chat` · `/api/hug` (`/send`, `/<id>/open`) · `/api/notifications` (`/read-all`, `/<id>/read`) ·
@@ -909,7 +910,7 @@ Manual order, if I ever need it: `git pull` → `npm run build` → `pip install
 | `./scripts/dev.sh` / `run` | setup if needed, then backend on :8000 and frontend on :5173 |
 | `setup` | venv, requirements, `.env` with dev defaults, migrate, seed, `npm ci` |
 | `test` | backend tests + frontend checks (below) |
-| `test:be` | `manage.py check` + `manage.py test` (83 tests) |
+| `test:be` | `manage.py check` + `manage.py test` (102 tests) |
 | `test:fe` | `tsc -b` + `oxlint src` + `npm run build` + `npm run test:ui` |
 | `check` | `manage.py check`, `makemigrations --check`, `tsc`, `oxlint` — fast pre-commit check |
 | `reset` | delete the SQLite file, migrate, seed again |
@@ -946,14 +947,16 @@ level M, versions 1–10).
 ./scripts/dev.sh test          # everything
 ```
 
-### Backend — 83 tests (`manage.py test`)
+### Backend — 102 tests (`manage.py test`)
 
 Per app `tests.py`: session lifecycle and expiry, boot endpoint hiding secrets, unlock attempt
 limit, settings round-trip, effective location (live vs. panel vs. stale), Persian-tolerant search,
 content endpoints, hugs and chat, medication and cycle flows, library co-writing, puzzle
 start/complete, call overlap and approve/reject/reschedule, single-shot call reminders, gift stats
 and price bands, reading progress and the shared shelf, room-coordinate clamping, language
-flashcards/streak and panel-only quizzes, and "every registered admin model renders".
+flashcards/streak and panel-only quizzes, "every registered admin model renders", and the
+legacy-database repairs (orphan `NOT NULL` columns such as `content_moodlog.note`, the runtime
+self-heal, and a full legacy DB → `migrate` → `seed` end-to-end run).
 
 ### Frontend — type check, lint, build, UI tests
 
@@ -978,6 +981,14 @@ The UI tests run under **jsdom** with esbuild — no browser needed (`frontend/t
 | `starmap-sky` | star sky renders edge-to-edge with the real 8 constellations, tap → message, "light the whole name" |
 | `starmap-broken-stars` | corrupt `stars` rows never blank or crash the sky |
 | `starmap-mobile` | two-row layout math (symbols 1.3×, no overlap, RTL mirror), phone portrait → rotated full-screen portal above the dock, landscape → no extra rotation, ✕ closes the window, other windows on top hide the overlay |
+| `mapofus-iran-cinema` | the Iran frame and the ~20 s cinematic fly-over sequence (math + zoning) |
+| `boot-timeout` | an unresponsive backend walks from "connecting" to "try again" |
+| `error-boundary-wrapper` | a crashed app shows the calm retry shell only in its own window |
+| `dreamhome-map-gestures` | map-tab gestures inside the dream home |
+| `setup-permissions` | the getting-ready screen takes all seven permissions in order, "later" only quiets the current session, and a permission the browser refuses is never asked again |
+| `language-bridge-quiz` | the quiz result stays on screen after the stats reload, and "one more round" fetches a fresh quiz |
+| `mood-custom` | she can build a mood (emoji + name + note), it lands on the server and stays in the list, and a server error shows a message instead of silence |
+| `phone-notifications` | a fresh notification becomes a real phone notification via the service worker while the app is backgrounded — and never for the ones she has already seen |
 
 `tests/fixtures.json` was captured from the live API; if an endpoint contract changes, these
 fail before she notices.

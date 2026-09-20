@@ -3,12 +3,13 @@
  * اعلان‌های سیستم + یادآورهای مهربان (که آیکن دسکتاپ ندارند و فقط اینجا دیده می‌شوند).
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { get, post } from '../shared/api'
 import { formatDate, formatTime } from '../shared/format'
+import { showSystemNotification } from '../shared/notify'
 import { playClick } from '../shared/sound'
 import { useOS } from '../shared/store'
 
@@ -56,12 +57,35 @@ export function NotificationCenter() {
   const [items, setItems] = useState<Notif[]>([])
   const [reminders, setReminders] = useState<Rem[]>([])
   const [tab, setTab] = useState<'all' | 'reminders'>('all')
+  /** شناسه‌ی اعلان‌هایی که یک‌بار دیدیم — فقط خبرِ *تازه* روی گوشی می‌رود */
+  const seenIds = useRef<Set<number> | null>(null)
+
+  /**
+   * خبرهای تازه را روی گوشی هم نشان می‌دهد (فقط وقتی اپ جلوی چشم نیست).
+   * اولین بار فقط «دیده‌شده‌ها» را یادداشت می‌کند تا اعلان‌های قدیمی دوباره
+   * روی گوشی نیایند.
+   */
+  const announceNew = useCallback((next: Notif[]) => {
+    const previous = seenIds.current
+    seenIds.current = new Set(next.map((n) => n.id))
+    if (!previous) return
+    if (typeof document === 'undefined' || !document.hidden) return
+    const fresh = next.filter((n) => !n.is_read && !previous.has(n.id))
+    if (!fresh.length) return
+    const newest = fresh[0]
+    void showSystemNotification(newest.title, {
+      body: fresh.length > 1 ? `${newest.text} (+${fresh.length - 1})` : newest.text,
+      tag: `loveos-notif-${newest.id}`,
+      app: newest.action_app || undefined,
+    })
+  }, [])
 
   const load = useCallback(async () => {
     try {
       const res = await get<{ unread: number; items: Notif[] }>('/notifications')
       setItems(res.items)
       setUnread(res.unread)
+      announceNew(res.items)
       const rem = await get<{ items: Rem[] }>('/reminders')
       setReminders(rem.items)
     } catch {

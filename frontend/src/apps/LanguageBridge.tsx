@@ -73,8 +73,11 @@ export default function LanguageBridge() {
   // پنل همیشه مال دختر است؛ سوییچ 👧/👨 حذف شد (درخواست صاحب پروژه)
   const owner: Owner = 'daughter'
 
-  if (overview.loading || overview.error) return <ApiStatus loading={overview.loading} error={overview.error} onRetry={() => void overview.reload()} />
-  if (!overview.data) return <Empty />
+  // ⚠️ اینجا نکته‌ی حیاتی است: فقط وقتی آمارِ کلی را *هنوز نداریم* اجازه‌ی
+  // نمایشِ حالتِ بارگذاری داریم. اگر در وقتِ «reload» کلِ درخت را به اسپینر
+  // ببریم، تب‌ها (مثل کوییز) از نو mount می‌شوند و صفحه‌ی نتیجه‌ی کوییز —
+  // همان باگی که دخترم دید — هرگز دیده نمی‌شود.
+  if (!overview.data) return <ApiStatus loading={overview.loading} error={overview.error} onRetry={() => void overview.reload()} />
   const data = overview.data
   const myProgress = data.stats.progress.find((p) => p.owner === owner)
 
@@ -647,29 +650,57 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
   const [started, setStarted] = useState(false)
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<{ id: number; answer: string }[]>([])
+  const [picked, setPicked] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState<{ correct: number; total: number; details: any[]; message: string } | null>(null)
   const quiz = useApi<{ items: QuizQuestion[]; count: number }>(started ? '/language/quiz?count=8' : null)
 
   const questions = quiz.data?.items || []
   const current = questions[index]
 
+  const restart = () => {
+    setResult(null)
+    setAnswers([])
+    setPicked('')
+    setSubmitError('')
+    setIndex(0)
+    void quiz.reload()
+  }
+
   const answer = async (option: string) => {
-    if (!current) return
+    if (!current || submitting || picked) return
+    setPicked(option)
     const nextAnswers = [...answers, { id: current.id, answer: option }]
     setAnswers(nextAnswers)
+
     if (index + 1 >= questions.length) {
-      const res = await post<{ correct: number; total: number; details: any[]; message: string }>('/language/quiz/submit', {
-        owner,
-        answers: nextAnswers,
-      })
-      if (res.correct === res.total) playSuccess()
-      else playError()
-      setResult(res)
-      onChanged()
+      // پایانِ کوییز: نتیجه باید همین‌جا بماند و نشان داده شود — حتی اگر
+      // آمارِ بالای صفحه در حال به‌روزرسانی باشد.
+      setSubmitting(true)
+      setSubmitError('')
+      try {
+        const res = await post<{ correct: number; total: number; details: any[]; message: string }>(
+          '/language/quiz/submit',
+          { owner, answers: nextAnswers },
+        )
+        if (res.correct === res.total) playSuccess()
+        else playError()
+        setResult(res)
+        onChanged()
+      } catch (e) {
+        setSubmitError(e instanceof Error && e.message ? e.message : t('os.error'))
+      } finally {
+        setSubmitting(false)
+      }
       return
     }
+
     playClick()
-    setIndex((i) => i + 1)
+    window.setTimeout(() => {
+      setPicked('')
+      setIndex((i) => i + 1)
+    }, 180)
   }
 
   if (quizCount === 0) {
@@ -690,6 +721,18 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
     )
   }
 
+  if (submitError && !result) {
+    return (
+      <div className="os-card space-y-2 p-4 text-center" role="alert">
+        <p className="text-sm" style={{ color: '#e2557f' }}>😔 {submitError}</p>
+        <p className="text-[11px] os-muted">{t('language.answers')}</p>
+        <button className="os-btn-primary mx-auto !px-5 !py-2 text-xs" onClick={restart}>
+          <Icon name="retry" size={14} /> {t('language.again')}
+        </button>
+      </div>
+    )
+  }
+
   if (result) {
     return (
       <div className="space-y-3">
@@ -700,12 +743,7 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
           <p className="text-sm">{result.message}</p>
           <button
             className="os-btn-primary mx-auto !px-5 !py-2 text-xs"
-            onClick={() => {
-              setResult(null)
-              setAnswers([])
-              setIndex(0)
-              void quiz.reload()
-            }}
+            onClick={restart}
           >
             <Icon name="retry" size={14} /> {t('language.again')}
           </button>
@@ -732,7 +770,16 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
   }
 
   if (quiz.error) return <ApiStatus loading={false} error={quiz.error} onRetry={() => void quiz.reload()} />
-  if (quiz.loading || !current) return <Loading />
+  if (quiz.loading) return <Loading />
+  if (!current) {
+    // کوییزِ خالی (بابا همه را خاموش کرده) نباید اسپینرِ همیشگی نشان بدهد.
+    return (
+      <div className="space-y-3 text-center">
+        <Empty text={t('language.noQuiz')} />
+        <button className="os-chip" onClick={() => setStarted(false)}>{t('os.back')}</button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -750,10 +797,12 @@ function QuizTab({ owner, quizCount, onChanged }: { owner: Owner; quizCount: num
           {current.options.map((o) => (
             <button
               key={o}
+              disabled={submitting || Boolean(picked)}
               onClick={() => void answer(o)}
-              className="os-btn w-full !justify-start !py-2.5 text-sm"
+              className="os-btn w-full !justify-start !py-2.5 text-sm disabled:opacity-60"
+              style={picked === o ? { borderColor: 'var(--os-accent)', color: 'var(--os-accent)' } : undefined}
             >
-              {o}
+              {picked === o ? `👉 ${o}` : o}
             </button>
           ))}
         </div>

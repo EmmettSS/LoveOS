@@ -11,8 +11,9 @@
  */
 import { create } from 'zustand'
 import { get as apiGet, post, tokenStore } from './api'
+import { markSetupSeen, permissionStates, setupNeeded, skipQuietNow } from './permissions'
 
-export type Phase = 'boot' | 'lock' | 'desktop'
+export type Phase = 'boot' | 'lock' | 'setup' | 'desktop'
 export type Theme = 'auto' | 'day' | 'night'
 
 export interface Config {
@@ -107,6 +108,8 @@ interface OSState {
 
   bootstrap: () => Promise<void>
   setPhase: (p: Phase) => void
+  /** بعد از باز شدنِ نشست: رفتن به صفحه‌ی آماده‌سازی (اگر مجوزی کم باشد) یا دسکتاپ */
+  resumeSession: () => Promise<void>
   setConfig: (c: Config) => void
   patchConfig: (partial: Partial<Config>) => void
   unlock: (token: string) => Promise<void>
@@ -123,6 +126,29 @@ interface OSState {
   showEgg: (e: OSState['eggOverlay']) => void
   showToast: (text: string, tone?: 'love' | 'info') => void
   saveWindowGeometry: (id: string, geom: { x?: number; y?: number; w?: number; h?: number }) => void
+}
+
+/**
+ * بعد از باز شدنِ نشست، کجا برویم؟
+ *
+ *   • اگر مجوزی هست که می‌توان پرسید (حالتِ prompt) → صفحه‌ی «آماده‌سازی».
+ *   • اگر کاربر تازه «بعداً» را زده باشد (چند ساعتِ آرام) → مستقیم دسکتاپ.
+ *   • اگر همه‌چیز گرفته شده باشد → مستقیم دسکتاپ.
+ *
+ * نکته: اگر همین حالا بعد از «بعداً» وارد شود، در ورودِ بعدی دوباره می‌پرسد —
+ * همان قاعده‌ی «هر بار کم بود».
+ */
+async function phaseAfterUnlock(): Promise<Phase> {
+  try {
+    const states = await permissionStates()
+    if (!setupNeeded(states) || skipQuietNow()) {
+      markSetupSeen()
+      return 'desktop'
+    }
+    return 'setup'
+  } catch {
+    return 'desktop'
+  }
 }
 
 let windowSeq = 0
@@ -198,7 +224,11 @@ export const useOS = create<OSState>((set, get) => ({
   unlock: async (token) => {
     tokenStore.set(token)
     const me = await apiGet<Config>('/me')
-    set({ config: me, phase: 'desktop' })
+    set({ config: me, phase: await phaseAfterUnlock() })
+  },
+
+  resumeSession: async () => {
+    set({ phase: await phaseAfterUnlock() })
   },
 
   logout: async () => {

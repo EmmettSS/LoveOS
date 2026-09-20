@@ -10,9 +10,17 @@ import { Boot } from './os/Boot'
 import { Desktop } from './os/Desktop'
 import { EggOverlay, Toast } from './os/EggOverlay'
 import { Lock } from './os/Lock'
+import { Setup } from './os/Setup'
 import { useNightMode } from './os/daynight'
 import { post, tokenStore } from './shared/api'
 import { refreshLocationIfStale } from './shared/geo'
+import {
+  autoFullscreen,
+  autoFullscreenEnabled,
+  fullscreenSupported,
+  isFullscreen,
+  isStandalone,
+} from './shared/permissions'
 import { applyLocalPrefs, syncSettings } from './shared/prefs'
 import { setSoundEnabled } from './shared/sound'
 import { useOS } from './shared/store'
@@ -40,6 +48,7 @@ export default function App() {
   const config = useOS((s) => s.config)
   const bootstrap = useOS((s) => s.bootstrap)
   const setPhase = useOS((s) => s.setPhase)
+  const resumeSession = useOS((s) => s.resumeSession)
   const showEgg = useOS((s) => s.showEgg)
   const patchConfig = useOS((s) => s.patchConfig)
   const [ready, setReady] = useState(false)
@@ -107,13 +116,53 @@ export default function App() {
     })()
   }, [phase, patchConfig])
 
-  // اگر توکن معتبر داریم، پس از بوت مستقیم وارد دسکتاپ شو
+  // اگر توکن معتبر داریم، پس از بوت مستقیم وارد شو — ولی اگر مجوزی کم باشد،
+  // اول صفحه‌ی «آماده‌سازی» می‌آید (نه دسکتاپِ نیمه‌کاره).
   useEffect(() => {
     if (!ready) return
     if (phase === 'lock' && tokenStore.get()) {
-      setPhase('desktop')
+      void resumeSession()
     }
-  }, [ready, phase, setPhase])
+  }, [ready, phase, resumeSession])
+
+  // تمام‌صفحه: روی گوشی/تبلت هر لمس یک فرصت است.
+  //   • اولین لمس → از نوارِ مرورگر بیرون می‌آییم.
+  //   • لمس‌های بعدی → اگر کاربر با باز کردنِ اپِ دیگری (یا Home) از تمام‌صفحه
+  //     بیرون افتاده باشد، با اولین لمسِ برگشت دوباره تمام‌صفحه می‌شویم؛ این‌طور
+  //     LoveOS همیشه مثلِ یک اپ واقعی می‌ماند.
+  //   • روی دسکتاپ (نشانگرِ دقیق) فقط همان یک‌بار، تا «Esc» کاربر را اذیت نکنیم.
+  useEffect(() => {
+    if (phase !== 'desktop') return
+    if (isStandalone() || !autoFullscreenEnabled() || !fullscreenSupported()) return
+    let armed = true
+    const coarse = (() => {
+      try {
+        return window.matchMedia?.('(pointer: coarse)').matches ?? false
+      } catch {
+        return false
+      }
+    })()
+    const onTouch = () => {
+      if (armed) {
+        armed = false
+        void autoFullscreen()
+        return
+      }
+      if (coarse && !isFullscreen()) void autoFullscreen()
+    }
+    // وقتی اپ از پس‌زمینه برمی‌گردد هم یک تلاشِ بی‌صدا می‌کنیم (اگر مرورگر
+    // به‌خاطرِ لمسِ قبلی اجازه بدهد).
+    const onVisible = () => {
+      if (coarse && document.visibilityState === 'visible' && !isFullscreen()) void autoFullscreen()
+    }
+    window.addEventListener('pointerdown', onTouch, { passive: true })
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      armed = false
+      window.removeEventListener('pointerdown', onTouch)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [phase])
 
   // باغچه: با هر «ورود به پروژه» (باز شدن قفل / ورود تازه) گل‌ها به
   // مرحله‌ی اول برمی‌گردند تا هر بازدید یک باغ تازه باشد.
@@ -284,11 +333,12 @@ export default function App() {
     <div
       className="os-screen"
       // موقع خروج انیمیشن بوت، پس‌زمینه هم تیره بماند تا فلش سفید پیدا نشود
-      style={phase === 'boot' ? { background: '#0a0410' } : undefined}
+      style={phase === 'boot' || phase === 'setup' ? { background: '#0a0410' } : undefined}
     >
       <AnimatePresence mode="wait">
         {phase === 'boot' && <Boot key="boot" />}
         {phase === 'lock' && <Lock key="lock" />}
+        {phase === 'setup' && <Setup key="setup" />}
         {phase === 'desktop' && <Desktop key="desktop" />}
       </AnimatePresence>
       <EggOverlay />

@@ -300,7 +300,15 @@
             "sad": "Sad",
             "excited": "Excited",
             "sleepy": "Sleepy"
-        }
+        },
+        "mine": "my own mood",
+        "addMood": "Make a new mood",
+        "addTitle": "Your own mood",
+        "namePlaceholder": "e.g. I miss the sea…",
+        "addSave": "Create it and tell daddy",
+        "addSaving": "Sending…",
+        "addHint": "Daddy gets the news and can write you a message and a voice note later ❤",
+        "replyFallback": "Saved your mood and told daddy ❤"
     },
     "quiz": {
         "start": "Start quiz",
@@ -532,7 +540,19 @@
         "layout": "Desktop layout",
         "layoutHint": "Drag icons to rearrange; the order is saved",
         "layoutReset": "Reset layout",
-        "layoutResetDone": "Layout restored to its default ✨"
+        "layoutResetDone": "Layout restored to its default ✨",
+        "perms": "Device permissions",
+        "permsHint": "Every permission in one place — grant or refresh each of them here.",
+        "openSetup": "Setup screen",
+        "askPerm": "Allow",
+        "permDeniedHint": "The browser refused — you have to allow it in the browser settings.",
+        "fullscreen": "Fullscreen mode",
+        "fullscreenHint": "If the browser bars come back, go fullscreen again from here.",
+        "fsEnter": "Go fullscreen",
+        "fsExit": "Exit fullscreen",
+        "fsAuto": "Automatic after entry",
+        "installHint": "Put LoveOS on your home screen, like a real app.",
+        "installManual": "From the browser menu: Add to Home Screen"
     },
     "notifications": {
         "title": "Notification Center",
@@ -797,5 +817,75 @@
         "yourAnswer": "Your answer",
         "rightAnswer": "Correct answer",
         "micError": "Microphone access was refused — allow it first."
+    },
+    "setup": {
+        "title": "Getting LoveOS ready",
+        "subtitle": "A few permissions so everything works properly",
+        "later": "Later",
+        "enter": "Enter LoveOS",
+        "footer": "These permissions live on this device only. Every time you open LoveOS with a permission still missing, this screen comes back; you can also change everything later from Settings → Permissions.",
+        "reading": "Checking what we need…",
+        "needTouch": "Tap the button to grant it",
+        "allow": "Allow",
+        "asking": "One moment…",
+        "again": "Try again",
+        "skipItem": "Not this one yet",
+        "installNow": "Install on home screen",
+        "doneTitle": "All set",
+        "doneBody": "LoveOS will now run full screen, like a real app.",
+        "partialTitle": "A few left",
+        "partialBody": "You can reopen this page any time from Settings → Permissions.",
+        "iosNotificationHint": "On iPhone, notifications only work when LoveOS is installed to the home screen (Share → Add to Home Screen).",
+        "iosFullscreenHint": "iPhone Safari has no fullscreen API, but opening LoveOS from the home screen runs it without browser bars.",
+        "state": {
+            "granted": "granted",
+            "prompt": "waiting",
+            "denied": "denied",
+            "unsupported": "not available",
+            "unknown": "unknown",
+            "skipped": "not needed"
+        },
+        "items": {
+            "fullscreen": {
+                "title": "Full screen, no browser bars",
+                "short": "Full screen",
+                "why": "Browser bars make LoveOS look like a web page. With this, the whole screen belongs to LoveOS."
+            },
+            "notifications": {
+                "title": "Notifications",
+                "short": "Notifications",
+                "why": "So new letters, Daddy's voice notes and reminders reach you as phone notifications while LoveOS is in the background."
+            },
+            "location": {
+                "title": "Location",
+                "short": "Location",
+                "why": "For the map of us, so daddy sees where you are. Without it the map falls back to daddy's location."
+            },
+            "microphone": {
+                "title": "Microphone",
+                "short": "Microphone",
+                "why": "For recording pronunciation in the language bridge, voice notes in the vault and letters."
+            },
+            "camera": {
+                "title": "Camera",
+                "short": "Camera",
+                "why": "For taking memory photos straight into the LoveOS gallery."
+            },
+            "vibration": {
+                "title": "Vibration",
+                "short": "Vibration",
+                "why": "Hugs, heartbeats and buttons feel real. I just sent a tiny vibration."
+            },
+            "storage": {
+                "title": "Keep storage",
+                "short": "Storage",
+                "why": "So the browser never clears LoveOS files and music, and the app keeps working offline."
+            },
+            "install": {
+                "title": "Install on the home screen",
+                "short": "App mode",
+                "why": "Installed, LoveOS opens like a real app: full screen, no browser bars, its own icon."
+            }
+        }
     }
 }

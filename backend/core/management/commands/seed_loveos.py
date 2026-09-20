@@ -39,6 +39,7 @@ from content.models import (
     FuturePlan,
     Letter,
     Memory,
+    MoodLog,
     MoodMessage,
     QuizQuestion,
     QuizReward,
@@ -155,12 +156,12 @@ TUTORIAL = [
 ]
 
 MOODS = [
-    ("happy", "خوشحالی‌ات دنیای منو روشن می‌کنه دخترم ☀"),
-    ("missing", "منم دلم تنگه… چشم‌هات رو ببند، بابا بغلت کرده."),
-    ("tired", "بشین یه نفس بکش. کارها منتظر می‌مونن، تو مهم‌تری."),
-    ("sad", "غصه نخور دخترم. هر چی هست می‌گذره، من همین‌جام."),
-    ("excited", "چه خبره! بگو ببینم چی شده 😍"),
-    ("sleepy", "برو بخواب دخترم، فردا هم بابا هست."),
+    ("happy", "خوشحالی‌ات دنیای منو روشن می‌کنه دخترم ☀", "😊"),
+    ("missing", "منم دلم تنگه… چشم‌هات رو ببند، بابا بغلت کرده.", "🥺"),
+    ("tired", "بشین یه نفس بکش. کارها منتظر می‌مونن، تو مهم‌تری.", "😴"),
+    ("sad", "غصه نخور دخترم. هر چی هست می‌گذره، من همین‌جام.", "😢"),
+    ("excited", "چه خبره! بگو ببینم چی شده 😍", "🤩"),
+    ("sleepy", "برو بخواب دخترم، فردا هم بابا هست.", "🌙"),
 ]
 
 QUIZ = [
@@ -255,8 +256,17 @@ class Command(BaseCommand):
         for i, (key, title, body) in enumerate(TUTORIAL, start=1):
             TutorialChapter.objects.get_or_create(key=key, defaults={"title": title, "body": body, "order": i})
 
-        for mood, message in MOODS:
-            MoodMessage.objects.get_or_create(mood=mood, defaults={"message": message})
+        for mood, message, emoji in MOODS:
+            obj, created = MoodMessage.objects.get_or_create(
+                mood=mood,
+                defaults={"message": message, "emoji": emoji, "added_by": "daddy"},
+            )
+            # نصب‌های قبلی این حال‌ها را بدون ایموجی ساخته‌اند؛ همان‌جا پر می‌شود
+            # تا «حال دلم» در هر نصب یک‌شکل باشد. حال‌های ساخته‌ی دخترم
+            # (added_by="daughter") دست‌نخورده می‌مانند.
+            if not created and not obj.emoji:
+                obj.emoji = emoji
+                obj.save(update_fields=["emoji"])
 
         for i, (q, a, b, c, d, correct, exp) in enumerate(QUIZ, start=1):
             QuizQuestion.objects.get_or_create(
@@ -350,14 +360,18 @@ class Command(BaseCommand):
 
     @staticmethod
     def _ensure_schema_ready() -> None:
-        """نگهبانِ طرحِ دیتابیس: اگر ستون‌های یتیمِ یادگارِ مهاجرتِ
-        برگردانده‌شده‌ی ۱۶ سپتامبر (``kind`` روی جدولِ آسمان، ``ui_quality``
-        روی جدولِ تنظیمات) هنوز هستند، به‌جای tracebackِ گنگِ IntegrityError
-        راهِ درست را بگو: اول migrate."""
+        """نگهبانِ طرحِ دیتابیس: اگر ستون‌های یتیمِ یادگارِ مهاجرت‌های
+        برگردانده‌شده (``kind`` روی جدولِ آسمان، ``ui_quality`` روی جدولِ
+        تنظیمات، ``note`` روی جدولِ حال دل) هنوز هستند، به‌جای tracebackِ گنگِ
+        IntegrityError راهِ درست را بگو: اول migrate."""
         stale_columns = [
             (Constellation._meta.db_table, "kind"),
             (UserConfig._meta.db_table, "ui_quality"),
         ]
+        # «حال دل» امروز خودش فیلدِ note دارد (مایگریشن ۰۰۰۴)؛ فقط وقتی ستونِ
+        # قدیمی مهاجرتِ برگردانده‌شده حساب می‌شود که مدل آن را نشناسد.
+        if "note" not in {field.name for field in MoodLog._meta.local_fields}:
+            stale_columns.append((MoodLog._meta.db_table, "note"))
         try:
             cols_by_table = {}
             with connection.cursor() as cursor:

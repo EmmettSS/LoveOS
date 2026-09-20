@@ -78,6 +78,7 @@ urlpatterns = [
     path("api/plans/<int:pk>", content_api.plan_item),
     path("api/moods", content_api.moods),
     path("api/moods/set", content_api.mood_set),
+    path("api/moods/add", content_api.mood_add),
     path("api/vault", content_api.vault),
     path("api/tutorial", content_api.tutorial),
     # -------------------------------------------------------------- social

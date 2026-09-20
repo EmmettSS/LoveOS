@@ -5,11 +5,13 @@
 
 ![backend](https://img.shields.io/badge/backend-Django%205.2%20%2B%20DRF-0C4B33)
 ![frontend](https://img.shields.io/badge/frontend-React%2019%20%2B%20Vite%208-61DAFB)
-![tests](https://img.shields.io/badge/tests-83%20backend%20%2B%2012%20UI%20suites-ec4899)
+![tests](https://img.shields.io/badge/tests-102%20backend%20%2B%2018%20UI%20suites-ec4899)
 
 LoveOS boots, asks for a passcode, shows a desktop with widgets and a dock, and opens **30 small
 apps** — voice notes, letters, memories, a shared map, a garden, a star sky, chat, hugs, quizzes,
-call planning, a gift book, reading together, a dream home, a language bridge and more. Everything
+call planning, a gift book, reading together, a dream home, a language bridge and more — and a
+"getting LoveOS ready" screen that takes every phone permission (fullscreen included) with her own
+tap. Everything
 she sees is written by me in an admin panel; nothing is hard-coded. Everything she does reaches me
 through a Soroush bot.
 
@@ -52,7 +54,7 @@ Every step for every host type is in [DOCUMENTATION.md § 10](./DOCUMENTATION.md
 ## Tests
 
 ```bash
-./scripts/dev.sh test         # 83 backend tests + type check + lint + build + 12 UI suites
+./scripts/dev.sh test         # 102 backend tests + type check + lint + build + 18 UI suites
 ```
 
 ## Layout

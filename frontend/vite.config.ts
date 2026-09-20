@@ -41,6 +41,9 @@ export default defineConfig({
         // پیشوند همه‌ی نام‌های کش؛ بالا بردن PWA_CACHE_VERSION همه‌ی کش‌های
         // قدیمی را بی‌اعتبار می‌کند تا PWA گیرکرده روی نسخه‌ی قبلی نماند.
         cacheId: `loveos-${PWA_CACHE_VERSION}`,
+        // قطعه‌ی خودمان برای اعلان‌ها: با ضربه روی اعلانِ گوشی، LoveOS باز/فوکوس
+        // می‌شود (public/notify-sw.js).
+        importScripts: ['/notify-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallbackDenylist: [/^\/api/, /^\/media/, /^\/daddy-panel/],
         runtimeCaching: [
