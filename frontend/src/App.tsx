@@ -176,24 +176,38 @@ export default function App() {
   //   • در اپ‌های محتوایی (.os-allow-select: چت، نامه‌ها، کتابخانه، خاطره‌ها...) آزاد است
   //   • نزدیک‌ترین کلاس در زنجیره‌ی والدها برنده است؛ فیلدهای ورودی همیشه مستثنا هستند
   useEffect(() => {
+    // selectstart در بعضی مرورگرها روی خودِ گره‌ی متنی می‌آید، نه عنصر والدش
+    const targetElement = (target: EventTarget | null): Element | null => {
+      if (target instanceof Element) return target
+      return target instanceof Node ? target.parentElement : null
+    }
     const isBlocked = (target: EventTarget | null) => {
-      if (!(target instanceof Element)) return false
-      if (target.closest('input, textarea, select, [contenteditable="true"]')) return false
-      const zone = target.closest('.os-no-select, .os-allow-select')
+      const el = targetElement(target)
+      if (!el) return false
+      if (el.closest('input, textarea, select, [contenteditable="true"]')) return false
+      const zone = el.closest('.os-no-select, .os-allow-select')
       return !!zone && zone.classList.contains('os-no-select')
     }
     const block = (e: Event) => {
       if (isBlocked(e.target)) e.preventDefault()
+    }
+    // لمس: اگر از یک اپ محتوایی متنی انتخاب مانده و کاربر روی دسکتاپ/اپ تعاملی می‌زند،
+    // انتخابِ مانده پاک می‌شود تا با نگه‌داشتن، منوی کپی برایش بالا نیاید.
+    // (بدون preventDefault روی pointerdown تا tap، اسکرول و کشیدن آیکن‌ها سالم بمانند)
+    const clearStaleTouchSelection = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' && isBlocked(e.target)) window.getSelection()?.removeAllRanges()
     }
     // contextmenu: کلیک راست دسکتاپ و منوی نگه‌داشتن اندروید؛
     // selectstart/dragstart: شروع انتخاب یا کشیدن متن و تصویر با موس و لمس (iOS با CSS هم پوشش داده شده)
     document.addEventListener('contextmenu', block)
     document.addEventListener('selectstart', block)
     document.addEventListener('dragstart', block)
+    document.addEventListener('pointerdown', clearStaleTouchSelection, { passive: true })
     return () => {
       document.removeEventListener('contextmenu', block)
       document.removeEventListener('selectstart', block)
       document.removeEventListener('dragstart', block)
+      document.removeEventListener('pointerdown', clearStaleTouchSelection)
     }
   }, [])
 

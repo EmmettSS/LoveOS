@@ -134,6 +134,11 @@ check('برچسب ♾ روی آسمان هست', texts.includes('♾'))
 const caption = rootEl.querySelector('p.absolute') as HTMLElement | null
 check('کپشن بالای آسمان دیگر رندر نمی‌شود', !caption, caption ? `text=${caption.textContent}` : '')
 check('متن «اسمت رو با ستاره‌ها نوشتم» جایی روی آسمان نیست', !rootEl.textContent!.includes('با ستاره‌ها'))
+// نوار کنترل پایین (چیپ‌ها) باید همچنان شناور روی آسمان بماند
+const floatingControls = Array.from(rootEl.querySelectorAll('div.absolute')).find((el) =>
+  el.className.includes('inset-x-2') && el.className.includes('justify-center'),
+) as HTMLElement | undefined
+check('نوار کنترل به‌صورت شناور روی آسمان است', !!floatingControls)
 
 // چهارم: زدن روی ❤ → پیامش نمایش داده شود
 await act(async () => { (groups[6] as unknown as HTMLElement).dispatchEvent(new w.MouseEvent('click', { bubbles: true })) })
