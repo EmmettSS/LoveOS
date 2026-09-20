@@ -164,7 +164,12 @@
         "refresh": "Refresh",
         "accuracy": "Accuracy",
         "meters": "m",
-        "flying": "Flying… ✨"
+        "flying": "Flying… ✨",
+        "cineIran": "Iran… my heart's forever frame, from the Caspian to the Persian Gulf ❤",
+        "cineDaddy": "This is Daddy's home — the place my heart beats from.",
+        "cineLift": "I let go of the ground… only to reach you ✨",
+        "cineMid": "Every kilometre of it is one beat of my heart.",
+        "cineKm": "{{km}} km flown ❤"
     },
     "voice": {
         "random": "A random voice note",

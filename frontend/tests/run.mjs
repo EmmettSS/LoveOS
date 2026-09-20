@@ -33,6 +33,7 @@ const ALL = {
   'boot-timeout': join(here, 'boot-timeout.tsx'),
   'error-boundary-wrapper': join(here, 'error-boundary-wrapper.tsx'),
   'dreamhome-map-gestures': join(here, 'dreamhome-map-gestures.tsx'),
+  'mapofus-iran-cinema': join(here, 'mapofus-iran-cinema.tsx'),
 }
 
 const only = process.argv.slice(2)
