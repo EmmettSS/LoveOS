@@ -9,7 +9,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // بالا ببرید تا سرویس‌ورکرِ تازه حتماً جای نسخه‌ی کش‌شده‌ی قدیمی بنشیند و
 // کش‌های قدیمی پاک شوند (با skipWaiting + clientsClaim + cleanupOutdatedCaches).
 // اگر کاربری روی نسخه‌ی قدیمی گیر کرد: حذف و نصب مجدد PWA همان اثر را دارد.
-const PWA_CACHE_VERSION = 'v2026-09-19'
+const PWA_CACHE_VERSION = 'v2026-09-20-logo'
 
 export default defineConfig({
   plugins: [

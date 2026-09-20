@@ -264,7 +264,7 @@ export function Desktop() {
 
   return (
     <div
-      className="os-screen relative"
+      className="os-screen os-no-select relative"
       style={{
         // overlay کم‌رنگ‌تر شد تا والپیپر دیده شود — یک‌سومِ قبل (درخواست کاربر)
         backgroundImage: `linear-gradient(${

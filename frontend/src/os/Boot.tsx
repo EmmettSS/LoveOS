@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { post } from '../shared/api'
+import { BRAND_STROKE_WIDTH, HEART_INFINITY_PATH, INFINITY_PATH } from '../shared/brand'
 import { digits } from '../shared/format'
 import { playBootMelody, playSuccess, playTypeTick, tone } from '../shared/sound'
 import { useOS } from '../shared/store'
@@ -47,24 +48,7 @@ const TONE_COLOR: Record<Tone, string> = {
 
 const MONO_STACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace"
 const FA_STACK = "'Vazirmatn', 'Segoe UI', Tahoma, sans-serif"
-
-// مسیر قلب+بی‌نهایت - دقیقاً مشابه آویز مرجع
-const HEART_INFINITY_PATH = `M32 22
-           C 24 14, 10 15, 8.5 26
-           C 7 36, 17 43, 26 50
-           C 26 46.5, 29 42.5, 33 41
-           C 36 39.8, 39 40.5, 39 42.8
-           C 39 45.1, 36 46, 33.5 44.8
-           C 31 43.6, 32.5 40.5, 36 39.5
-           C 39.5 38.5, 43 36.8, 45.5 34.2
-           C 48 31.6, 48.5 29, 46.5 27.5
-           C 44.5 26, 42 27, 42 29.2
-           C 42 31.4, 44.5 32.4, 46.5 31.4
-           C 48.5 30.4, 48 28, 45.5 27.2
-           C 43 26.4, 40.5 28.2, 41.5 30.5
-           C 42.5 32.8, 46 31.5, 48.5 29
-           C 51 26.5, 50 15.5, 41 13.5
-           C 37 12.5, 33.5 14.5, 32 22Z`
+const ECG_PATH = 'M0 28 H62 L69 27.5 L76 36 L84 15 L92 30 L101 28 H128 C138 20 147 20 157 28 C167 36 177 36 188 28 C177 20 167 20 157 28 C147 36 138 36 128 28 H280'
 
 export function Boot() {
   const { t, i18n } = useTranslation()
@@ -541,68 +525,44 @@ function BouncingDots({ color }: { color: string }) {
   )
 }
 
-/** لوگوی سینمایی قلب+بی‌نهایت - ساخته شدن از ذرات نور */
+/** لوگوی سینمایی: همان تک‌مسیر رسمی، با glow فیلترشده و رسم تدریجی. */
 function CinematicHeartInfinity({ size = 100 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="relative z-10">
+      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="relative z-10 overflow-visible">
         <defs>
-          <linearGradient id="boot-heart-g" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id="boot-heart-g" x1="8" y1="9" x2="56" y2="54" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#ff9ecb" />
             <stop offset="55%" stopColor="#f767a8" />
             <stop offset="100%" stopColor="#bba0fb" />
           </linearGradient>
-          <linearGradient id="boot-heart-glow" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ff9ecb" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#bba0fb" stopOpacity="0.8" />
-          </linearGradient>
-          <filter id="boot-glow">
-            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+          <filter id="boot-glow" x="-45%" y="-45%" width="190%" height="190%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="1 0 0 0 .18  0 .35 0 0 .02  0 0 1 0 .22  0 0 0 .8 0"
+              result="coloredBlur"
+            />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
-        {/* سایه و هاله پس‌زمینه */}
-        <path
-          d={HEART_INFINITY_PATH}
-          fill="none"
-          stroke="url(#boot-heart-glow)"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.15"
-          filter="url(#boot-glow)"
-        />
-        {/* مسیر اصلی با انیمیشن ساخته شدن */}
         <motion.path
           d={HEART_INFINITY_PATH}
           fill="none"
           stroke="url(#boot-heart-g)"
-          strokeWidth="2.8"
+          strokeWidth={BRAND_STROKE_WIDTH}
           strokeLinecap="round"
           strokeLinejoin="round"
+          filter="url(#boot-glow)"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 2.2, ease: 'easeInOut', delay: 0.3 }}
         />
-        {/* لایه درخشان دوم با تاخیر */}
-        <motion.path
-          d={HEART_INFINITY_PATH}
-          fill="none"
-          stroke="url(#boot-heart-glow)"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.6"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 2, ease: 'easeInOut', delay: 0.6 }}
-          style={{ filter: 'blur(0.5px)' }}
-        />
       </svg>
-      {/* هاله مرکزی تپنده */}
       <motion.div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
@@ -746,12 +706,12 @@ function InfinityFlow() {
           </feMerge>
         </filter>
       </defs>
-      {/* بی‌نهایت کوچک در پایین راست */}
+      {/* جریان روی همان بخش بی‌نهایتِ مسیر رسمی؛ هیچ منحنی موازیِ حدسی وجود ندارد. */}
       <motion.path
-        d="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
+        d={INFINITY_PATH}
         fill="none"
         stroke="url(#inf-flow)"
-        strokeWidth="1.5"
+        strokeWidth="1.25"
         strokeLinecap="round"
         strokeLinejoin="round"
         filter="url(#inf-glow)"
@@ -760,22 +720,15 @@ function InfinityFlow() {
         animate={{ strokeDashoffset: -18 }}
         transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
       />
-      {/* نقطه نور متحرک داخل بی‌نهایت */}
       <motion.circle
-        r="1.8"
+        r="1.45"
         fill="#fff"
         style={{ filter: 'drop-shadow(0 0 4px #fff)' }}
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: [0, 1, 1, 0],
-        }}
+        animate={{ opacity: [0, 1, 1, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <animateMotion
-          path="M26 50 C26 46.5 29 42.5 33 41 C36 39.8 39 40.5 39 42.8 C39 45.1 36 46 33.5 44.8 C31 43.6 32.5 40.5 36 39.5 C39.5 38.5 43 36.8 45.5 34.2 C48 31.6 48.5 29 46.5 27.5 C44.5 26 42 27 42 29.2 C42 31.4 44.5 32.4 46.5 31.4 C48.5 30.4 48 28 45.5 27.2 C43 26.4 40.5 28.2 41.5 30.5 C42.5 32.8 46 31.5 48.5 29"
-          dur="2.5s"
-          repeatCount="indefinite"
-        />
+        <animateMotion path={INFINITY_PATH} dur="2.5s" repeatCount="indefinite" />
       </motion.circle>
     </svg>
   )
@@ -811,7 +764,7 @@ function EcgLineInfinity() {
       viewBox="0 0 280 56"
       fill="none"
       aria-hidden
-      className="pointer-events-none absolute -bottom-1 left-1/2 h-12 w-[280px] -translate-x-1/2"
+      className="pointer-events-none absolute left-1/2 top-[74px] h-12 w-[280px] -translate-x-1/2"
     >
       <defs>
         <linearGradient id="boot-ecg-inf" x1="0" y1="0" x2="1" y2="0">
@@ -830,15 +783,9 @@ function EcgLineInfinity() {
           </feMerge>
         </filter>
       </defs>
-      {/* ECG اصلی که از قلب عبور می‌کند و داخل بی‌نهایت می‌پیچد */}
+      {/* نقطه‌ی تقاطع ECG دقیقاً روی مرکز بی‌نهایتِ لوگوی ۱۰۰ پیکسلی می‌افتد. */}
       <motion.path
-        d="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5
-           C 100 27, 115 22, 125 28
-           C 135 34, 125 40, 115 34
-           C 105 28, 115 22, 125 28
-           C 135 34, 130 40, 120 38
-           C 110 36, 105 32, 108 28
-           L 140 28 H280"
+        d={ECG_PATH}
         stroke="url(#boot-ecg-inf)"
         strokeWidth="1.8"
         strokeLinecap="round"
@@ -857,11 +804,7 @@ function EcgLineInfinity() {
         animate={{ opacity: [0, 1, 1, 0] }}
         transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.1, 0.8, 1] }}
       >
-        <animateMotion
-          path="M0 28 H60 l6 -0.5 l6 8 l8 -20 l7 14 l5 -1.5 C 100 27, 115 22, 125 28 C 135 34, 125 40, 115 34 C 105 28, 115 22, 125 28 C 135 34, 130 40, 120 38 C 110 36, 105 32, 108 28 L 140 28 H280"
-          dur="2.2s"
-          repeatCount="indefinite"
-        />
+        <animateMotion path={ECG_PATH} dur="2.2s" repeatCount="indefinite" />
       </motion.circle>
     </svg>
   )
