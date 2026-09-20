@@ -8,13 +8,13 @@
  *   ۳) گالری الهام: عکس خانه‌های قشنگ + گفتگو زیر هر عکس
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon } from '../shared/Icon'
 import { del, patch, post, upload } from '../shared/api'
 import { digits } from '../shared/format'
-import { playError, playSuccess } from '../shared/sound'
+import { playClick, playError, playSuccess } from '../shared/sound'
 import { ApiStatus, Chips, Empty, useApi } from '../shared/ui'
 
 type Owner = 'daddy' | 'daughter'
@@ -304,41 +304,190 @@ function PlanTab({
 }
 
 /* --------------------------------------------------------------- نقشه --- */
+/**
+ * تفکیک «کلیک» از «جابه‌جایی» (مثل الگوی آیکن‌های دسکتاپ):
+ *   • ضربه/کلیک ساده = انتخاب اتاق → پنل ویرایش باز می‌شود
+ *   • لمس و ~۳۵۰ms نگه‌داشتن = حالت جابه‌جایی (اتاق «بلند» می‌شود)
+ *   • اتاقِ انتخاب‌شده را می‌توان مستقیم با لمس و کشیدن جابه‌جا کرد
+ *   • با موس: حرکت بیش از چند پیکسل = جابه‌جایی، کلیک ساده = انتخاب
+ *   • سوایپِ قبل از آماده‌شدن درگ = هیچ (کاربر می‌خواست اسکرول کند)
+ * موقعیت فقط بعد از رها شدن و در یک PATCH ذخیره می‌شود؛ حین کشیدن
+ * به‌صورت خوش‌بینانه‌ی محلی رندر می‌شود.
+ */
+const ROOM_HOLD_MS = 350 // لمس: این‌قدر نگه دار تا جابه‌جایی «آماده» شود
+const ROOM_TOUCH_SLOP = 10 // لمس: کمتر از این یعنی «ضربه»، بیشتر یعنی کشیدن
+const ROOM_MOUSE_SLOP = 5 // موس: با این‌قدر جابه‌جایی، جابه‌جایی شروع می‌شود
+
 function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
   const { t } = useTranslation()
   const canvasRef = useRef<HTMLDivElement | null>(null)
-  const [selected, setSelected] = useState<Room | null>(null)
-  const [dragging, setDragging] = useState<number | null>(null)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [movingId, setMovingId] = useState<number | null>(null)
+  /** جای فعلی اتاقِ در حال جابه‌جایی (درصدی) — تا پایان درگ اعمال می‌شود */
+  const [pos, setPos] = useState<{ id: number; x: number; y: number } | null>(null)
   const [name, setName] = useState('')
   const [floor, setFloor] = useState('ground')
 
-  const selectedRoom = selected ? rooms.find((r) => r.id === selected.id) || null : null
+  const selectedRoom = selected != null ? rooms.find((r) => r.id === selected) || null : null
 
-  /** درصد موقعیت اشاره‌گر روی نقشه (۰ تا ۱۰۰) */
-  const pointerPercent = useCallback((clientX: number, clientY: number) => {
-    const el = canvasRef.current
-    if (!el) return null
-    const rect = el.getBoundingClientRect()
-    return {
-      x: ((clientX - rect.left) / rect.width) * 100,
-      y: ((clientY - rect.top) / rect.height) * 100,
+  /** وضعیت اشاره‌گر جاری — ref است تا بین رندرها گم نشود */
+  const gesture = useRef<{
+    id: number
+    roomId: number
+    x0: number
+    y0: number
+    armed: boolean
+    touch: boolean
+    dragged: boolean
+    timer: number | null
+  } | null>(null)
+  const suppressClick = useRef(false)
+  /** نسخه‌های تازه برای شنونده‌های window (بدون وابستگی و دوباره بستن) */
+  const roomsRef = useRef(rooms)
+  const selectedRef = useRef(selected)
+  const posRef = useRef(pos)
+  useEffect(() => {
+    roomsRef.current = rooms
+  }, [rooms])
+  useEffect(() => {
+    selectedRef.current = selected
+  }, [selected])
+  useEffect(() => {
+    posRef.current = pos
+  }, [pos])
+
+  const endGesture = useCallback(() => {
+    const g = gesture.current
+    if (g?.timer) window.clearTimeout(g.timer)
+    gesture.current = null
+    setMovingId(null)
+  }, [])
+
+  const arm = useCallback((g: NonNullable<typeof gesture.current>) => {
+    if (g.armed) return
+    g.armed = true
+    suppressClick.current = true
+    setMovingId(g.roomId)
+    playClick()
+    if (g.touch) {
+      try {
+        navigator.vibrate?.(14)
+      } catch {
+        /* دستگاه ویبره ندارد */
+      }
     }
   }, [])
 
-  const dragTo = useCallback(
-    async (room: Room, clientX: number, clientY: number) => {
-      const p = pointerPercent(clientX, clientY)
-      if (!p) return
-      const x = Math.max(0, Math.min(100 - room.w, p.x - room.w / 2))
-      const y = Math.max(0, Math.min(100 - room.h, p.y - room.h / 2))
-      // به‌روزرسانی خوش‌بینانه‌ی محلی برای روان بودن کشیدن
-      room.x = Math.round(x)
-      room.y = Math.round(y)
-      setSelected({ ...room })
-      await patch(`/home/rooms/${room.id}`, { x: Math.round(x), y: Math.round(y) })
+  /** جای اتاق زیر اشاره‌گر (درصدی، محدود به بوم) — فقط محلی، بدون سرور */
+  const dragTo = useCallback((room: Room, clientX: number, clientY: number) => {
+    const el = canvasRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (!rect.width || !rect.height) return
+    const px = ((clientX - rect.left) / rect.width) * 100
+    const py = ((clientY - rect.top) / rect.height) * 100
+    const x = Math.round(Math.max(0, Math.min(100 - room.w, px - room.w / 2)))
+    const y = Math.round(Math.max(0, Math.min(100 - room.h, py - room.h / 2)))
+    // ref را همان‌جا تازه می‌کنیم تا رهاکردنِ بلافاصله بعد از آخرین حرکت،
+    // حتی قبل از اجرای افکت، مختصات نهایی را ببیند
+    posRef.current = { id: room.id, x, y }
+    setPos({ id: room.id, x, y })
+  }, [])
+
+  /** رها کردن: فقط یک PATCH با آخرین جای اتاق، بعد تازه‌سازی */
+  const finishDrop = useCallback(
+    async (roomId: number, moved: boolean) => {
+      const p = posRef.current
+      setMovingId(null)
+      // آماده‌شدنِ جابه‌جایی بدون هیچ کشیدنی چیزی را عوض نمی‌کند
+      if (moved && p && p.id === roomId) {
+        try {
+          await patch(`/home/rooms/${roomId}`, { x: p.x, y: p.y })
+          playSuccess()
+        } catch {
+          /* بی‌سرور موقت؛ بعد از reload وضعیت واقعی برمی‌گردد */
+        }
+        await reload()
+        // برش را بعد از رسیدن داده‌ی تازه پاک می‌کنیم تا اتاق لحظه‌ای به عقب نپرد
+        posRef.current = null
+        setPos((cur) => (cur && cur.id === roomId ? null : cur))
+      }
     },
-    [pointerPercent],
+    [reload],
   )
+
+  const onRoomPointerDown = (e: React.PointerEvent, room: Room) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    suppressClick.current = false
+    const touch = e.pointerType !== 'mouse'
+    posRef.current = null
+    gesture.current = { id: e.pointerId, roomId: room.id, x0: e.clientX, y0: e.clientY, armed: false, touch, dragged: false, timer: null }
+    // لمسِ اتاقِ انتخاب‌نشده: با نگه‌داشتن آماده می‌شود (کشیدنِ زودهنگام یعنی اسکرول)
+    if (touch && selectedRef.current !== room.id) {
+      const g = gesture.current
+      g.timer = window.setTimeout(() => {
+        const cur = gesture.current
+        if (cur) arm(cur)
+      }, ROOM_HOLD_MS)
+    }
+  }
+
+  // رویدادهای move/up روی window: بیرون‌رفتن انگشت از بوم درگ را خراب نمی‌کند
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const g = gesture.current
+      if (!g || e.pointerId !== g.id) return
+      const dist = Math.hypot(e.clientX - g.x0, e.clientY - g.y0)
+      if (!g.armed) {
+        if (g.touch) {
+          if (selectedRef.current === g.roomId) {
+            // اتاق انتخاب‌شده را می‌توان مستقیم با کشیدن جابه‌جا کرد
+            if (dist > ROOM_TOUCH_SLOP) arm(g)
+          } else if (dist > ROOM_TOUCH_SLOP) {
+            // سوایپ قبل از آماده‌شدن → اسکرول بود، ولش کن
+            endGesture()
+          }
+          return
+        }
+        if (dist > ROOM_MOUSE_SLOP) arm(g)
+        else return
+      }
+      const room = roomsRef.current.find((r) => r.id === g.roomId)
+      if (room) {
+        g.dragged = true
+        dragTo(room, e.clientX, e.clientY)
+      }
+    }
+    const onUp = (e: PointerEvent) => {
+      const g = gesture.current
+      if (!g || e.pointerId !== g.id) return
+      if (g.armed) {
+        suppressClick.current = true
+        void finishDrop(g.roomId, g.dragged)
+        endGesture()
+      } else {
+        // ضربه‌ی ساده (بدون کشیدن) = انتخاب اتاق برای ویرایش
+        if (Math.hypot(e.clientX - g.x0, e.clientY - g.y0) <= (g.touch ? ROOM_TOUCH_SLOP : ROOM_MOUSE_SLOP)) {
+          setSelected(g.roomId)
+        }
+        endGesture()
+      }
+    }
+    const onCancel = () => {
+      const g = gesture.current
+      if (g?.armed) void finishDrop(g.roomId, g.dragged)
+      endGesture()
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      endGesture()
+    }
+  }, [arm, dragTo, endGesture, finishDrop])
 
   const addRoom = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -358,24 +507,15 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
     await reload()
   }
 
+  const shownPos = (r: Room) => (pos && pos.id === r.id ? { ...r, x: pos.x, y: pos.y } : r)
+
   return (
     <div className="space-y-3">
       <div
         ref={canvasRef}
+        data-map-canvas
         className="relative w-full overflow-hidden rounded-2xl border"
         style={{ aspectRatio: '4 / 3', background: 'var(--os-accent-soft)', borderColor: 'var(--os-border)', touchAction: 'none' }}
-        onPointerMove={(e) => {
-          if (dragging == null) return
-          const room = rooms.find((r) => r.id === dragging)
-          if (room) void dragTo(room, e.clientX, e.clientY)
-        }}
-        onPointerUp={async () => {
-          if (dragging != null) {
-            setDragging(null)
-            await reload()
-          }
-        }}
-        onPointerLeave={() => setDragging(null)}
       >
         {/* راهنما */}
         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -387,35 +527,81 @@ function MapTab({ rooms, reload }: { rooms: Room[]; reload: () => void }) {
           ))}
         </svg>
 
-        {rooms.map((r) => (
-          <motion.button
-            key={r.id}
-            layout
-            className="absolute flex flex-col items-center justify-center rounded-xl p-1 text-center shadow-soft"
-            style={{
-              left: `${r.x}%`,
-              top: `${r.y}%`,
-              width: `${r.w}%`,
-              height: `${r.h}%`,
-              background: `${r.color}55`,
-              border: `1.5px solid ${r.color}`,
-            }}
-            onPointerDown={() => setDragging(r.id)}
-            onClick={() => setSelected(r)}
-            whileTap={{ scale: 0.97 }}
-          >
-            <span className="text-base leading-none">{r.icon || '🛋'}</span>
-            <span className="mt-0.5 truncate text-[10px] font-semibold" style={{ maxWidth: '95%' }}>
-              {r.name}
-            </span>
-          </motion.button>
-        ))}
+        {rooms.map((raw) => {
+          const r = shownPos(raw)
+          const isSelected = selected === r.id
+          const isMoving = movingId === r.id
+          return (
+            <motion.button
+              key={r.id}
+              data-room-id={r.id}
+              className={`absolute flex flex-col items-center justify-center rounded-xl p-1 text-center shadow-soft ${
+                isMoving ? 'z-20 cursor-grabbing' : isSelected ? 'z-10' : ''
+              }`}
+              style={{
+                left: `${r.x}%`,
+                top: `${r.y}%`,
+                width: `${r.w}%`,
+                height: `${r.h}%`,
+                background: `${r.color}55`,
+                border: `1.5px solid ${r.color}`,
+                ...(isSelected ? { outline: '2px dashed var(--os-accent)', outlineOffset: 2 } : {}),
+                ...(isMoving
+                  ? { boxShadow: '0 16px 32px -10px rgba(0,0,0,.4)', filter: 'brightness(1.08)' }
+                  : {}),
+              }}
+              animate={{ scale: isMoving ? 1.07 : 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+              onPointerDown={(e) => onRoomPointerDown(e, r)}
+              onClick={(e) => {
+                // کلیکِ واقعی را pointerup مدیریت می‌کند؛ فقط کیبورد (detail=0) اینجا انتخاب می‌کند
+                if (suppressClick.current) {
+                  suppressClick.current = false
+                  return
+                }
+                if (e.detail === 0) setSelected(r.id)
+              }}
+              aria-pressed={isSelected}
+              whileTap={{ scale: 0.97 }}
+            >
+              {isSelected && (
+                <span
+                  className="absolute -top-2 -start-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px]"
+                  style={{ background: 'var(--os-accent)', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,.25)' }}
+                >
+                  ✏️
+                </span>
+              )}
+              <span className="text-base leading-none">{r.icon || '🛋'}</span>
+              <span className="mt-0.5 truncate text-[10px] font-semibold" style={{ maxWidth: '95%' }}>
+                {r.name}
+              </span>
+            </motion.button>
+          )
+        })}
 
         {rooms.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-xs os-muted">{t('home.emptyMap')}</div>
         )}
+
+        {/* برچسب حالت جابه‌جایی روی بوم */}
+        <AnimatePresence>
+          {movingId != null && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="absolute left-1/2 top-2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-semibold"
+              style={{ background: 'rgba(74,44,64,.72)', color: '#fff', backdropFilter: 'blur(3px)' }}
+            >
+              🏠 {t('home.mapMoving')}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <p className="px-1 text-[10px] os-muted">{t('home.mapHint')}</p>
+      <p className="px-1 text-[10px] leading-5 os-muted">
+        {selected != null ? t('home.mapHintSelected') : t('home.mapHint')}
+      </p>
 
       <AnimatePresence>
         {selectedRoom && (
