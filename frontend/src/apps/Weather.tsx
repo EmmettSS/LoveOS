@@ -399,16 +399,20 @@ export default function Weather() {
   /** بابا از تنظیمات پنل، دخترم اول از موقعیت زنده‌ی دستگاهش و بعد از پنل */
   const targets = useMemo(() => weatherTargets(config), [config])
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     setLoading(true)
     try {
-      // هر دو شهر با هم — همان لحظه، مستقیم از مرورگر
+      const opts = force ? { force: true } : undefined
+      // هر دو شهر با هم — همان لحظه، مستقیم از مرورگر؛ force=true کش ۱۵ دقیقه‌ای را دور می‌زند
       const [daddy, daughter] = await Promise.all([
+        fetchLiveWeather(targets.daddy.city, targets.daddy.lat, targets.daddy.lng, targets.daddy.tz, targets.daddy.is_live, opts),
         fetchLiveWeather(
-          targets.daddy.city, targets.daddy.lat, targets.daddy.lng, targets.daddy.tz, targets.daddy.is_live,
-        ),
-        fetchLiveWeather(
-          targets.daughter.city, targets.daughter.lat, targets.daughter.lng, targets.daughter.tz, targets.daughter.is_live,
+          targets.daughter.city,
+          targets.daughter.lat,
+          targets.daughter.lng,
+          targets.daughter.tz,
+          targets.daughter.is_live,
+          opts,
         ),
       ])
       setPair({ daddy, daughter })
@@ -421,7 +425,7 @@ export default function Weather() {
   }, [targets, t])
 
   useEffect(() => {
-    void load()
+    void load(nonce > 0)
   }, [load, nonce])
 
   if (loading && !pair) return <ApiStatus loading error={null} />
