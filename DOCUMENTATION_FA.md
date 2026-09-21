@@ -691,6 +691,8 @@ tail -f /srv/loveos/logs/sweep.log # زمان‌بند
 (`passenger_wsgi.py`) می‌رسند. پس جنگو فرانت‌اند را هم سرو می‌کند: `SERVE_FRONTEND=True`.
 هاست‌های اشتراکی معمولاً Node ندارند، پس فرانت روی سیستم خودم build و آپلود می‌شود.
 
+> ⚠️ پشت Passenger/Edge که خودش HTTPS را تمام می‌کند، `SECURE_SSL_REDIRECT=False` بگذار تا حلقه‌ی ریدایرکت پیش نیاید.
+
 **قدم ۱ — build و بسته‌بندی روی سیستم خودم**
 
 ```bash
