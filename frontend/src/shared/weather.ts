@@ -223,15 +223,9 @@ function writeCache(key: string, entry: CacheEntry): void {
   }
 }
 
-/** آدرس رسمی Open-Meteo (بدون کلید، با CORS باز) */
+/** آدرس رسمی Open-Meteo (بدون کلید، با CORS باز) — واحدها صریح تا وابسته به پیش‌فرض سرور نماند */
 export function forecastUrl(lat: number, lng: number, tz: string): string {
-  return (
-    `${ENDPOINT}?latitude=${lat}&longitude=${lng}` +
-    '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,' +
-    'wind_speed_10m,wind_direction_10m,pressure_msl,cloud_cover,is_day,uv_index' +
-    '&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code' +
-    `&timezone=${encodeURIComponent(tz)}&forecast_days=${FORECAST_DAYS}`
-  )
+  return `${ENDPOINT}?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,pressure_msl,cloud_cover,is_day,uv_index&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=${encodeURIComponent(tz)}&forecast_days=5&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm&timeformat=iso8601`
 }
 
 async function getJson(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Record<string, unknown>> {
@@ -357,13 +351,15 @@ export async function fetchLiveWeather(
   lng: number,
   tz: string,
   is_live = false,
+  opts: { force?: boolean } = {},
 ): Promise<LiveWeather> {
   const zone = trimmed(tz) || deviceTimezone() || DEFAULT_DADDY.tz
   const key = cacheKey(lat, lng, zone)
   const cached = readCache(key)
   const now = Date.now()
+  const force = Boolean(opts.force)
 
-  if (cached && now - cached.at < CACHE_TTL_MS) {
+  if (!force && cached && now - cached.at < CACHE_TTL_MS) {
     return normalize(city, cached.current, cached.daily, is_live, { cached: true, updatedAt: cached.at })
   }
 
@@ -426,11 +422,14 @@ export function weatherTargets(config: Config | null | undefined): { daddy: Weat
 }
 
 /** هر دو شهر با هم — برای هر جایی که به جفتِ بابا و دخترم نیاز دارد */
-export async function fetchWeatherPair(config: Config | null | undefined): Promise<WeatherPair> {
+export async function fetchWeatherPair(
+  config: Config | null | undefined,
+  opts: { force?: boolean } = {},
+): Promise<WeatherPair> {
   const { daddy, daughter } = weatherTargets(config)
   const [d, g] = await Promise.all([
-    fetchLiveWeather(daddy.city, daddy.lat, daddy.lng, daddy.tz, daddy.is_live),
-    fetchLiveWeather(daughter.city, daughter.lat, daughter.lng, daughter.tz, daughter.is_live),
+    fetchLiveWeather(daddy.city, daddy.lat, daddy.lng, daddy.tz, daddy.is_live, opts),
+    fetchLiveWeather(daughter.city, daughter.lat, daughter.lng, daughter.tz, daughter.is_live, opts),
   ])
   return { daddy: d, daughter: g }
 }
