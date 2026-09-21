@@ -22,6 +22,7 @@ import { get, post } from '../shared/api'
 import { digits, formatDate, formatTime, weekdayName } from '../shared/format'
 import { playClick, playOpen } from '../shared/sound'
 import { useOS } from '../shared/store'
+import { fetchWeatherPair, type WeatherPair } from '../shared/weather'
 import { APPS, effectiveAppOrder } from './appRegistry'
 import { Dock } from './Dock'
 import { GlobalSearch } from './GlobalSearch'
@@ -43,11 +44,11 @@ interface NextCallPayload {
   } | null
 }
 
-interface WeatherPayload {
-  daddy: { city: string; temp: number | null; label: string; icon: string }
-  daughter: { city: string; temp: number | null; label: string; icon: string }
-  message: string
-}
+/**
+ * ویجت آب‌وهوا هم مثل خودِ اپ، داده را مستقیم از مرورگر می‌گیرد؛ پس دمای
+ * واقعی شهرها همان لحظه‌ی بالا آمدنِ دسکتاپ ظاهر می‌شود، نه بعد از پاسخ سرور.
+ */
+type WeatherPayload = WeatherPair
 
 const WEATHER_ICON: Record<string, 'sun' | 'cloud' | 'rain' | 'snow'> = {
   sun: 'sun', cloud: 'cloud', rain: 'rain', snow: 'snow', fog: 'cloud', storm: 'rain',
@@ -125,11 +126,22 @@ export function Desktop() {
     return () => clearInterval(id)
   }, [])
 
+  // آب‌وهوای زندهٔ دو شهر — مستقیم از مرورگر (همان تابع اپ هواشناسی)
   useEffect(() => {
-    get<WeatherPayload>('/weather').then(setWeather).catch(() => undefined)
-    const id = setInterval(() => get<WeatherPayload>('/weather').then(setWeather).catch(() => undefined), 900_000)
-    return () => clearInterval(id)
-  }, [])
+    let alive = true
+    const load = () =>
+      fetchWeatherPair(config)
+        .then((pair) => {
+          if (alive) setWeather(pair)
+        })
+        .catch(() => undefined)
+    void load()
+    const id = setInterval(load, 900_000) // هر ۱۵ دقیقه، هم‌قدمِ کش
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [config])
 
   const midnight = now.getHours() < 5
   useEffect(() => {
@@ -337,6 +349,9 @@ export function Desktop() {
                   <div key={idx} className="flex items-center gap-1.5">
                     <Icon name={WEATHER_ICON[side?.icon] || 'cloud'} size={16} />
                     <span className="truncate">{side?.city || '—'}</span>
+                    {side?.is_live && (
+                      <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#ef4444]" />
+                    )}
                     <span className="ms-auto">
                       {side?.temp != null ? digits(Math.round(side.temp)) : '—'}°
                     </span>

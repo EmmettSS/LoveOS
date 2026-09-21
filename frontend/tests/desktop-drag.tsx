@@ -63,7 +63,26 @@ g.fetch = async (url: string) => {
     return json(JSON.parse(readFileSync(join(publicDir, 'locales', lang, 'translation.json'), 'utf8')))
   }
   if (p.includes('/api/boot')) return json({ config: serverConfig, unlocked: true })
-  if (p.includes('/api/weather')) return json({ daddy: null, daughter: null, message: '' })
+  if (p.includes('api.open-meteo.com')) {
+    const dates = [0, 1, 2, 3, 4].map((i) => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10))
+    return json({
+      latitude: 35.6892,
+      current: {
+        time: `${dates[0]}T21:00`, temperature_2m: 21, apparent_temperature: 22, relative_humidity_2m: 40,
+        weather_code: 0, wind_speed_10m: 7, wind_direction_10m: 90, pressure_msl: 1011, cloud_cover: 5,
+        is_day: 1, uv_index: 1.2,
+      },
+      daily: {
+        time: dates,
+        sunrise: dates.map((d) => `${d}T05:50`),
+        sunset: dates.map((d) => `${d}T18:30`),
+        temperature_2m_max: dates.map(() => 24),
+        temperature_2m_min: dates.map(() => 15),
+        precipitation_probability_max: dates.map(() => 5),
+        weather_code: dates.map(() => 0),
+      },
+    })
+  }
   if (p.includes('/api/calls/next')) return json({ item: null })
   return json({ items: [], unread: 0, item: null, config: serverConfig })
 }
