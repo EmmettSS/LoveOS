@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- interactive-widget: با باز شدن کیبوردِ موبایل، ارتفاع چیدمان کوچک می‌شود
+         (نه اینکه کیبورد روی فیلد بیفتد)؛ چون html/body اسکرول ندارند، این
+         تنظیم باعث می‌شود فیلدهای فرم — مثل رمز صفحه‌ی قفل — همیشه دیده شوند. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#14071a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LoveOS" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <title>LoveOS</title>
+    <style>
+      /* اسپلش پیش از لود React — مستقل و بدون دارایی بیرونی */
+      #loveos-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background:
+          radial-gradient(80% 60% at 50% 28%, rgba(247,103,168,.16), transparent 70%),
+          radial-gradient(90% 70% at 50% 100%, rgba(150,120,255,.14), transparent 70%),
+          linear-gradient(170deg, #1d0c26 0%, #120719 55%, #0a0410 100%);
+        color: #fce7f3; font-family: Vazirmatn, system-ui, sans-serif;
+        transition: opacity .35s ease;
+      }
+      #loveos-splash.ls-hide { opacity: 0; pointer-events: none; }
+      .ls-heart { animation: loveosBeat 1.2s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(247,103,168,.65)); }
+      .ls-name { font-size: 22px; font-weight: 700; letter-spacing: .18em; color: #fff; text-shadow: 0 0 18px rgba(247,103,168,.55); }
+      .ls-sub { font-size: 12px; opacity: .65; letter-spacing: .08em; }
+      .ls-bar { width: 190px; height: 3px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.1); }
+      .ls-bar span { display: block; height: 100%; width: 40%; border-radius: 99px;
+        background: linear-gradient(90deg, #ff8cc0, #bba0fb);
+        animation: loveosSlide 1.15s ease-in-out infinite; }
+      @keyframes loveosBeat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.16); } 28% { transform: scale(1); } 42% { transform: scale(1.1); } }
+      @keyframes loveosSlide {
+        0% { transform: translateX(-130%); }
+        100% { transform: translateX(360%); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- وقتی React سوار شد کل این بخش با اپ جایگزین می‌شود -->
+      <div id="loveos-splash" aria-label="LoveOS loading">
+        <svg class="ls-heart" width="92" height="92" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="ls-g" x1="8" y1="9" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ff9ecb" />
+              <stop offset="55%" stop-color="#f767a8" />
+              <stop offset="100%" stop-color="#bba0fb" />
+            </linearGradient>
+          </defs>
+          <path d="M29.98 50.68C27.72 49.19 24.77 47.2 22.02 44.95C19.24 42.68 16.66 40.14 14.35 37.35C12.15 34.71 10.2 31.84 9 28.59C7.79 25.32 7.35 21.67 8.29 18.31C9.21 15.02 11.44 12.01 14.55 10.45C17.68 8.87 21.71 8.76 24.68 10.22C27.74 11.72 29.69 14.88 31.63 18.04C33.16 15.32 34.68 12.59 37.12 10.99C39.47 9.46 42.66 8.96 45.58 9.51C48.5 10.06 51.16 11.65 52.91 13.94C54.67 16.25 55.51 19.26 55.46 22.14C55.4 25.13 54.37 27.96 53.25 30.15M43.16 42.72C42.29 41.9 43.12 39.33 43.9 37.21C44.64 35.2 45.34 33.59 46.9 32.88C48.42 32.17 50.76 32.33 52.02 33.57C53.28 34.82 53.46 37.15 52.78 38.69C52.1 40.25 50.53 41 48.57 41.8C46.51 42.64 44.01 43.53 43.16 42.72C42.29 41.91 39.8 42.8 37.75 43.65C35.77 44.47 34.18 45.24 33.52 46.82C32.88 48.36 33.12 50.67 34.4 51.9C35.68 53.14 38.02 53.29 39.54 52.57C41.07 51.85 41.77 50.25 42.49 48.25C43.25 46.12 44.04 43.54 43.16 42.72" fill="none" stroke="url(#ls-g)" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="ls-name">LoveOS</div>
+        <div class="ls-bar"><span></span></div>
+        <div class="ls-sub">…</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

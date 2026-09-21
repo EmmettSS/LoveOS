@@ -1,0 +1,3791 @@
+{
+  "/api/calls/overview": {
+    "slots": [
+      {
+        "id": 1,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "21:00",
+        "end": "22:30",
+        "minutes": 90,
+        "note": "بعد از کار"
+      },
+      {
+        "id": 2,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 3,
+        "weekday_label": "سه‌شنبه",
+        "start": "20:30",
+        "end": "22:00",
+        "minutes": 90,
+        "note": ""
+      },
+      {
+        "id": 3,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "10:00",
+        "end": "13:00",
+        "minutes": 180,
+        "note": "صبح روز تعطیل"
+      },
+      {
+        "id": 4,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "20:00",
+        "end": "21:30",
+        "minutes": 90,
+        "note": "بعد از کلاس"
+      },
+      {
+        "id": 5,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 2,
+        "weekday_label": "دوشنبه",
+        "start": "19:30",
+        "end": "21:00",
+        "minutes": 90,
+        "note": ""
+      },
+      {
+        "id": 6,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "11:00",
+        "end": "14:00",
+        "minutes": 180,
+        "note": "آخر هفته"
+      }
+    ],
+    "overlap": [
+      {
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "21:00",
+        "end": "21:30",
+        "minutes": 30
+      },
+      {
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "11:00",
+        "end": "13:00",
+        "minutes": 120
+      }
+    ],
+    "appointments": [
+      {
+        "id": 1,
+        "proposer": "daughter",
+        "proposer_label": "دخترم",
+        "proposee": "daddy",
+        "proposee_label": "بابا",
+        "date": "2026-09-16",
+        "time": "21:00",
+        "duration_minutes": 45,
+        "topic": "حرف زدن درباره‌ی سفر",
+        "status": "approved",
+        "status_label": "تأیید شده",
+        "message": "",
+        "answer_note": "",
+        "answered_at": null,
+        "alternative_of": null,
+        "seconds_to_start": 180659,
+        "is_upcoming": true,
+        "sides_time": {
+          "daddy": {
+            "label": "تهران",
+            "time": "21:30",
+            "date": "2026-09-16"
+          },
+          "daughter": {
+            "label": "استانبول",
+            "time": "21:00",
+            "date": "2026-09-16"
+          }
+        },
+        "logged": false
+      },
+      {
+        "id": 2,
+        "proposer": "daddy",
+        "proposer_label": "بابا",
+        "proposee": "daughter",
+        "proposee_label": "دخترم",
+        "date": "2026-09-19",
+        "time": "20:30",
+        "duration_minutes": 30,
+        "topic": "دیدن عکس‌های قدیمی",
+        "status": "pending",
+        "status_label": "در انتظار جواب",
+        "message": "",
+        "answer_note": "",
+        "answered_at": null,
+        "alternative_of": null,
+        "seconds_to_start": 438059,
+        "is_upcoming": true,
+        "sides_time": {
+          "daddy": {
+            "label": "تهران",
+            "time": "20:30",
+            "date": "2026-09-19"
+          },
+          "daughter": {
+            "label": "استانبول",
+            "time": "20:00",
+            "date": "2026-09-19"
+          }
+        },
+        "logged": false
+      }
+    ],
+    "next": {
+      "id": 1,
+      "proposer": "daughter",
+      "proposer_label": "دخترم",
+      "proposee": "daddy",
+      "proposee_label": "بابا",
+      "date": "2026-09-16",
+      "time": "21:00",
+      "duration_minutes": 45,
+      "topic": "حرف زدن درباره‌ی سفر",
+      "status": "approved",
+      "status_label": "تأیید شده",
+      "message": "",
+      "answer_note": "",
+      "answered_at": null,
+      "alternative_of": null,
+      "seconds_to_start": 180659,
+      "is_upcoming": true,
+      "sides_time": {
+        "daddy": {
+          "label": "تهران",
+          "time": "21:30",
+          "date": "2026-09-16"
+        },
+        "daughter": {
+          "label": "استانبول",
+          "time": "21:00",
+          "date": "2026-09-16"
+        }
+      },
+      "logged": false
+    },
+    "logs": [
+      {
+        "id": 1,
+        "appointment": null,
+        "happened_on": "2026-09-11",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 32,
+        "duration_label": "32 دقیقه",
+        "topic": "کار و روزمرگی",
+        "daddy_mood": "happy",
+        "daughter_mood": "happy",
+        "note": "خیلی خندیدیم",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.077032+00:00"
+      },
+      {
+        "id": 2,
+        "appointment": null,
+        "happened_on": "2026-09-04",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 192,
+        "duration_label": "3 ساعت و 12 دقیقه",
+        "topic": "تماشای فیلم با هم (اسکایپ)",
+        "daddy_mood": "happy",
+        "daughter_mood": "happy",
+        "note": "سه ساعت و دوازده دقیقه شد!",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.078625+00:00"
+      },
+      {
+        "id": 3,
+        "appointment": null,
+        "happened_on": "2026-08-28",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 68,
+        "duration_label": "1 ساعت و 8 دقیقه",
+        "topic": "دلتنگ",
+        "daddy_mood": "missing",
+        "daughter_mood": "missing",
+        "note": "دلم نمی‌خواست قطع کنیم",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.081080+00:00"
+      },
+      {
+        "id": 4,
+        "appointment": null,
+        "happened_on": "2026-08-21",
+        "happened_at": null,
+        "kind": "voice",
+        "kind_label": "صوتی",
+        "duration_minutes": 21,
+        "duration_label": "21 دقیقه",
+        "topic": "سریع سلام",
+        "daddy_mood": "normal",
+        "daughter_mood": "happy",
+        "note": "",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.082272+00:00"
+      }
+    ],
+    "stats": {
+      "month_count": 2,
+      "month_minutes": 224,
+      "month_label": "3 ساعت و 44 دقیقه",
+      "total_count": 4,
+      "total_minutes": 313,
+      "total_label": "5 ساعت و 13 دقیقه",
+      "longest": {
+        "id": 2,
+        "appointment": null,
+        "happened_on": "2026-09-04",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 192,
+        "duration_label": "3 ساعت و 12 دقیقه",
+        "topic": "تماشای فیلم با هم (اسکایپ)",
+        "daddy_mood": "happy",
+        "daughter_mood": "happy",
+        "note": "سه ساعت و دوازده دقیقه شد!",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.078625+00:00"
+      },
+      "record_title": "رکورد تماس: 3 ساعت و 12 دقیقه در تاریخ 2026-09-04",
+      "average_minutes": 78,
+      "months": [
+        {
+          "key": "2026-04-01",
+          "label": "2026-04",
+          "count": 0,
+          "minutes": 0
+        },
+        {
+          "key": "2026-05-01",
+          "label": "2026-05",
+          "count": 0,
+          "minutes": 0
+        },
+        {
+          "key": "2026-06-01",
+          "label": "2026-06",
+          "count": 0,
+          "minutes": 0
+        },
+        {
+          "key": "2026-07-01",
+          "label": "2026-07",
+          "count": 0,
+          "minutes": 0
+        },
+        {
+          "key": "2026-08-01",
+          "label": "2026-08",
+          "count": 2,
+          "minutes": 89
+        },
+        {
+          "key": "2026-09-01",
+          "label": "2026-09",
+          "count": 2,
+          "minutes": 224
+        }
+      ],
+      "mood_breakdown": {
+        "happy": 3,
+        "normal": 0,
+        "missing": 1
+      }
+    },
+    "settings": {
+      "reminder_minutes": 30,
+      "default_duration": 30,
+      "notify_on_propose": true,
+      "notify_on_answer": true,
+      "notify_on_log": true,
+      "notify_reminder": true
+    }
+  },
+  "/api/calls/slots": {
+    "items": [
+      {
+        "id": 1,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "21:00",
+        "end": "22:30",
+        "minutes": 90,
+        "note": "بعد از کار"
+      },
+      {
+        "id": 2,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 3,
+        "weekday_label": "سه‌شنبه",
+        "start": "20:30",
+        "end": "22:00",
+        "minutes": 90,
+        "note": ""
+      },
+      {
+        "id": 3,
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "10:00",
+        "end": "13:00",
+        "minutes": 180,
+        "note": "صبح روز تعطیل"
+      },
+      {
+        "id": 4,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "20:00",
+        "end": "21:30",
+        "minutes": 90,
+        "note": "بعد از کلاس"
+      },
+      {
+        "id": 5,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 2,
+        "weekday_label": "دوشنبه",
+        "start": "19:30",
+        "end": "21:00",
+        "minutes": 90,
+        "note": ""
+      },
+      {
+        "id": 6,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "11:00",
+        "end": "14:00",
+        "minutes": 180,
+        "note": "آخر هفته"
+      }
+    ],
+    "overlap": [
+      {
+        "weekday": 0,
+        "weekday_label": "شنبه",
+        "start": "21:00",
+        "end": "21:30",
+        "minutes": 30
+      },
+      {
+        "weekday": 5,
+        "weekday_label": "پنجشنبه",
+        "start": "11:00",
+        "end": "13:00",
+        "minutes": 120
+      }
+    ]
+  },
+  "/api/calls/appointments": {
+    "items": [
+      {
+        "id": 1,
+        "proposer": "daughter",
+        "proposer_label": "دخترم",
+        "proposee": "daddy",
+        "proposee_label": "بابا",
+        "date": "2026-09-16",
+        "time": "21:00",
+        "duration_minutes": 45,
+        "topic": "حرف زدن درباره‌ی سفر",
+        "status": "approved",
+        "status_label": "تأیید شده",
+        "message": "",
+        "answer_note": "",
+        "answered_at": null,
+        "alternative_of": null,
+        "seconds_to_start": 180659,
+        "is_upcoming": true,
+        "sides_time": {
+          "daddy": {
+            "label": "تهران",
+            "time": "21:30",
+            "date": "2026-09-16"
+          },
+          "daughter": {
+            "label": "استانبول",
+            "time": "21:00",
+            "date": "2026-09-16"
+          }
+        },
+        "logged": false
+      },
+      {
+        "id": 2,
+        "proposer": "daddy",
+        "proposer_label": "بابا",
+        "proposee": "daughter",
+        "proposee_label": "دخترم",
+        "date": "2026-09-19",
+        "time": "20:30",
+        "duration_minutes": 30,
+        "topic": "دیدن عکس‌های قدیمی",
+        "status": "pending",
+        "status_label": "در انتظار جواب",
+        "message": "",
+        "answer_note": "",
+        "answered_at": null,
+        "alternative_of": null,
+        "seconds_to_start": 438059,
+        "is_upcoming": true,
+        "sides_time": {
+          "daddy": {
+            "label": "تهران",
+            "time": "20:30",
+            "date": "2026-09-19"
+          },
+          "daughter": {
+            "label": "استانبول",
+            "time": "20:00",
+            "date": "2026-09-19"
+          }
+        },
+        "logged": false
+      }
+    ]
+  },
+  "/api/calls/logs": {
+    "items": [
+      {
+        "id": 1,
+        "appointment": null,
+        "happened_on": "2026-09-11",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 32,
+        "duration_label": "32 دقیقه",
+        "topic": "کار و روزمرگی",
+        "daddy_mood": "happy",
+        "daughter_mood": "happy",
+        "note": "خیلی خندیدیم",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.077032+00:00"
+      },
+      {
+        "id": 2,
+        "appointment": null,
+        "happened_on": "2026-09-04",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 192,
+        "duration_label": "3 ساعت و 12 دقیقه",
+        "topic": "تماشای فیلم با هم (اسکایپ)",
+        "daddy_mood": "happy",
+        "daughter_mood": "happy",
+        "note": "سه ساعت و دوازده دقیقه شد!",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.078625+00:00"
+      },
+      {
+        "id": 3,
+        "appointment": null,
+        "happened_on": "2026-08-28",
+        "happened_at": null,
+        "kind": "video",
+        "kind_label": "ویدیویی",
+        "duration_minutes": 68,
+        "duration_label": "1 ساعت و 8 دقیقه",
+        "topic": "دلتنگ",
+        "daddy_mood": "missing",
+        "daughter_mood": "missing",
+        "note": "دلم نمی‌خواست قطع کنیم",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.081080+00:00"
+      },
+      {
+        "id": 4,
+        "appointment": null,
+        "happened_on": "2026-08-21",
+        "happened_at": null,
+        "kind": "voice",
+        "kind_label": "صوتی",
+        "duration_minutes": 21,
+        "duration_label": "21 دقیقه",
+        "topic": "سریع سلام",
+        "daddy_mood": "normal",
+        "daughter_mood": "happy",
+        "note": "",
+        "attachment": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.082272+00:00"
+      }
+    ]
+  },
+  "/api/calls/stats": {
+    "month_count": 2,
+    "month_minutes": 224,
+    "month_label": "3 ساعت و 44 دقیقه",
+    "total_count": 4,
+    "total_minutes": 313,
+    "total_label": "5 ساعت و 13 دقیقه",
+    "longest": {
+      "id": 2,
+      "appointment": null,
+      "happened_on": "2026-09-04",
+      "happened_at": null,
+      "kind": "video",
+      "kind_label": "ویدیویی",
+      "duration_minutes": 192,
+      "duration_label": "3 ساعت و 12 دقیقه",
+      "topic": "تماشای فیلم با هم (اسکایپ)",
+      "daddy_mood": "happy",
+      "daughter_mood": "happy",
+      "note": "سه ساعت و دوازده دقیقه شد!",
+      "attachment": null,
+      "recorded_by": "daddy",
+      "recorded_by_label": "بابا",
+      "created_at": "2026-09-14T15:10:29.078625+00:00"
+    },
+    "record_title": "رکورد تماس: 3 ساعت و 12 دقیقه در تاریخ 2026-09-04",
+    "average_minutes": 78,
+    "months": [
+      {
+        "key": "2026-04-01",
+        "label": "2026-04",
+        "count": 0,
+        "minutes": 0
+      },
+      {
+        "key": "2026-05-01",
+        "label": "2026-05",
+        "count": 0,
+        "minutes": 0
+      },
+      {
+        "key": "2026-06-01",
+        "label": "2026-06",
+        "count": 0,
+        "minutes": 0
+      },
+      {
+        "key": "2026-07-01",
+        "label": "2026-07",
+        "count": 0,
+        "minutes": 0
+      },
+      {
+        "key": "2026-08-01",
+        "label": "2026-08",
+        "count": 2,
+        "minutes": 89
+      },
+      {
+        "key": "2026-09-01",
+        "label": "2026-09",
+        "count": 2,
+        "minutes": 224
+      }
+    ],
+    "mood_breakdown": {
+      "happy": 3,
+      "normal": 0,
+      "missing": 1
+    }
+  },
+  "/api/calls/next": {
+    "item": {
+      "id": 1,
+      "proposer": "daughter",
+      "proposer_label": "دخترم",
+      "proposee": "daddy",
+      "proposee_label": "بابا",
+      "date": "2026-09-16",
+      "time": "21:00",
+      "duration_minutes": 45,
+      "topic": "حرف زدن درباره‌ی سفر",
+      "status": "approved",
+      "status_label": "تأیید شده",
+      "message": "",
+      "answer_note": "",
+      "answered_at": null,
+      "alternative_of": null,
+      "seconds_to_start": 180659,
+      "is_upcoming": true,
+      "sides_time": {
+        "daddy": {
+          "label": "تهران",
+          "time": "21:30",
+          "date": "2026-09-16"
+        },
+        "daughter": {
+          "label": "استانبول",
+          "time": "21:00",
+          "date": "2026-09-16"
+        }
+      },
+      "logged": false
+    }
+  },
+  "/api/gifts": {
+    "items": [
+      {
+        "id": 6,
+        "name": "دستبند سنگ فیروزه",
+        "given_on": "2026-08-10",
+        "year": 1405,
+        "occasion": 3,
+        "occasion_name": "بدون مناسبت",
+        "occasion_icon": "🎁",
+        "giver": "daddy",
+        "giver_label": "بابا",
+        "receiver": "daughter",
+        "receiver_label": "دخترم",
+        "price": 1500.0,
+        "currency": "",
+        "price_band": "medium",
+        "description": "سنگش از نیشابوره",
+        "reaction": "هر روز می‌بندمش",
+        "photo": null,
+        "is_favorite": false,
+        "memory": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.103201+00:00"
+      },
+      {
+        "id": 5,
+        "name": "شال دست‌باف",
+        "given_on": "2026-06-16",
+        "year": 1405,
+        "occasion": 4,
+        "occasion_name": "دلتنگی",
+        "occasion_icon": "💌",
+        "giver": "daughter",
+        "giver_label": "دخترم",
+        "receiver": "daddy",
+        "receiver_label": "بابا",
+        "price": null,
+        "currency": "",
+        "price_band": "",
+        "description": "خودم بافتم، رنگش مثل آسمون شب",
+        "reaction": "بابا گفت شب‌ها می‌بندمش",
+        "photo": null,
+        "is_favorite": true,
+        "memory": null,
+        "recorded_by": "daughter",
+        "recorded_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.101249+00:00"
+      },
+      {
+        "id": 4,
+        "name": "عطر",
+        "given_on": "2026-04-17",
+        "year": 1405,
+        "occasion": 5,
+        "occasion_name": "موفقیت",
+        "occasion_icon": "🌟",
+        "giver": "daughter",
+        "giver_label": "دخترم",
+        "receiver": "daddy",
+        "receiver_label": "بابا",
+        "price": 900.0,
+        "currency": "",
+        "price_band": "medium",
+        "description": "برای قبولی‌ات در دانشگاه",
+        "reaction": "بابا گفت بوش یادته می‌ندازه",
+        "photo": null,
+        "is_favorite": false,
+        "memory": null,
+        "recorded_by": "daughter",
+        "recorded_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.099566+00:00"
+      },
+      {
+        "id": 3,
+        "name": "کتاب «ملت عشق»",
+        "given_on": "2026-02-16",
+        "year": 1405,
+        "occasion": 3,
+        "occasion_name": "بدون مناسبت",
+        "occasion_icon": "🎁",
+        "giver": "daughter",
+        "giver_label": "دخترم",
+        "receiver": "daddy",
+        "receiver_label": "بابا",
+        "price": 320.0,
+        "currency": "",
+        "price_band": "low",
+        "description": "برای اینکه با هم بخونیمش",
+        "reaction": "خوندیم و کلی حرف زدیم",
+        "photo": null,
+        "is_favorite": false,
+        "memory": null,
+        "recorded_by": "daughter",
+        "recorded_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.097655+00:00"
+      },
+      {
+        "id": 2,
+        "name": "پلی‌استیشن",
+        "given_on": "2025-11-18",
+        "year": 1404,
+        "occasion": 3,
+        "occasion_name": "بدون مناسبت",
+        "occasion_icon": "🎁",
+        "giver": "daddy",
+        "giver_label": "بابا",
+        "receiver": "daughter",
+        "receiver_label": "دخترم",
+        "price": 12000.0,
+        "currency": "",
+        "price_band": "high",
+        "description": "چون نمره‌هایت عالی بود",
+        "reaction": "باورش نمی‌شد!",
+        "photo": null,
+        "is_favorite": false,
+        "memory": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.095662+00:00"
+      },
+      {
+        "id": 1,
+        "name": "زنجیر طلا با اسم تو",
+        "given_on": "2025-07-21",
+        "year": 1404,
+        "occasion": 1,
+        "occasion_name": "تولد",
+        "occasion_icon": "🎂",
+        "giver": "daddy",
+        "giver_label": "بابا",
+        "receiver": "daughter",
+        "receiver_label": "دخترم",
+        "price": 4800.0,
+        "currency": "",
+        "price_band": "high",
+        "description": "زنجیر نازک با حرف اول اسمت",
+        "reaction": "گفتم تا آخر عمر می‌بندمش",
+        "photo": null,
+        "is_favorite": true,
+        "memory": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.093726+00:00"
+      }
+    ],
+    "count": 6
+  },
+  "/api/gifts/stats": {
+    "received_count": 3,
+    "given_count": 3,
+    "from_daddy_count": 3,
+    "total_count": 6,
+    "years": [
+      {
+        "year": 1404,
+        "count": 2,
+        "from_daddy": 2,
+        "from_daughter": 0
+      },
+      {
+        "year": 1405,
+        "count": 4,
+        "from_daddy": 1,
+        "from_daughter": 3
+      }
+    ],
+    "max_year_count": 4,
+    "by_occasion": [
+      {
+        "name": "بدون مناسبت",
+        "icon": "🎁",
+        "count": 3
+      },
+      {
+        "name": "دلتنگی",
+        "icon": "💌",
+        "count": 1
+      },
+      {
+        "name": "موفقیت",
+        "icon": "🌟",
+        "count": 1
+      },
+      {
+        "name": "تولد",
+        "icon": "🎂",
+        "count": 1
+      }
+    ],
+    "favorites": [
+      {
+        "id": 5,
+        "name": "شال دست‌باف",
+        "given_on": "2026-06-16",
+        "year": 2026,
+        "occasion": 4,
+        "occasion_name": "دلتنگی",
+        "occasion_icon": "💌",
+        "giver": "daughter",
+        "giver_label": "دخترم",
+        "receiver": "daddy",
+        "receiver_label": "بابا",
+        "price": null,
+        "currency": "",
+        "price_band": "",
+        "description": "خودم بافتم، رنگش مثل آسمون شب",
+        "reaction": "بابا گفت شب‌ها می‌بندمش",
+        "photo": null,
+        "is_favorite": true,
+        "memory": null,
+        "recorded_by": "daughter",
+        "recorded_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.101249+00:00"
+      },
+      {
+        "id": 1,
+        "name": "زنجیر طلا با اسم تو",
+        "given_on": "2025-07-21",
+        "year": 2025,
+        "occasion": 1,
+        "occasion_name": "تولد",
+        "occasion_icon": "🎂",
+        "giver": "daddy",
+        "giver_label": "بابا",
+        "receiver": "daughter",
+        "receiver_label": "دخترم",
+        "price": 4800.0,
+        "currency": "",
+        "price_band": "high",
+        "description": "زنجیر نازک با حرف اول اسمت",
+        "reaction": "گفتم تا آخر عمر می‌بندمش",
+        "photo": null,
+        "is_favorite": true,
+        "memory": null,
+        "recorded_by": "daddy",
+        "recorded_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.093726+00:00"
+      }
+    ],
+    "latest": {
+      "id": 6,
+      "name": "دستبند سنگ فیروزه",
+      "given_on": "2026-08-10",
+      "year": 2026,
+      "occasion": 3,
+      "occasion_name": "بدون مناسبت",
+      "occasion_icon": "🎁",
+      "giver": "daddy",
+      "giver_label": "بابا",
+      "receiver": "daughter",
+      "receiver_label": "دخترم",
+      "price": 1500.0,
+      "currency": "",
+      "price_band": "medium",
+      "description": "سنگش از نیشابوره",
+      "reaction": "هر روز می‌بندمش",
+      "photo": null,
+      "is_favorite": false,
+      "memory": null,
+      "recorded_by": "daddy",
+      "recorded_by_label": "بابا",
+      "created_at": "2026-09-14T15:10:29.103201+00:00"
+    },
+    "today": "2026-09-14"
+  },
+  "/api/gifts/occasions": {
+    "items": [
+      {
+        "id": 1,
+        "name": "تولد",
+        "icon": "🎂",
+        "count": 1
+      },
+      {
+        "id": 2,
+        "name": "سالگرد",
+        "icon": "💞",
+        "count": 0
+      },
+      {
+        "id": 3,
+        "name": "بدون مناسبت",
+        "icon": "🎁",
+        "count": 3
+      },
+      {
+        "id": 4,
+        "name": "دلتنگی",
+        "icon": "💌",
+        "count": 1
+      },
+      {
+        "id": 5,
+        "name": "موفقیت",
+        "icon": "🌟",
+        "count": 1
+      },
+      {
+        "id": 6,
+        "name": "عید",
+        "icon": "🌷",
+        "count": 0
+      }
+    ],
+    "years": [
+      1405,
+      1404
+    ]
+  },
+  "/api/reading/overview": {
+    "shelf": {
+      "reading": [
+        {
+          "id": 1,
+          "title": "ملت عشق",
+          "author": "الیف شافاک",
+          "cover": null,
+          "status": "reading",
+          "status_label": "الان داریم می‌خونیم",
+          "summary": "داستان عشق و شمس و مولانا؛ کتابی که با هم می‌خونیم و حاشیه می‌نویسیم.",
+          "why_this_book": "چون هر دومون عاشق جمله‌های قشنگیم",
+          "pdf": null,
+          "link": "",
+          "is_physical": true,
+          "chapters_count": 4,
+          "added_by": "daddy",
+          "added_by_label": "بابا",
+          "started_on": "2026-08-15",
+          "finished_on": null,
+          "library_book": null,
+          "source": "reading",
+          "progress": {
+            "daddy": 25,
+            "daughter": 25
+          },
+          "notes_count": 2,
+          "quotes_count": 1
+        }
+      ],
+      "finished": [
+        {
+          "id": 2,
+          "title": "ماهی سیاه کوچولو",
+          "author": "صمد بهرنگی",
+          "cover": null,
+          "status": "finished",
+          "status_label": "خوندیم",
+          "summary": "یه کتاب کوچیک ولی پر از حرف، از قفسه‌ی کتابخونه‌ی ما.",
+          "why_this_book": "",
+          "pdf": null,
+          "link": "",
+          "is_physical": false,
+          "chapters_count": 1,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "started_on": null,
+          "finished_on": "2026-09-02",
+          "library_book": null,
+          "source": "reading",
+          "progress": {
+            "daddy": 100,
+            "daughter": 100
+          },
+          "notes_count": 2,
+          "quotes_count": 0
+        }
+      ],
+      "want": []
+    },
+    "counts": {
+      "reading": 1,
+      "finished": 1,
+      "want": 0
+    },
+    "library": [
+      {
+        "id": "lib-1",
+        "library_book": 1,
+        "title": "داستان ما",
+        "author": "نوشته‌ی بابا و دخترش",
+        "cover": null,
+        "source": "library",
+        "chapters_count": 1,
+        "status": "reading",
+        "status_label": "کتاب داستان ما",
+        "progress": {
+          "daddy": 0,
+          "daughter": 0
+        },
+        "in_reading": false
+      }
+    ],
+    "recent_quotes": [
+      {
+        "id": 1,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "book": 1,
+        "book_title": "ملت عشق",
+        "chapter": 3,
+        "chapter_label": "فصل سوم: آتش",
+        "text": "عشق، تنها پلی است که از آن می‌توان به دلِ دیگری رفت.",
+        "comment": "این جمله رو گذاشتم پشت گوشی بابا",
+        "created_at": "2026-09-14T15:10:29.115448+00:00"
+      }
+    ],
+    "stats": {
+      "books_total": 2,
+      "reading": 1,
+      "finished": 1,
+      "want": 0,
+      "notes_total": 4,
+      "quotes_total": 1,
+      "comments_total": 2,
+      "both_finished": [
+        {
+          "id": 2,
+          "title": "ماهی سیاه کوچولو",
+          "author": "صمد بهرنگی",
+          "cover": null,
+          "status": "finished",
+          "status_label": "خوندیم",
+          "summary": "یه کتاب کوچیک ولی پر از حرف، از قفسه‌ی کتابخونه‌ی ما.",
+          "why_this_book": "",
+          "pdf": null,
+          "link": "",
+          "is_physical": false,
+          "chapters_count": 1,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "started_on": null,
+          "finished_on": "2026-09-02",
+          "library_book": null,
+          "source": "reading",
+          "progress": {
+            "daddy": 100,
+            "daughter": 100
+          },
+          "notes_count": 2,
+          "quotes_count": 0
+        }
+      ],
+      "progress_rows": [
+        {
+          "book": "ماهی سیاه کوچولو",
+          "book_id": 2,
+          "daddy": 100,
+          "daughter": 100
+        },
+        {
+          "book": "ملت عشق",
+          "book_id": 1,
+          "daddy": 25,
+          "daughter": 25
+        }
+      ]
+    }
+  },
+  "/api/reading/quotes": {
+    "items": [
+      {
+        "id": 1,
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "book": 1,
+        "book_title": "ملت عشق",
+        "chapter": 3,
+        "chapter_label": "فصل سوم: آتش",
+        "text": "عشق، تنها پلی است که از آن می‌توان به دلِ دیگری رفت.",
+        "comment": "این جمله رو گذاشتم پشت گوشی بابا",
+        "created_at": "2026-09-14T15:10:29.115448+00:00"
+      }
+    ]
+  },
+  "/api/reading/stats": {
+    "books_total": 2,
+    "reading": 1,
+    "finished": 1,
+    "want": 0,
+    "notes_total": 4,
+    "quotes_total": 1,
+    "comments_total": 2,
+    "both_finished": [
+      {
+        "id": 2,
+        "title": "ماهی سیاه کوچولو",
+        "author": "صمد بهرنگی",
+        "cover": null,
+        "status": "finished",
+        "status_label": "خوندیم",
+        "summary": "یه کتاب کوچیک ولی پر از حرف، از قفسه‌ی کتابخونه‌ی ما.",
+        "why_this_book": "",
+        "pdf": null,
+        "link": "",
+        "is_physical": false,
+        "chapters_count": 1,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "started_on": null,
+        "finished_on": "2026-09-02",
+        "library_book": null,
+        "source": "reading",
+        "progress": {
+          "daddy": 100,
+          "daughter": 100
+        },
+        "notes_count": 2,
+        "quotes_count": 0
+      }
+    ],
+    "progress_rows": [
+      {
+        "book": "ماهی سیاه کوچولو",
+        "book_id": 2,
+        "daddy": 100,
+        "daughter": 100
+      },
+      {
+        "book": "ملت عشق",
+        "book_id": 1,
+        "daddy": 25,
+        "daughter": 25
+      }
+    ]
+  },
+  "/api/home/overview": {
+    "features": [
+      {
+        "id": 2,
+        "title": "پنجره‌ی بزرگ رو به دریا",
+        "category": 5,
+        "category_name": "دکور",
+        "category_icon": "🖼",
+        "importance": "luxury",
+        "importance_label": "لوکس",
+        "description": "صبح‌ها نور بیاد روی فرش",
+        "photo": null,
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 3,
+        "created_at": "2026-09-14T15:10:29.143091+00:00"
+      },
+      {
+        "id": 3,
+        "title": "یه اتاق کوچیک برای کتاب‌ها",
+        "category": 3,
+        "category_name": "اتاق‌ها",
+        "category_icon": "🚪",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "با یک صندلی نرم و چراغ مطالعه",
+        "photo": null,
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 1,
+        "created_at": "2026-09-14T15:10:29.145048+00:00"
+      },
+      {
+        "id": 1,
+        "title": "حیاط بزرگ با درخت انار",
+        "category": 4,
+        "category_name": "حیاط",
+        "category_icon": "🌳",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "که تابستون‌ها زیرش بشینیم و بشمریم ستاره‌ها رو",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 2,
+        "created_at": "2026-09-14T15:10:29.141007+00:00"
+      },
+      {
+        "id": 5,
+        "title": "یک گربه‌ی پشمالو",
+        "category": 1,
+        "category_name": "مکان",
+        "category_icon": "📍",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "بغل‌ت بخوابه و براتون خرخر کنه",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 5,
+        "created_at": "2026-09-14T15:10:29.148950+00:00"
+      },
+      {
+        "id": 4,
+        "title": "آشپزخانه‌ی جزیره‌ای",
+        "category": 6,
+        "category_name": "آشپزخانه",
+        "category_icon": "🍳",
+        "importance": "nice",
+        "importance_label": "خوبه داشته باشیم",
+        "description": "که هر دومون همزمان بتونیم آشپزی کنیم",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 4,
+        "created_at": "2026-09-14T15:10:29.147000+00:00"
+      },
+      {
+        "id": 6,
+        "title": "یک تخت آویز توی بالکن",
+        "category": 5,
+        "category_name": "دکور",
+        "category_icon": "🖼",
+        "importance": "nice",
+        "importance_label": "خوبه داشته باشیم",
+        "description": "برای ظهرهای تابستون",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 6,
+        "created_at": "2026-09-14T15:10:29.151047+00:00"
+      }
+    ],
+    "rooms": [
+      {
+        "id": 1,
+        "name": "نشیمن",
+        "description": "کاناپه‌ی بزرگ خاکستری + پتوی پشمی",
+        "floor": "",
+        "x": 6.0,
+        "y": 8.0,
+        "w": 34.0,
+        "h": 26.0,
+        "color": "#f9a8d4",
+        "icon": "🛋",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 2,
+            "kind": "color",
+            "kind_label": "رنگ",
+            "text": "رنگ اصلی: صورتی خاکی",
+            "color_value": "#f9a8d4",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          },
+          {
+            "id": 3,
+            "kind": "furniture",
+            "kind_label": "مبلمان",
+            "text": "کاناپه‌ی بی‌گوشه",
+            "color_value": "",
+            "added_by": "daddy",
+            "added_by_label": "بابا"
+          },
+          {
+            "id": 1,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "کاناپه‌ی بزرگ خاکستری + پتوی پشمی",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "آشپزخانه",
+        "description": "جزیره‌ی چوبی با دو صندلی",
+        "floor": "",
+        "x": 42.0,
+        "y": 8.0,
+        "w": 26.0,
+        "h": 24.0,
+        "color": "#fcd34d",
+        "icon": "🍳",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 4,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "جزیره‌ی چوبی با دو صندلی",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "اتاق من",
+        "description": "دیوار صورتی کم‌رنگ و چراغ رشته‌ای",
+        "floor": "",
+        "x": 70.0,
+        "y": 8.0,
+        "w": 24.0,
+        "h": 26.0,
+        "color": "#c4b5fd",
+        "icon": "🛏",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 5,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "دیوار صورتی کم‌رنگ و چراغ رشته‌ای",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "کتابخانه",
+        "description": "قفسه تا سقف، صندلی نرم",
+        "floor": "",
+        "x": 8.0,
+        "y": 38.0,
+        "w": 30.0,
+        "h": 24.0,
+        "color": "#86efac",
+        "icon": "📚",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 6,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "قفسه تا سقف، صندلی نرم",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "بالکن",
+        "description": "تخت آویز و کلی گلدون",
+        "floor": "",
+        "x": 68.0,
+        "y": 40.0,
+        "w": 26.0,
+        "h": 22.0,
+        "color": "#93c5fd",
+        "icon": "🪴",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 7,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "تخت آویز و کلی گلدون",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      }
+    ],
+    "inspirations": [],
+    "categories": [
+      {
+        "id": 1,
+        "name": "مکان",
+        "icon": "📍",
+        "detail": "شهر، محله، نزدیک دریا یا کوه",
+        "count": 1
+      },
+      {
+        "id": 2,
+        "name": "اندازه",
+        "icon": "📐",
+        "detail": "کوچک و دنج یا بزرگ",
+        "count": 0
+      },
+      {
+        "id": 3,
+        "name": "اتاق‌ها",
+        "icon": "🚪",
+        "detail": "اتاق خواب، کار، کتابخانه",
+        "count": 1
+      },
+      {
+        "id": 4,
+        "name": "حیاط",
+        "icon": "🌳",
+        "detail": "باغچه، درخت، استخر",
+        "count": 1
+      },
+      {
+        "id": 5,
+        "name": "دکور",
+        "icon": "🖼",
+        "detail": "رنگ دیوار، فرش، تابلو",
+        "count": 2
+      },
+      {
+        "id": 6,
+        "name": "آشپزخانه",
+        "icon": "🍳",
+        "detail": "جزیره‌ی آشپزخانه، پنجره‌ی بزرگ",
+        "count": 1
+      }
+    ],
+    "stats": {
+      "features_total": 6,
+      "must": 3,
+      "nice": 2,
+      "luxury": 1,
+      "done": 0,
+      "percent": 0,
+      "percent_label": "0٪ خانه‌ی رویایی طراحی شده",
+      "rooms_total": 5,
+      "inspirations_total": 0,
+      "comments_total": 0,
+      "checklist": {
+        "must": [
+          {
+            "id": 3,
+            "title": "یه اتاق کوچیک برای کتاب‌ها",
+            "category": 3,
+            "category_name": "اتاق‌ها",
+            "category_icon": "🚪",
+            "importance": "must",
+            "importance_label": "ضروری",
+            "description": "با یک صندلی نرم و چراغ مطالعه",
+            "photo": null,
+            "added_by": "daddy",
+            "added_by_label": "بابا",
+            "is_done": false,
+            "linked_plan": null,
+            "order": 1,
+            "created_at": "2026-09-14T15:10:29.145048+00:00"
+          },
+          {
+            "id": 1,
+            "title": "حیاط بزرگ با درخت انار",
+            "category": 4,
+            "category_name": "حیاط",
+            "category_icon": "🌳",
+            "importance": "must",
+            "importance_label": "ضروری",
+            "description": "که تابستون‌ها زیرش بشینیم و بشمریم ستاره‌ها رو",
+            "photo": null,
+            "added_by": "daughter",
+            "added_by_label": "دخترم",
+            "is_done": false,
+            "linked_plan": null,
+            "order": 2,
+            "created_at": "2026-09-14T15:10:29.141007+00:00"
+          },
+          {
+            "id": 5,
+            "title": "یک گربه‌ی پشمالو",
+            "category": 1,
+            "category_name": "مکان",
+            "category_icon": "📍",
+            "importance": "must",
+            "importance_label": "ضروری",
+            "description": "بغل‌ت بخوابه و براتون خرخر کنه",
+            "photo": null,
+            "added_by": "daughter",
+            "added_by_label": "دخترم",
+            "is_done": false,
+            "linked_plan": null,
+            "order": 5,
+            "created_at": "2026-09-14T15:10:29.148950+00:00"
+          }
+        ],
+        "nice": [
+          {
+            "id": 4,
+            "title": "آشپزخانه‌ی جزیره‌ای",
+            "category": 6,
+            "category_name": "آشپزخانه",
+            "category_icon": "🍳",
+            "importance": "nice",
+            "importance_label": "خوبه داشته باشیم",
+            "description": "که هر دومون همزمان بتونیم آشپزی کنیم",
+            "photo": null,
+            "added_by": "daughter",
+            "added_by_label": "دخترم",
+            "is_done": false,
+            "linked_plan": null,
+            "order": 4,
+            "created_at": "2026-09-14T15:10:29.147000+00:00"
+          },
+          {
+            "id": 6,
+            "title": "یک تخت آویز توی بالکن",
+            "category": 5,
+            "category_name": "دکور",
+            "category_icon": "🖼",
+            "importance": "nice",
+            "importance_label": "خوبه داشته باشیم",
+            "description": "برای ظهرهای تابستون",
+            "photo": null,
+            "added_by": "daughter",
+            "added_by_label": "دخترم",
+            "is_done": false,
+            "linked_plan": null,
+            "order": 6,
+            "created_at": "2026-09-14T15:10:29.151047+00:00"
+          }
+        ]
+      },
+      "room_progress": [
+        {
+          "room": "نشیمن",
+          "icon": "🛋",
+          "ideas": 3,
+          "inspirations": 0
+        },
+        {
+          "room": "آشپزخانه",
+          "icon": "🍳",
+          "ideas": 1,
+          "inspirations": 0
+        },
+        {
+          "room": "اتاق من",
+          "icon": "🛏",
+          "ideas": 1,
+          "inspirations": 0
+        },
+        {
+          "room": "کتابخانه",
+          "icon": "📚",
+          "ideas": 1,
+          "inspirations": 0
+        },
+        {
+          "room": "بالکن",
+          "icon": "🪴",
+          "ideas": 1,
+          "inspirations": 0
+        }
+      ]
+    }
+  },
+  "/api/home/features": {
+    "items": [
+      {
+        "id": 2,
+        "title": "پنجره‌ی بزرگ رو به دریا",
+        "category": 5,
+        "category_name": "دکور",
+        "category_icon": "🖼",
+        "importance": "luxury",
+        "importance_label": "لوکس",
+        "description": "صبح‌ها نور بیاد روی فرش",
+        "photo": null,
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 3,
+        "created_at": "2026-09-14T15:10:29.143091+00:00"
+      },
+      {
+        "id": 3,
+        "title": "یه اتاق کوچیک برای کتاب‌ها",
+        "category": 3,
+        "category_name": "اتاق‌ها",
+        "category_icon": "🚪",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "با یک صندلی نرم و چراغ مطالعه",
+        "photo": null,
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 1,
+        "created_at": "2026-09-14T15:10:29.145048+00:00"
+      },
+      {
+        "id": 1,
+        "title": "حیاط بزرگ با درخت انار",
+        "category": 4,
+        "category_name": "حیاط",
+        "category_icon": "🌳",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "که تابستون‌ها زیرش بشینیم و بشمریم ستاره‌ها رو",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 2,
+        "created_at": "2026-09-14T15:10:29.141007+00:00"
+      },
+      {
+        "id": 5,
+        "title": "یک گربه‌ی پشمالو",
+        "category": 1,
+        "category_name": "مکان",
+        "category_icon": "📍",
+        "importance": "must",
+        "importance_label": "ضروری",
+        "description": "بغل‌ت بخوابه و براتون خرخر کنه",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 5,
+        "created_at": "2026-09-14T15:10:29.148950+00:00"
+      },
+      {
+        "id": 4,
+        "title": "آشپزخانه‌ی جزیره‌ای",
+        "category": 6,
+        "category_name": "آشپزخانه",
+        "category_icon": "🍳",
+        "importance": "nice",
+        "importance_label": "خوبه داشته باشیم",
+        "description": "که هر دومون همزمان بتونیم آشپزی کنیم",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 4,
+        "created_at": "2026-09-14T15:10:29.147000+00:00"
+      },
+      {
+        "id": 6,
+        "title": "یک تخت آویز توی بالکن",
+        "category": 5,
+        "category_name": "دکور",
+        "category_icon": "🖼",
+        "importance": "nice",
+        "importance_label": "خوبه داشته باشیم",
+        "description": "برای ظهرهای تابستون",
+        "photo": null,
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "is_done": false,
+        "linked_plan": null,
+        "order": 6,
+        "created_at": "2026-09-14T15:10:29.151047+00:00"
+      }
+    ]
+  },
+  "/api/home/rooms": {
+    "items": [
+      {
+        "id": 1,
+        "name": "نشیمن",
+        "description": "کاناپه‌ی بزرگ خاکستری + پتوی پشمی",
+        "floor": "",
+        "x": 6.0,
+        "y": 8.0,
+        "w": 34.0,
+        "h": 26.0,
+        "color": "#f9a8d4",
+        "icon": "🛋",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 2,
+            "kind": "color",
+            "kind_label": "رنگ",
+            "text": "رنگ اصلی: صورتی خاکی",
+            "color_value": "#f9a8d4",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          },
+          {
+            "id": 3,
+            "kind": "furniture",
+            "kind_label": "مبلمان",
+            "text": "کاناپه‌ی بی‌گوشه",
+            "color_value": "",
+            "added_by": "daddy",
+            "added_by_label": "بابا"
+          },
+          {
+            "id": 1,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "کاناپه‌ی بزرگ خاکستری + پتوی پشمی",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "آشپزخانه",
+        "description": "جزیره‌ی چوبی با دو صندلی",
+        "floor": "",
+        "x": 42.0,
+        "y": 8.0,
+        "w": 26.0,
+        "h": 24.0,
+        "color": "#fcd34d",
+        "icon": "🍳",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 4,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "جزیره‌ی چوبی با دو صندلی",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "اتاق من",
+        "description": "دیوار صورتی کم‌رنگ و چراغ رشته‌ای",
+        "floor": "",
+        "x": 70.0,
+        "y": 8.0,
+        "w": 24.0,
+        "h": 26.0,
+        "color": "#c4b5fd",
+        "icon": "🛏",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 5,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "دیوار صورتی کم‌رنگ و چراغ رشته‌ای",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "کتابخانه",
+        "description": "قفسه تا سقف، صندلی نرم",
+        "floor": "",
+        "x": 8.0,
+        "y": 38.0,
+        "w": 30.0,
+        "h": 24.0,
+        "color": "#86efac",
+        "icon": "📚",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 6,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "قفسه تا سقف، صندلی نرم",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "بالکن",
+        "description": "تخت آویز و کلی گلدون",
+        "floor": "",
+        "x": 68.0,
+        "y": 40.0,
+        "w": 26.0,
+        "h": 22.0,
+        "color": "#93c5fd",
+        "icon": "🪴",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "order": 0,
+        "inspirations_count": 0,
+        "ideas": [
+          {
+            "id": 7,
+            "kind": "idea",
+            "kind_label": "ایده",
+            "text": "تخت آویز و کلی گلدون",
+            "color_value": "",
+            "added_by": "daughter",
+            "added_by_label": "دخترم"
+          }
+        ]
+      }
+    ]
+  },
+  "/api/home/inspirations": {
+    "items": []
+  },
+  "/api/home/categories": {
+    "items": [
+      {
+        "id": 1,
+        "name": "مکان",
+        "icon": "📍",
+        "detail": "شهر، محله، نزدیک دریا یا کوه",
+        "count": 1
+      },
+      {
+        "id": 2,
+        "name": "اندازه",
+        "icon": "📐",
+        "detail": "کوچک و دنج یا بزرگ",
+        "count": 0
+      },
+      {
+        "id": 3,
+        "name": "اتاق‌ها",
+        "icon": "🚪",
+        "detail": "اتاق خواب، کار، کتابخانه",
+        "count": 1
+      },
+      {
+        "id": 4,
+        "name": "حیاط",
+        "icon": "🌳",
+        "detail": "باغچه، درخت، استخر",
+        "count": 1
+      },
+      {
+        "id": 5,
+        "name": "دکور",
+        "icon": "🖼",
+        "detail": "رنگ دیوار، فرش، تابلو",
+        "count": 2
+      },
+      {
+        "id": 6,
+        "name": "آشپزخانه",
+        "icon": "🍳",
+        "detail": "جزیره‌ی آشپزخانه، پنجره‌ی بزرگ",
+        "count": 1
+      }
+    ]
+  },
+  "/api/home/stats": {
+    "features_total": 6,
+    "must": 3,
+    "nice": 2,
+    "luxury": 1,
+    "done": 0,
+    "percent": 0,
+    "percent_label": "0٪ خانه‌ی رویایی طراحی شده",
+    "rooms_total": 5,
+    "inspirations_total": 0,
+    "comments_total": 0,
+    "checklist": {
+      "must": [
+        {
+          "id": 3,
+          "title": "یه اتاق کوچیک برای کتاب‌ها",
+          "category": 3,
+          "category_name": "اتاق‌ها",
+          "category_icon": "🚪",
+          "importance": "must",
+          "importance_label": "ضروری",
+          "description": "با یک صندلی نرم و چراغ مطالعه",
+          "photo": null,
+          "added_by": "daddy",
+          "added_by_label": "بابا",
+          "is_done": false,
+          "linked_plan": null,
+          "order": 1,
+          "created_at": "2026-09-14T15:10:29.145048+00:00"
+        },
+        {
+          "id": 1,
+          "title": "حیاط بزرگ با درخت انار",
+          "category": 4,
+          "category_name": "حیاط",
+          "category_icon": "🌳",
+          "importance": "must",
+          "importance_label": "ضروری",
+          "description": "که تابستون‌ها زیرش بشینیم و بشمریم ستاره‌ها رو",
+          "photo": null,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "is_done": false,
+          "linked_plan": null,
+          "order": 2,
+          "created_at": "2026-09-14T15:10:29.141007+00:00"
+        },
+        {
+          "id": 5,
+          "title": "یک گربه‌ی پشمالو",
+          "category": 1,
+          "category_name": "مکان",
+          "category_icon": "📍",
+          "importance": "must",
+          "importance_label": "ضروری",
+          "description": "بغل‌ت بخوابه و براتون خرخر کنه",
+          "photo": null,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "is_done": false,
+          "linked_plan": null,
+          "order": 5,
+          "created_at": "2026-09-14T15:10:29.148950+00:00"
+        }
+      ],
+      "nice": [
+        {
+          "id": 4,
+          "title": "آشپزخانه‌ی جزیره‌ای",
+          "category": 6,
+          "category_name": "آشپزخانه",
+          "category_icon": "🍳",
+          "importance": "nice",
+          "importance_label": "خوبه داشته باشیم",
+          "description": "که هر دومون همزمان بتونیم آشپزی کنیم",
+          "photo": null,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "is_done": false,
+          "linked_plan": null,
+          "order": 4,
+          "created_at": "2026-09-14T15:10:29.147000+00:00"
+        },
+        {
+          "id": 6,
+          "title": "یک تخت آویز توی بالکن",
+          "category": 5,
+          "category_name": "دکور",
+          "category_icon": "🖼",
+          "importance": "nice",
+          "importance_label": "خوبه داشته باشیم",
+          "description": "برای ظهرهای تابستون",
+          "photo": null,
+          "added_by": "daughter",
+          "added_by_label": "دخترم",
+          "is_done": false,
+          "linked_plan": null,
+          "order": 6,
+          "created_at": "2026-09-14T15:10:29.151047+00:00"
+        }
+      ]
+    },
+    "room_progress": [
+      {
+        "room": "نشیمن",
+        "icon": "🛋",
+        "ideas": 3,
+        "inspirations": 0
+      },
+      {
+        "room": "آشپزخانه",
+        "icon": "🍳",
+        "ideas": 1,
+        "inspirations": 0
+      },
+      {
+        "room": "اتاق من",
+        "icon": "🛏",
+        "ideas": 1,
+        "inspirations": 0
+      },
+      {
+        "room": "کتابخانه",
+        "icon": "📚",
+        "ideas": 1,
+        "inspirations": 0
+      },
+      {
+        "room": "بالکن",
+        "icon": "🪴",
+        "ideas": 1,
+        "inspirations": 0
+      }
+    ]
+  },
+  "/api/language/overview": {
+    "entries": [
+      {
+        "id": 5,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Merhaba",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "سلام",
+          "mzn": "خِدِ حَق"
+        },
+        "translation_labels": "فارسی: سلام • مازندرانی: خِدِ حَق",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "Merhaba babacığım!",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.192620+00:00"
+      },
+      {
+        "id": 4,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "توکِلا",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "یک لحظه صبر کن",
+          "tr": "bir saniye"
+        },
+        "translation_labels": "فارسی: یک لحظه صبر کن • ترکی: bir saniye",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.190577+00:00"
+      },
+      {
+        "id": 2,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "خِدافِز",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "خداحافظ",
+          "tr": "Hoşça kal"
+        },
+        "translation_labels": "فارسی: خداحافظ • ترکی: Hoşça kal",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.186335+00:00"
+      },
+      {
+        "id": 1,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "خِدِ حَق",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "سلام",
+          "tr": "Merhaba"
+        },
+        "translation_labels": "فارسی: سلام • ترکی: Merhaba",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "خِدِ حَق باباجان!",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.183824+00:00"
+      },
+      {
+        "id": 6,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Seni seviyorum",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "دوستت دارم",
+          "mzn": "تو ره دِل داشتنه"
+        },
+        "translation_labels": "فارسی: دوستت دارم • مازندرانی: تو ره دِل داشتنه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 2,
+        "category_name": "عاشقانه",
+        "category_icon": "💗",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.194847+00:00"
+      },
+      {
+        "id": 3,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "دِلِسِه",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "دلِ من",
+          "tr": "kalbim"
+        },
+        "translation_labels": "فارسی: دلِ من • ترکی: kalbim",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "دِلِسِه، اینجا خیلی خلوته.",
+        "pronunciation": null,
+        "category": 2,
+        "category_name": "عاشقانه",
+        "category_icon": "💗",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.188531+00:00"
+      },
+      {
+        "id": 12,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "Kedi gibi bakmak",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "مثل گربه نگاه کردن",
+          "mzn": "گربه‌واری چش‌بازی"
+        },
+        "translation_labels": "فارسی: مثل گربه نگاه کردن • مازندرانی: گربه‌واری چش‌بازی",
+        "literal_meaning": "نگاهِ گربه‌ای",
+        "real_meaning": "با چشمانی مهربان و دلبرانه نگاه کردن",
+        "example": "به بابا که نگاه می‌کنی، همین‌طوری",
+        "pronunciation": null,
+        "category": 3,
+        "category_name": "بامزه",
+        "category_icon": "😄",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.207345+00:00"
+      },
+      {
+        "id": 11,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "آب زیر کاه",
+        "language": "fa",
+        "language_label": "فارسی",
+        "translations": {
+          "mzn": "او زیرِ کاه",
+          "tr": "sinsi"
+        },
+        "translation_labels": "مازندرانی: او زیرِ کاه • ترکی: sinsi",
+        "literal_meaning": "",
+        "real_meaning": "کسی که کارهایش را پنهانی انجام می‌دهد",
+        "example": "",
+        "pronunciation": null,
+        "category": 3,
+        "category_name": "بامزه",
+        "category_icon": "😄",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.205279+00:00"
+      },
+      {
+        "id": 9,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Anne",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "مادر",
+          "mzn": "مار"
+        },
+        "translation_labels": "فارسی: مادر • مازندرانی: مار",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 4,
+        "category_name": "خانوادگی",
+        "category_icon": "👨‍👧",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.201209+00:00"
+      },
+      {
+        "id": 8,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Yemek",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "غذا",
+          "mzn": "شِمه"
+        },
+        "translation_labels": "فارسی: غذا • مازندرانی: شِمه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 5,
+        "category_name": "غذا و آشپزی",
+        "category_icon": "🍲",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.199003+00:00"
+      },
+      {
+        "id": 10,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "دِلِس درمِ از",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "دلم درد گرفت"
+        },
+        "translation_labels": "فارسی: دلم درد گرفت",
+        "literal_meaning": "دلِ من درد گرفت",
+        "real_meaning": "یعنی خیلی ناراحت شدم / دلم شکست",
+        "example": "وقتی خیلی دلخور میشی می‌گن",
+        "pronunciation": null,
+        "category": 6,
+        "category_name": "احساسات",
+        "category_icon": "🌧",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.203208+00:00"
+      },
+      {
+        "id": 7,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Özledim",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "دلم برات تنگ شده",
+          "mzn": "دل تنگی دارمه"
+        },
+        "translation_labels": "فارسی: دلم برات تنگ شده • مازندرانی: دل تنگی دارمه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "Seni çok özledim",
+        "pronunciation": null,
+        "category": 6,
+        "category_name": "احساسات",
+        "category_icon": "🌧",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.196983+00:00"
+      }
+    ],
+    "categories": [
+      {
+        "id": 1,
+        "name": "روزمره",
+        "icon": "🌤",
+        "detail": "سلام، خداحافظ، ممنون",
+        "count": 4
+      },
+      {
+        "id": 2,
+        "name": "عاشقانه",
+        "icon": "💗",
+        "detail": "دوستت دارم، دلم برات تنگ شده",
+        "count": 2
+      },
+      {
+        "id": 3,
+        "name": "بامزه",
+        "icon": "😄",
+        "detail": "اصطلاحات خنده‌دار",
+        "count": 2
+      },
+      {
+        "id": 4,
+        "name": "خانوادگی",
+        "icon": "👨‍👧",
+        "detail": "نسبت‌ها و اسم‌های فامیلی",
+        "count": 1
+      },
+      {
+        "id": 5,
+        "name": "غذا و آشپزی",
+        "icon": "🍲",
+        "detail": "اسم غذاها و خوراکی‌ها",
+        "count": 1
+      },
+      {
+        "id": 6,
+        "name": "احساسات",
+        "icon": "🌧",
+        "detail": "دلتنگی، خوشحالی، دلخوری",
+        "count": 2
+      }
+    ],
+    "languages": [
+      {
+        "key": "mzn",
+        "label": "مازندرانی"
+      },
+      {
+        "key": "tr",
+        "label": "ترکی"
+      },
+      {
+        "key": "fa",
+        "label": "فارسی"
+      },
+      {
+        "key": "en",
+        "label": "English"
+      }
+    ],
+    "stats": {
+      "words": 9,
+      "idioms": 3,
+      "with_audio": 0,
+      "quiz_count": 6,
+      "progress": [
+        {
+          "owner": "daddy",
+          "owner_label": "بابا",
+          "learned_count": 0,
+          "streak": 0,
+          "best_streak": 0,
+          "last_practiced": null,
+          "total_entries": 12
+        },
+        {
+          "owner": "daughter",
+          "owner_label": "دخترم",
+          "learned_count": 0,
+          "streak": 0,
+          "best_streak": 0,
+          "last_practiced": null,
+          "total_entries": 12
+        }
+      ],
+      "by_language": [
+        {
+          "key": "mzn",
+          "label": "مازندرانی",
+          "count": 5
+        },
+        {
+          "key": "tr",
+          "label": "ترکی",
+          "count": 6
+        },
+        {
+          "key": "fa",
+          "label": "فارسی",
+          "count": 1
+        },
+        {
+          "key": "en",
+          "label": "English",
+          "count": 0
+        }
+      ]
+    }
+  },
+  "/api/language/entries": {
+    "items": [
+      {
+        "id": 5,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Merhaba",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "سلام",
+          "mzn": "خِدِ حَق"
+        },
+        "translation_labels": "فارسی: سلام • مازندرانی: خِدِ حَق",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "Merhaba babacığım!",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.192620+00:00"
+      },
+      {
+        "id": 4,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "توکِلا",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "یک لحظه صبر کن",
+          "tr": "bir saniye"
+        },
+        "translation_labels": "فارسی: یک لحظه صبر کن • ترکی: bir saniye",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.190577+00:00"
+      },
+      {
+        "id": 2,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "خِدافِز",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "خداحافظ",
+          "tr": "Hoşça kal"
+        },
+        "translation_labels": "فارسی: خداحافظ • ترکی: Hoşça kal",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.186335+00:00"
+      },
+      {
+        "id": 1,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "خِدِ حَق",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "سلام",
+          "tr": "Merhaba"
+        },
+        "translation_labels": "فارسی: سلام • ترکی: Merhaba",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "خِدِ حَق باباجان!",
+        "pronunciation": null,
+        "category": 1,
+        "category_name": "روزمره",
+        "category_icon": "🌤",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.183824+00:00"
+      },
+      {
+        "id": 6,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Seni seviyorum",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "دوستت دارم",
+          "mzn": "تو ره دِل داشتنه"
+        },
+        "translation_labels": "فارسی: دوستت دارم • مازندرانی: تو ره دِل داشتنه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 2,
+        "category_name": "عاشقانه",
+        "category_icon": "💗",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.194847+00:00"
+      },
+      {
+        "id": 3,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "دِلِسِه",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "دلِ من",
+          "tr": "kalbim"
+        },
+        "translation_labels": "فارسی: دلِ من • ترکی: kalbim",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "دِلِسِه، اینجا خیلی خلوته.",
+        "pronunciation": null,
+        "category": 2,
+        "category_name": "عاشقانه",
+        "category_icon": "💗",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.188531+00:00"
+      },
+      {
+        "id": 12,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "Kedi gibi bakmak",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "مثل گربه نگاه کردن",
+          "mzn": "گربه‌واری چش‌بازی"
+        },
+        "translation_labels": "فارسی: مثل گربه نگاه کردن • مازندرانی: گربه‌واری چش‌بازی",
+        "literal_meaning": "نگاهِ گربه‌ای",
+        "real_meaning": "با چشمانی مهربان و دلبرانه نگاه کردن",
+        "example": "به بابا که نگاه می‌کنی، همین‌طوری",
+        "pronunciation": null,
+        "category": 3,
+        "category_name": "بامزه",
+        "category_icon": "😄",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.207345+00:00"
+      },
+      {
+        "id": 11,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "آب زیر کاه",
+        "language": "fa",
+        "language_label": "فارسی",
+        "translations": {
+          "mzn": "او زیرِ کاه",
+          "tr": "sinsi"
+        },
+        "translation_labels": "مازندرانی: او زیرِ کاه • ترکی: sinsi",
+        "literal_meaning": "",
+        "real_meaning": "کسی که کارهایش را پنهانی انجام می‌دهد",
+        "example": "",
+        "pronunciation": null,
+        "category": 3,
+        "category_name": "بامزه",
+        "category_icon": "😄",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.205279+00:00"
+      },
+      {
+        "id": 9,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Anne",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "مادر",
+          "mzn": "مار"
+        },
+        "translation_labels": "فارسی: مادر • مازندرانی: مار",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 4,
+        "category_name": "خانوادگی",
+        "category_icon": "👨‍👧",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.201209+00:00"
+      },
+      {
+        "id": 8,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Yemek",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "غذا",
+          "mzn": "شِمه"
+        },
+        "translation_labels": "فارسی: غذا • مازندرانی: شِمه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "",
+        "pronunciation": null,
+        "category": 5,
+        "category_name": "غذا و آشپزی",
+        "category_icon": "🍲",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.199003+00:00"
+      },
+      {
+        "id": 10,
+        "kind": "idiom",
+        "kind_label": "اصطلاح و ضرب‌المثل",
+        "text": "دِلِس درمِ از",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "translations": {
+          "fa": "دلم درد گرفت"
+        },
+        "translation_labels": "فارسی: دلم درد گرفت",
+        "literal_meaning": "دلِ من درد گرفت",
+        "real_meaning": "یعنی خیلی ناراحت شدم / دلم شکست",
+        "example": "وقتی خیلی دلخور میشی می‌گن",
+        "pronunciation": null,
+        "category": 6,
+        "category_name": "احساسات",
+        "category_icon": "🌧",
+        "added_by": "daddy",
+        "added_by_label": "بابا",
+        "created_at": "2026-09-14T15:10:29.203208+00:00"
+      },
+      {
+        "id": 7,
+        "kind": "word",
+        "kind_label": "کلمه",
+        "text": "Özledim",
+        "language": "tr",
+        "language_label": "ترکی",
+        "translations": {
+          "fa": "دلم برات تنگ شده",
+          "mzn": "دل تنگی دارمه"
+        },
+        "translation_labels": "فارسی: دلم برات تنگ شده • مازندرانی: دل تنگی دارمه",
+        "literal_meaning": "",
+        "real_meaning": "",
+        "example": "Seni çok özledim",
+        "pronunciation": null,
+        "category": 6,
+        "category_name": "احساسات",
+        "category_icon": "🌧",
+        "added_by": "daughter",
+        "added_by_label": "دخترم",
+        "created_at": "2026-09-14T15:10:29.196983+00:00"
+      }
+    ]
+  },
+  "/api/language/categories": {
+    "items": [
+      {
+        "id": 1,
+        "name": "روزمره",
+        "icon": "🌤",
+        "detail": "سلام، خداحافظ، ممنون",
+        "count": 4
+      },
+      {
+        "id": 2,
+        "name": "عاشقانه",
+        "icon": "💗",
+        "detail": "دوستت دارم، دلم برات تنگ شده",
+        "count": 2
+      },
+      {
+        "id": 3,
+        "name": "بامزه",
+        "icon": "😄",
+        "detail": "اصطلاحات خنده‌دار",
+        "count": 2
+      },
+      {
+        "id": 4,
+        "name": "خانوادگی",
+        "icon": "👨‍👧",
+        "detail": "نسبت‌ها و اسم‌های فامیلی",
+        "count": 1
+      },
+      {
+        "id": 5,
+        "name": "غذا و آشپزی",
+        "icon": "🍲",
+        "detail": "اسم غذاها و خوراکی‌ها",
+        "count": 1
+      },
+      {
+        "id": 6,
+        "name": "احساسات",
+        "icon": "🌧",
+        "detail": "دلتنگی، خوشحالی، دلخوری",
+        "count": 2
+      }
+    ],
+    "languages": [
+      {
+        "key": "mzn",
+        "label": "مازندرانی"
+      },
+      {
+        "key": "tr",
+        "label": "ترکی"
+      },
+      {
+        "key": "fa",
+        "label": "فارسی"
+      },
+      {
+        "key": "en",
+        "label": "English"
+      }
+    ]
+  },
+  "/api/language/flashcards?target=tr&count=8": {
+    "items": [
+      {
+        "id": 5,
+        "kind": "word",
+        "question": "Merhaba",
+        "language": "tr",
+        "language_label": "ترکی",
+        "answer": "",
+        "target_language": "tr",
+        "example": "Merhaba babacığım!",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "روزمره",
+        "category_icon": "🌤"
+      },
+      {
+        "id": 2,
+        "kind": "word",
+        "question": "خِدافِز",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "answer": "Hoşça kal",
+        "target_language": "tr",
+        "example": "",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "روزمره",
+        "category_icon": "🌤"
+      },
+      {
+        "id": 7,
+        "kind": "word",
+        "question": "Özledim",
+        "language": "tr",
+        "language_label": "ترکی",
+        "answer": "",
+        "target_language": "tr",
+        "example": "Seni çok özledim",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "احساسات",
+        "category_icon": "🌧"
+      },
+      {
+        "id": 4,
+        "kind": "word",
+        "question": "توکِلا",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "answer": "bir saniye",
+        "target_language": "tr",
+        "example": "",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "روزمره",
+        "category_icon": "🌤"
+      },
+      {
+        "id": 8,
+        "kind": "word",
+        "question": "Yemek",
+        "language": "tr",
+        "language_label": "ترکی",
+        "answer": "",
+        "target_language": "tr",
+        "example": "",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "غذا و آشپزی",
+        "category_icon": "🍲"
+      },
+      {
+        "id": 1,
+        "kind": "word",
+        "question": "خِدِ حَق",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "answer": "Merhaba",
+        "target_language": "tr",
+        "example": "خِدِ حَق باباجان!",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "روزمره",
+        "category_icon": "🌤"
+      },
+      {
+        "id": 10,
+        "kind": "idiom",
+        "question": "دِلِس درمِ از",
+        "language": "mzn",
+        "language_label": "مازندرانی",
+        "answer": "یعنی خیلی ناراحت شدم / دلم شکست",
+        "target_language": "tr",
+        "example": "وقتی خیلی دلخور میشی می‌گن",
+        "literal": "دلِ من درد گرفت",
+        "real": "یعنی خیلی ناراحت شدم / دلم شکست",
+        "pronunciation": null,
+        "category": "احساسات",
+        "category_icon": "🌧"
+      },
+      {
+        "id": 6,
+        "kind": "word",
+        "question": "Seni seviyorum",
+        "language": "tr",
+        "language_label": "ترکی",
+        "answer": "",
+        "target_language": "tr",
+        "example": "",
+        "literal": "",
+        "real": "",
+        "pronunciation": null,
+        "category": "عاشقانه",
+        "category_icon": "💗"
+      }
+    ],
+    "remaining": 12,
+    "total": 12
+  },
+  "/api/language/quiz?count=6": {
+    "items": [
+      {
+        "id": 4,
+        "question": "«آب زیر کاه» یعنی چه‌جور آدمی؟",
+        "options": [
+          "خجالتی",
+          "پنهان‌کار",
+          "مهربان"
+        ],
+        "category": "بامزه",
+        "category_icon": "😄",
+        "feedback": "بامزه‌ست، نه؟"
+      },
+      {
+        "id": 3,
+        "question": "«Özledim» یعنی…",
+        "options": [
+          "دوستت دارم",
+          "دلم برات تنگ شده",
+          "بخواب"
+        ],
+        "category": "احساسات",
+        "category_icon": "🌧",
+        "feedback": "منم همین‌طوری ❤"
+      },
+      {
+        "id": 2,
+        "question": "در مازندرانی به «سلام» چی می‌گن؟",
+        "options": [
+          "توکِلا",
+          "خِدِ حَق",
+          "دِلِسِه"
+        ],
+        "category": "روزمره",
+        "category_icon": "🌤",
+        "feedback": "آفرین دخترم! 🌸"
+      },
+      {
+        "id": 5,
+        "question": "«Yemek» یعنی…",
+        "options": [
+          "غذا",
+          "آب",
+          "نان"
+        ],
+        "category": "غذا و آشپزی",
+        "category_icon": "🍲",
+        "feedback": "بریم آشپزی کنیم 🍲"
+      },
+      {
+        "id": 6,
+        "question": "در مازندرانی «مار» یعنی…",
+        "options": [
+          "ماه",
+          "مادر",
+          "مار"
+        ],
+        "category": "خانوادگی",
+        "category_icon": "👨‍👧",
+        "feedback": "درسته دخترم!"
+      },
+      {
+        "id": 1,
+        "question": "«Merhaba» یعنی چی؟",
+        "options": [
+          "سلام",
+          "ممنون",
+          "خداحافظ"
+        ],
+        "category": "روزمره",
+        "category_icon": "🌤",
+        "feedback": "دقیقاً! این اولین کلمه‌ی ترکی تو بود."
+      }
+    ],
+    "count": 6
+  },
+  "/api/language/stats": {
+    "words": 9,
+    "idioms": 3,
+    "with_audio": 0,
+    "quiz_count": 6,
+    "progress": [
+      {
+        "owner": "daddy",
+        "owner_label": "بابا",
+        "learned_count": 0,
+        "streak": 0,
+        "best_streak": 0,
+        "last_practiced": null,
+        "total_entries": 12
+      },
+      {
+        "owner": "daughter",
+        "owner_label": "دخترم",
+        "learned_count": 0,
+        "streak": 0,
+        "best_streak": 0,
+        "last_practiced": null,
+        "total_entries": 12
+      }
+    ],
+    "by_language": [
+      {
+        "key": "mzn",
+        "label": "مازندرانی",
+        "count": 5
+      },
+      {
+        "key": "tr",
+        "label": "ترکی",
+        "count": 6
+      },
+      {
+        "key": "fa",
+        "label": "فارسی",
+        "count": 1
+      },
+      {
+        "key": "en",
+        "label": "English",
+        "count": 0
+      }
+    ]
+  },
+  "/api/search?q=بابا": {
+    "query": "بابا",
+    "total": 19,
+    "groups": [
+      {
+        "source": "achievements",
+        "label": "دستاوردها",
+        "icon": "achievements",
+        "color": "#fcd34d",
+        "app": "achievements",
+        "items": [
+          {
+            "source": "achievements",
+            "source_label": "دستاوردها",
+            "icon": "achievements",
+            "color": "#fcd34d",
+            "app": "achievements",
+            "title": "۱۰۰ روز با بابا",
+            "snippet": "صد روز کنار هم",
+            "date": "2026-09-14T15:04:24.953491+00:00",
+            "payload": {
+              "achievement_id": 3,
+              "unlocked": false,
+              "open": "achievements"
+            }
+          },
+          {
+            "source": "achievements",
+            "source_label": "دستاوردها",
+            "icon": "achievements",
+            "color": "#fcd34d",
+            "app": "achievements",
+            "title": "جوجه کوچولوی بغلی بابا",
+            "snippet": "ده بار بغل شدی",
+            "date": "2026-09-14T15:04:24.962271+00:00",
+            "payload": {
+              "achievement_id": 8,
+              "unlocked": false,
+              "open": "achievements"
+            }
+          },
+          {
+            "source": "achievements",
+            "source_label": "دستاوردها",
+            "icon": "achievements",
+            "color": "#fcd34d",
+            "app": "achievements",
+            "title": "دختر مهربون بابا",
+            "snippet": "ده بار بابا رو بغل کردی",
+            "date": "2026-09-14T15:04:24.964084+00:00",
+            "payload": {
+              "achievement_id": 9,
+              "unlocked": false,
+              "open": "achievements"
+            }
+          },
+          {
+            "source": "achievements",
+            "source_label": "دستاوردها",
+            "icon": "achievements",
+            "color": "#fcd34d",
+            "app": "achievements",
+            "title": "اولین ویس",
+            "snippet": "اولین صدای بابا رو گوش دادی",
+            "date": "2026-09-14T15:04:24.951228+00:00",
+            "payload": {
+              "achievement_id": 2,
+              "unlocked": false,
+              "open": "achievements"
+            }
+          },
+          {
+            "source": "achievements",
+            "source_label": "دستاوردها",
+            "icon": "achievements",
+            "color": "#fcd34d",
+            "app": "achievements",
+            "title": "ده تماس",
+            "snippet": "ده تماس با بابا",
+            "date": "2026-09-14T15:10:13.624520+00:00",
+            "payload": {
+              "achievement_id": 18,
+              "unlocked": false,
+              "open": "achievements"
+            }
+          }
+        ]
+      },
+      {
+        "source": "quiz",
+        "label": "سؤال‌های کوییز",
+        "icon": "quiz",
+        "color": "#67e8f9",
+        "app": "quiz",
+        "items": [
+          {
+            "source": "quiz",
+            "source_label": "سؤال‌های کوییز",
+            "icon": "quiz",
+            "color": "#67e8f9",
+            "app": "quiz",
+            "title": "بابا اول چی به تو گفت؟",
+            "snippet": "",
+            "date": "2026-09-14T15:04:25.060249+00:00",
+            "payload": {
+              "question_id": 2,
+              "open": "quiz"
+            }
+          },
+          {
+            "source": "quiz",
+            "source_label": "سؤال‌های کوییز",
+            "icon": "quiz",
+            "color": "#67e8f9",
+            "app": "quiz",
+            "title": "بابا کِی بیشتر دلتنگ می‌شه؟",
+            "snippet": "همیشه یعنی همیشه.",
+            "date": "2026-09-14T15:04:25.063370+00:00",
+            "payload": {
+              "question_id": 4,
+              "open": "quiz"
+            }
+          },
+          {
+            "source": "quiz",
+            "source_label": "سؤال‌های کوییز",
+            "icon": "quiz",
+            "color": "#67e8f9",
+            "app": "quiz",
+            "title": "رنگ مورد علاقه‌ی بابا چیه؟",
+            "snippet": "جواب همیشه تویی.",
+            "date": "2026-09-14T15:04:25.058406+00:00",
+            "payload": {
+              "question_id": 1,
+              "open": "quiz"
+            }
+          },
+          {
+            "source": "quiz",
+            "source_label": "سؤال‌های کوییز",
+            "icon": "quiz",
+            "color": "#67e8f9",
+            "app": "quiz",
+            "title": "اگه بابا یه آرزو داشت، چی بود؟",
+            "snippet": "",
+            "date": "2026-09-14T15:04:25.064887+00:00",
+            "payload": {
+              "question_id": 5,
+              "open": "quiz"
+            }
+          }
+        ]
+      },
+      {
+        "source": "easter_eggs",
+        "label": "رازها",
+        "icon": "star",
+        "color": "#fcd34d",
+        "app": "about",
+        "items": [
+          {
+            "source": "easter_eggs",
+            "source_label": "رازها",
+            "icon": "star",
+            "color": "#fcd34d",
+            "app": "about",
+            "title": "راز: خونه‌ی بابا",
+            "snippet": "یه راز مخفی توی LoveOS…",
+            "date": "2026-09-14T15:04:24.993355+00:00",
+            "payload": {
+              "egg_id": 9,
+              "open": "terminal"
+            }
+          },
+          {
+            "source": "easter_eggs",
+            "source_label": "رازها",
+            "icon": "star",
+            "color": "#fcd34d",
+            "app": "about",
+            "title": "راز: کمک بابا",
+            "snippet": "یه راز مخفی توی LoveOS…",
+            "date": "2026-09-14T15:04:25.003939+00:00",
+            "payload": {
+              "egg_id": 15,
+              "open": "terminal"
+            }
+          }
+        ]
+      },
+      {
+        "source": "gifts",
+        "label": "هدیه‌ها",
+        "icon": "gift",
+        "color": "#fcd34d",
+        "app": "gifts",
+        "items": [
+          {
+            "source": "gifts",
+            "source_label": "هدیه‌ها",
+            "icon": "gift",
+            "color": "#fcd34d",
+            "app": "gifts",
+            "title": "عطر",
+            "snippet": "برای قبولی‌ات در دانشگاه بابا گفت بوش یادته می‌ندازه",
+            "date": "2026-04-17",
+            "payload": {
+              "gift_id": 4,
+              "open": "gifts"
+            }
+          },
+          {
+            "source": "gifts",
+            "source_label": "هدیه‌ها",
+            "icon": "gift",
+            "color": "#fcd34d",
+            "app": "gifts",
+            "title": "شال دست‌باف",
+            "snippet": "خودم بافتم، رنگش مثل آسمون شب بابا گفت شب‌ها می‌بندمش",
+            "date": "2026-06-16",
+            "payload": {
+              "gift_id": 5,
+              "open": "gifts"
+            }
+          }
+        ]
+      },
+      {
+        "source": "language",
+        "label": "کلمات و اصطلاحات",
+        "icon": "language",
+        "color": "#93c5fd",
+        "app": "language",
+        "items": [
+          {
+            "source": "language",
+            "source_label": "کلمات و اصطلاحات",
+            "icon": "language",
+            "color": "#93c5fd",
+            "app": "language",
+            "title": "خِدِ حَق",
+            "snippet": "فارسی: سلام • ترکی: Merhaba خِدِ حَق باباجان!",
+            "date": "2026-09-14T15:10:29.183824+00:00",
+            "payload": {
+              "entry_id": 1,
+              "open": "language"
+            }
+          },
+          {
+            "source": "language",
+            "source_label": "کلمات و اصطلاحات",
+            "icon": "language",
+            "color": "#93c5fd",
+            "app": "language",
+            "title": "Kedi gibi bakmak",
+            "snippet": "…ربه‌ای با چشمانی مهربان و دلبرانه نگاه کردن به بابا که نگاه می‌کنی، همین‌طوری…",
+            "date": "2026-09-14T15:10:29.207345+00:00",
+            "payload": {
+              "entry_id": 12,
+              "open": "language"
+            }
+          }
+        ]
+      },
+      {
+        "source": "letters",
+        "label": "نامه‌های نجوا",
+        "icon": "whisper",
+        "color": "#fda4af",
+        "app": "whisper",
+        "items": [
+          {
+            "source": "letters",
+            "source_label": "نامه‌های نجوا",
+            "icon": "whisper",
+            "color": "#fda4af",
+            "app": "whisper",
+            "title": "اولین نامه",
+            "snippet": "…ای دنیا که باشی، یه تیکه از قلب من همون‌جاست.  بابا…",
+            "date": "2026-09-14T15:04:25.106802+00:00",
+            "payload": {
+              "letter_id": 1
+            }
+          }
+        ]
+      },
+      {
+        "source": "library",
+        "label": "کتابخانه",
+        "icon": "library",
+        "color": "#fca5a5",
+        "app": "library",
+        "items": [
+          {
+            "source": "library",
+            "source_label": "کتابخانه",
+            "icon": "library",
+            "color": "#fca5a5",
+            "app": "library",
+            "title": "داستان ما",
+            "snippet": "نوشته‌ی بابا و دخترش",
+            "date": "2026-09-14T15:04:25.111002+00:00",
+            "payload": {
+              "book_id": 1,
+              "open": "library"
+            }
+          }
+        ]
+      },
+      {
+        "source": "reading_notes",
+        "label": "یادداشت‌های کتاب‌خوانی",
+        "icon": "reading",
+        "color": "#5eead4",
+        "app": "reading",
+        "items": [
+          {
+            "source": "reading_notes",
+            "source_label": "یادداشت‌های کتاب‌خوانی",
+            "icon": "reading",
+            "color": "#5eead4",
+            "app": "reading",
+            "title": "یادداشت فصل: فصل دوم: آب",
+            "snippet": "مرسی که این کتاب رو انتخاب کردی بابا؛ قشنگ بود ❤",
+            "date": "2026-09-14T15:10:29.114096+00:00",
+            "payload": {
+              "book_id": 1,
+              "chapter_id": 2,
+              "note_id": 2,
+              "open": "reading"
+            }
+          }
+        ]
+      },
+      {
+        "source": "reading_quotes",
+        "label": "نقل‌قول‌ها",
+        "icon": "quote",
+        "color": "#5eead4",
+        "app": "reading",
+        "items": [
+          {
+            "source": "reading_quotes",
+            "source_label": "نقل‌قول‌ها",
+            "icon": "quote",
+            "color": "#5eead4",
+            "app": "reading",
+            "title": "نقل‌قول از «ملت عشق»",
+            "snippet": "عشق، تنها پلی است که از آن می‌توان به دلِ دیگری رفت. این جمله رو گذاشتم پشت گوشی بابا",
+            "date": "2026-09-14T15:10:29.115448+00:00",
+            "payload": {
+              "book_id": 1,
+              "quote_id": 1,
+              "open": "reading"
+            }
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "key": "chat",
+        "label": "پیام‌ها",
+        "icon": "chat",
+        "color": "#f0abfc",
+        "app": "chat"
+      },
+      {
+        "key": "letters",
+        "label": "نامه‌های نجوا",
+        "icon": "whisper",
+        "color": "#fda4af",
+        "app": "whisper"
+      },
+      {
+        "key": "voices",
+        "label": "ویس‌های بابا",
+        "icon": "voice",
+        "color": "#f9a8d4",
+        "app": "voice"
+      },
+      {
+        "key": "memories",
+        "label": "خاطره‌ها",
+        "icon": "memories",
+        "color": "#fcd34d",
+        "app": "memories"
+      },
+      {
+        "key": "music",
+        "label": "موسیقی ما",
+        "icon": "music",
+        "color": "#c4b5fd",
+        "app": "music"
+      },
+      {
+        "key": "library",
+        "label": "کتابخانه",
+        "icon": "library",
+        "color": "#fca5a5",
+        "app": "library"
+      },
+      {
+        "key": "chapters",
+        "label": "فصل‌های کتاب",
+        "icon": "book",
+        "color": "#fca5a5",
+        "app": "library"
+      },
+      {
+        "key": "paragraphs",
+        "label": "خط‌های کتاب",
+        "icon": "pen",
+        "color": "#fca5a5",
+        "app": "library"
+      },
+      {
+        "key": "gifts",
+        "label": "هدیه‌ها",
+        "icon": "gift",
+        "color": "#fcd34d",
+        "app": "gifts"
+      },
+      {
+        "key": "home_features",
+        "label": "خانه‌ی رویایی",
+        "icon": "dreamhome",
+        "color": "#86efac",
+        "app": "dreamhome"
+      },
+      {
+        "key": "home_rooms",
+        "label": "اتاق‌های خانه",
+        "icon": "dreamhome",
+        "color": "#86efac",
+        "app": "dreamhome"
+      },
+      {
+        "key": "language",
+        "label": "کلمات و اصطلاحات",
+        "icon": "language",
+        "color": "#93c5fd",
+        "app": "language"
+      },
+      {
+        "key": "reading_books",
+        "label": "کتاب‌های مشترک",
+        "icon": "reading",
+        "color": "#5eead4",
+        "app": "reading"
+      },
+      {
+        "key": "reading_notes",
+        "label": "یادداشت‌های کتاب‌خوانی",
+        "icon": "reading",
+        "color": "#5eead4",
+        "app": "reading"
+      },
+      {
+        "key": "reading_quotes",
+        "label": "نقل‌قول‌ها",
+        "icon": "quote",
+        "color": "#5eead4",
+        "app": "reading"
+      },
+      {
+        "key": "quiz",
+        "label": "سؤال‌های کوییز",
+        "icon": "quiz",
+        "color": "#67e8f9",
+        "app": "quiz"
+      },
+      {
+        "key": "plans",
+        "label": "آرزوهای ما",
+        "icon": "plans",
+        "color": "#5eead4",
+        "app": "plans"
+      },
+      {
+        "key": "achievements",
+        "label": "دستاوردها",
+        "icon": "achievements",
+        "color": "#fcd34d",
+        "app": "achievements"
+      },
+      {
+        "key": "easter_eggs",
+        "label": "رازها",
+        "icon": "star",
+        "color": "#fcd34d",
+        "app": "about"
+      }
+    ]
+  },
+  "/api/search?suggest=1": {
+    "items": [
+      {
+        "key": "last_memory",
+        "label": "آخرین خاطره",
+        "icon": "memories",
+        "color": "#fcd34d",
+        "app": "memories",
+        "query": "۱۰۰۰ روز با هم"
+      },
+      {
+        "key": "last_book",
+        "label": "آخرین کتاب",
+        "icon": "reading",
+        "color": "#5eead4",
+        "app": "reading",
+        "query": "ماهی سیاه کوچولو"
+      },
+      {
+        "key": "last_letter",
+        "label": "آخرین نامه",
+        "icon": "whisper",
+        "color": "#fda4af",
+        "app": "whisper",
+        "query": "اولین نامه"
+      }
+    ]
+  },
+  "/api/reading/books/1": {
+    "item": {
+      "id": 1,
+      "title": "ملت عشق",
+      "author": "الیف شافاک",
+      "cover": null,
+      "status": "reading",
+      "status_label": "الان داریم می‌خونیم",
+      "summary": "داستان عشق و شمس و مولانا؛ کتابی که با هم می‌خونیم و حاشیه می‌نویسیم.",
+      "why_this_book": "چون هر دومون عاشق جمله‌های قشنگیم",
+      "pdf": null,
+      "link": "",
+      "is_physical": true,
+      "chapters_count": 4,
+      "added_by": "daddy",
+      "added_by_label": "بابا",
+      "started_on": "2026-08-15",
+      "finished_on": null,
+      "library_book": null,
+      "source": "reading",
+      "progress": {
+        "daddy": 25,
+        "daughter": 25
+      },
+      "notes_count": 2,
+      "quotes_count": 1,
+      "chapters": [
+        {
+          "id": 1,
+          "book": 1,
+          "order": 1,
+          "title": "فصل اول: خاک",
+          "label": "فصل اول: خاک",
+          "text": "یه روز معمولی بود که مسافر رسید…",
+          "page_from": null,
+          "page_to": null,
+          "notes_count": 0,
+          "comments_count": 0,
+          "read_by": {
+            "daddy": false,
+            "daughter": false
+          },
+          "notes": [],
+          "comments": [],
+          "quotes": []
+        },
+        {
+          "id": 2,
+          "book": 1,
+          "order": 2,
+          "title": "فصل دوم: آب",
+          "label": "فصل دوم: آب",
+          "text": "شمس گفت: هر حرفی که می‌زنی، اگه از دلت نیاد، به دل نمی‌نشینه.",
+          "page_from": null,
+          "page_to": null,
+          "notes_count": 2,
+          "comments_count": 2,
+          "read_by": {
+            "daddy": true,
+            "daughter": true
+          },
+          "notes": [
+            {
+              "id": 2,
+              "owner": "daughter",
+              "owner_label": "دخترم",
+              "book": 1,
+              "chapter": 2,
+              "chapter_label": "فصل دوم: آب",
+              "text": "مرسی که این کتاب رو انتخاب کردی بابا؛ قشنگ بود ❤",
+              "rating": 4,
+              "is_finished": true,
+              "page_hint": "",
+              "created_at": "2026-09-14T15:10:29.114096+00:00"
+            },
+            {
+              "id": 1,
+              "owner": "daddy",
+              "owner_label": "بابا",
+              "book": 1,
+              "chapter": 2,
+              "chapter_label": "فصل دوم: آب",
+              "text": "این جمله رو دو بار خوندم: دلت باید حرف بزنه، نه زبونت.",
+              "rating": 5,
+              "is_finished": true,
+              "page_hint": "",
+              "created_at": "2026-09-14T15:10:29.112603+00:00"
+            }
+          ],
+          "comments": [
+            {
+              "id": 1,
+              "owner": "daddy",
+              "owner_label": "بابا",
+              "chapter": 2,
+              "text": "فصل دوم رو بخون، بعداً می‌خوام درباره‌ش حرف بزنیم.",
+              "reply_to": null,
+              "created_at": "2026-09-14T15:10:29.116783+00:00"
+            },
+            {
+              "id": 2,
+              "owner": "daughter",
+              "owner_label": "دخترم",
+              "chapter": 2,
+              "text": "خوندم بابا! نظرم رو نوشتم ❤",
+              "reply_to": null,
+              "created_at": "2026-09-14T15:10:29.118016+00:00"
+            }
+          ],
+          "quotes": []
+        },
+        {
+          "id": 3,
+          "book": 1,
+          "order": 3,
+          "title": "فصل سوم: آتش",
+          "label": "فصل سوم: آتش",
+          "text": "عشق، تنها پلی است که از آن می‌توان به دلِ دیگری رفت.",
+          "page_from": null,
+          "page_to": null,
+          "notes_count": 0,
+          "comments_count": 0,
+          "read_by": {
+            "daddy": false,
+            "daughter": false
+          },
+          "notes": [],
+          "comments": [],
+          "quotes": [
+            {
+              "id": 1,
+              "owner": "daughter",
+              "owner_label": "دخترم",
+              "book": 1,
+              "book_title": "ملت عشق",
+              "chapter": 3,
+              "chapter_label": "فصل سوم: آتش",
+              "text": "عشق، تنها پلی است که از آن می‌توان به دلِ دیگری رفت.",
+              "comment": "این جمله رو گذاشتم پشت گوشی بابا",
+              "created_at": "2026-09-14T15:10:29.115448+00:00"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "book": 1,
+          "order": 4,
+          "title": "فصل چهارم: باد",
+          "label": "فصل چهارم: باد",
+          "text": "و بعد… هر دو فهمیدیم که باید با هم بریم.",
+          "page_from": null,
+          "page_to": null,
+          "notes_count": 0,
+          "comments_count": 0,
+          "read_by": {
+            "daddy": false,
+            "daughter": false
+          },
+          "notes": [],
+          "comments": [],
+          "quotes": []
+        }
+      ]
+    }
+  },
+  "/api/reading/chapters/1/notes": {
+    "items": []
+  },
+  "/api/home/rooms/1/ideas": {
+    "items": [
+      {
+        "id": 2,
+        "kind": "color",
+        "kind_label": "رنگ",
+        "text": "رنگ اصلی: صورتی خاکی",
+        "color_value": "#f9a8d4",
+        "added_by_label": "دخترم"
+      },
+      {
+        "id": 3,
+        "kind": "furniture",
+        "kind_label": "مبلمان",
+        "text": "کاناپه‌ی بی‌گوشه",
+        "color_value": "",
+        "added_by_label": "بابا"
+      },
+      {
+        "id": 1,
+        "kind": "idea",
+        "kind_label": "ایده",
+        "text": "کاناپه‌ی بزرگ خاکستری + پتوی پشمی",
+        "color_value": "",
+        "added_by_label": "دخترم"
+      }
+    ]
+  }
+}

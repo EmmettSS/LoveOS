@@ -1,0 +1,65 @@
+/* فونت‌های self-host شده‌ی LoveOS — بدون CDN، کاملاً آفلاین */
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400; font-display: swap; unicode-range: U+0600-06FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-arabic-500-normal.woff2') format('woff2');
+  font-weight: 500; font-display: swap; unicode-range: U+0600-06FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-latin-500-normal.woff2') format('woff2');
+  font-weight: 500; font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700; font-display: swap; unicode-range: U+0600-06FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/vazirmatn-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
+
+/* فونت بچگانه‌ی تیترها */
+@font-face {
+  font-family: 'Lalezar';
+  src: url('/fonts/lalezar-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400; font-display: swap; unicode-range: U+0600-06FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Lalezar';
+  src: url('/fonts/lalezar-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  src: url('/fonts/baloo-bhaijaan-2-arabic-700-normal.woff2') format('woff2');
+  font-weight: 700; font-display: swap; unicode-range: U+0600-06FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  src: url('/fonts/baloo-bhaijaan-2-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
+
+/* دست‌خط نامه‌ها */
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('/fonts/noto-nastaliq-urdu-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('/fonts/noto-nastaliq-urdu-arabic-600-normal.woff2') format('woff2');
+  font-weight: 600; font-display: swap;
+}
