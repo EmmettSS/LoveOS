@@ -77,26 +77,31 @@ g.fetch = async (url: string, opts: any = {}) => {
     const match = fixtures[base]
     return json(match?.item ? { ok: true, item: match.item, already: false } : { ok: true, progress: { daddy: 0, daughter: 0 } })
   }
-  // مسیرهای پویا (کتاب/فصل/اتاق/الهام) از فایل fixture
-  if (path.startsWith('/api/weather')) {
-    const day = (offset: number, icon: string, hi: number, lo: number) => ({
-      date: new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10),
-      icon,
-      temp_high: hi,
-      temp_low: lo,
-    })
+  // هواشناسی کلاینت‌ساید است: پاسخِ Open-Meteo (شکل واقعی) را می‌دهیم
+  if (path.startsWith('/v1/forecast')) {
+    const lat = Number(new URL(raw).searchParams.get('latitude'))
+    const isDaughter = Math.abs(lat - 41.0082) < 0.6
+    const temp = isDaughter ? 27 : Math.abs(lat - 37.2808) < 0.6 ? 22 : 24
+    const code = isDaughter ? 3 : 0
+    const dates = [0, 1, 2, 3, 4].map((i) => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10))
     return json({
-      daddy: {
-        city: 'رشت', temp: 22, feels_like: 24, humidity: 68, wind: 14, pressure: 1012, cloud_cover: 20,
-        sunrise: '05:41', sunset: '18:55', label: 'آفتابی', icon: 'sun',
-        forecast: [day(1, 'sun', 24, 16), day(2, 'cloud', 23, 15), day(3, 'rain', 20, 14), day(4, 'sun', 25, 16), day(5, 'sun', 26, 17)],
+      latitude: lat,
+      timezone: 'auto',
+      current: {
+        time: `${dates[0]}T21:00`, interval: 900,
+        temperature_2m: temp, apparent_temperature: temp + 2, relative_humidity_2m: isDaughter ? 55 : 68,
+        weather_code: code, wind_speed_10m: isDaughter ? 9 : 14, wind_direction_10m: isDaughter ? 200 : 45,
+        pressure_msl: isDaughter ? 1008 : 1012, cloud_cover: isDaughter ? 60 : 20, is_day: 0, uv_index: 0.4,
       },
-      daughter: {
-        city: 'استانبول', temp: 27, feels_like: 29, humidity: 55, wind: 9, pressure: 1008, cloud_cover: 60,
-        sunrise: '06:02', sunset: '19:20', label: 'ابری', icon: 'cloud', is_live: true,
-        forecast: [day(1, 'cloud', 28, 19), day(2, 'rain', 25, 18), day(3, 'sun', 29, 19), day(4, 'cloud', 27, 18), day(5, 'storm', 26, 17)],
+      daily: {
+        time: dates,
+        sunrise: dates.map((d) => `${d}T0${isDaughter ? 6 : 5}:41`),
+        sunset: dates.map((d) => `${d}T18:55`),
+        temperature_2m_max: dates.map(() => temp + 3),
+        temperature_2m_min: dates.map(() => temp - 5),
+        precipitation_probability_max: dates.map(() => (isDaughter ? 40 : 5)),
+        weather_code: dates.map((_, i) => (isDaughter ? [3, 61, 2, 3, 95][i] : 0)),
       },
-      message: 'هوای جفتمون یه شکله ☁️',
     })
   }
   const exact = fixtures[path]

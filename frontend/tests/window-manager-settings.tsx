@@ -65,7 +65,9 @@ g.fetch = async (url: string, opts: any = {}) => {
     }
     return json({ ok: true, config: serverConfig })
   }
-  if (p.includes('/api/weather')) throw new Error('offline')
+  // هواشناسی حالا کلاینت‌ساید است: اینجا قطعیِ اینترنت را شبیه‌سازی می‌کنیم
+  // تا ویجت دسکتاپ بدون خطا با مقدارهای خالی رندر شود
+  if (p.includes('api.open-meteo.com')) throw new Error('offline')
   return json({ items: [], unread: 0 })
 }
 

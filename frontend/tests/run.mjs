@@ -38,6 +38,7 @@ const ALL = {
   'language-bridge-quiz': join(here, 'language-bridge-quiz.tsx'),
   'mood-custom': join(here, 'mood-custom.tsx'),
   'phone-notifications': join(here, 'phone-notifications.tsx'),
+  'weather-live': join(here, 'weather-live.tsx'),
 }
 
 const only = process.argv.slice(2)

@@ -4,42 +4,32 @@
  * جزئیات کامل (حس دما، رطوبت، باد، فشار، UV، پوشش ابر)، طلوع/غروب
  * و پیش‌بینی ۵ روزه — به‌همراه پیام عاشقانه‌ی مقایسه.
  * نسخه‌ی اصلاح‌شده: رنگ متن‌ها همیشه با تم هماهنگ و خوانا است.
+ *
+ * ⚠️ آب‌وهوا اینجا مستقیم از مرورگرِ کاربر گرفته می‌شود (Open-Meteo)، نه از
+ * سرور. هاست اشتراکی دسترسی خروجی ندارد؛ پس همه‌ی منطق در
+ * `shared/weather.ts` است و فقط همان تابع صدا زده می‌شود.
  */
 import { motion, animate } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Icon, type IconName } from '../shared/Icon'
-import { digits, isFa, weekdayName } from '../shared/format'
-import { ApiStatus, useApi } from '../shared/ui'
+import { digits, formatTime, isFa, weekdayName } from '../shared/format'
+import { useOS } from '../shared/store'
+import { ApiStatus } from '../shared/ui'
+import {
+  careNote,
+  clockTime,
+  fetchLiveWeather,
+  tempDiff,
+  temperatureMessage,
+  weatherTargets,
+  type LiveWeather,
+  type WeatherPair,
+} from '../shared/weather'
 
-interface ForecastDay {
-  date: string | null
-  t_max: number | null
-  t_min: number | null
-  precip_prob: number | null
-  label: string
-  icon: string
-}
-
-interface Side {
-  city: string
-  ok?: boolean
-  temp: number | null
-  feels_like?: number | null
-  humidity?: number | null
-  wind?: number | null
-  wind_dir?: string
-  pressure?: number | null
-  cloud_cover?: number | null
-  uv?: number | null
-  is_day?: boolean
-  label: string
-  icon: string
-  sunrise?: string | null
-  sunset?: string | null
-  forecast?: ForecastDay[]
-}
+/** هر طرف، یک آب‌وهوای کامل است (بابا / دخترم) */
+type Side = LiveWeather
 
 const ICON: Record<string, IconName> = { sun: 'sun', cloud: 'cloud', rain: 'rain', snow: 'snow', fog: 'cloud', storm: 'rain' }
 
@@ -257,8 +247,16 @@ function Card({ side, label }: { side: Side; label: string }) {
         <div className="absolute inset-0 flex flex-col justify-between p-4" style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(15,23,42,.42))' }}>
           <div className="flex items-center justify-between">
             <p className="os-title rounded-full bg-white/70 px-3 py-1 text-sm backdrop-blur text-[#4a2c40]">{label}</p>
-            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] backdrop-blur text-[#4a2c40]">
-              {side.is_day ? '☀️' : '🌙'} {side.label}
+            <span className="flex items-center gap-1.5">
+              {side.is_live && (
+                <span className="flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-[11px] backdrop-blur text-[#4a2c40]">
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#ef4444]" />
+                  {t('weather.live')}
+                </span>
+              )}
+              <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] backdrop-blur text-[#4a2c40]">
+                {side.is_day ? '☀️' : '🌙'} {side.label}
+              </span>
             </span>
           </div>
           <div className="flex items-end justify-between">
@@ -334,11 +332,11 @@ function Card({ side, label }: { side: Side; label: string }) {
         <div className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-[11px] os-card" style={{ background: 'var(--os-accent-soft)' }}>
           <span className="flex items-center gap-1.5" style={{ color: 'var(--os-text)' }}>
             <Icon name="sun" size={14} /> {t('weather.sunrise')}:{' '}
-            <b>{side.sunrise ? digits(side.sunrise.slice(11, 16)) : '—'}</b>
+            <b>{digits(clockTime(side.sunrise))}</b>
           </span>
           <span className="flex items-center gap-1.5" style={{ color: 'var(--os-text)' }}>
             <Icon name="moon" size={14} /> {t('weather.sunset')}:{' '}
-            <b>{side.sunset ? digits(side.sunset.slice(11, 16)) : '—'}</b>
+            <b>{digits(clockTime(side.sunset))}</b>
           </span>
           {side.cloud_cover != null && (
             <span className="flex items-center gap-1" style={{ color: 'var(--os-text)' }}>
@@ -391,21 +389,56 @@ function forecastDayName(date: string | null, i: number, t: (k: string) => strin
 /* ------------------------------------------------------------- اپ ---- */
 export default function Weather() {
   const { t } = useTranslation()
-  const { data, loading, error } = useApi<{ daddy: Side; daughter: Side; message: string }>('/weather')
-  if (loading || error) return <ApiStatus loading={loading} error={error} />
-  if (!data) return <p className="os-empty">{t('weather.unavailable')}</p>
+  const config = useOS((s) => s.config)
 
-  const diff =
-    data.daddy.temp != null && data.daughter.temp != null
-      ? Math.abs(Math.round(data.daddy.temp) - Math.round(data.daughter.temp))
-      : null
+  const [pair, setPair] = useState<WeatherPair | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [nonce, setNonce] = useState(0)
 
+  /** بابا از تنظیمات پنل، دخترم اول از موقعیت زنده‌ی دستگاهش و بعد از پنل */
+  const targets = useMemo(() => weatherTargets(config), [config])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      // هر دو شهر با هم — همان لحظه، مستقیم از مرورگر
+      const [daddy, daughter] = await Promise.all([
+        fetchLiveWeather(
+          targets.daddy.city, targets.daddy.lat, targets.daddy.lng, targets.daddy.tz, targets.daddy.is_live,
+        ),
+        fetchLiveWeather(
+          targets.daughter.city, targets.daughter.lat, targets.daughter.lng, targets.daughter.tz, targets.daughter.is_live,
+        ),
+      ])
+      setPair({ daddy, daughter })
+      setError(daddy.ok || daughter.ok ? null : t('weather.unavailable'))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLoading(false)
+    }
+  }, [targets, t])
+
+  useEffect(() => {
+    void load()
+  }, [load, nonce])
+
+  if (loading && !pair) return <ApiStatus loading error={null} />
+  if (!pair) return <ApiStatus loading={false} error={error || t('weather.unavailable')} onRetry={() => setNonce((n) => n + 1)} />
+
+  const diff = tempDiff(pair.daddy, pair.daughter)
+  const message = temperatureMessage(pair.daddy, pair.daughter)
+  const note = careNote(pair.daughter)
+  const bothOffline = !pair.daddy.ok && !pair.daughter.ok
+  const fromCache = pair.daddy.cached || pair.daughter.cached
+  const updatedAt = pair.daddy.updated_at || pair.daughter.updated_at
   return (
     <div className="space-y-3">
-      <Card side={data.daddy} label={t('weather.daddyCity')} />
-      <Card side={data.daughter} label={t('weather.daughterCity')} />
+      <Card side={pair.daddy} label={t('weather.daddyCity')} />
+      <Card side={pair.daughter} label={t('weather.daughterCity')} />
 
-      {(data.message || diff != null) && (
+      {(message || diff != null || note) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -419,7 +452,8 @@ export default function Weather() {
             💞
           </motion.span>
           <div className="min-w-0 flex-1">
-            {data.message && <p className="text-sm leading-6 os-hand">{data.message}</p>}
+            {message && <p className="text-sm leading-6 os-hand">{message}</p>}
+            {note && <p className="mt-0.5 text-xs leading-6 os-hand" style={{ color: 'var(--os-accent)' }}>{note}</p>}
             {diff != null && (
               <p className="text-[11px] os-muted">
                 {t('weather.tempDiff', { diff: digits(diff) })}
@@ -432,7 +466,26 @@ export default function Weather() {
         </motion.div>
       )}
 
-      {data.daddy.temp == null && <p className="text-center text-xs os-muted">{t('weather.unavailable')}</p>}
+      {/* وضعیت: از حافظه یا تازه — با دکمه‌ی تازه‌سازی (کش ۱۵ دقیقه‌ای) */}
+      <div className="flex items-center justify-between gap-2 px-1">
+        <p className="text-[11px] os-muted">
+          {bothOffline
+            ? t('weather.unavailable')
+            : fromCache
+              ? t('weather.cachedHint')
+              : updatedAt
+                ? `${t('weather.updated')} ${formatTime(new Date(updatedAt))}`
+                : ''}
+        </p>
+        <button
+          type="button"
+          className="os-chip"
+          onClick={() => setNonce((n) => n + 1)}
+          disabled={loading}
+        >
+          {loading ? '…' : t('os.refresh')}
+        </button>
+      </div>
     </div>
   )
 }

@@ -258,7 +258,10 @@
         "cloudCover": "Cloud cover",
         "today": "Today",
         "tomorrow": "Tomorrow",
-        "tempDiff": "Diff from Daddy's weather: {{diff}}°"
+        "tempDiff": "Diff from Daddy's weather: {{diff}}°",
+        "live": "Live",
+        "cachedHint": "From this session's cache — tap to refresh",
+        "updated": "Updated:"
     },
     "heartbeat": {
         "feelIt": "Feel my heartbeat",

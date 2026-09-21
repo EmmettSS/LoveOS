@@ -42,7 +42,16 @@ export interface Config {
   today_message?: string
   about_text?: string
   daddy_city?: string
+  /** مختصات و منطقه‌ی زمانی بابا (از پنل بابا می‌آید — برای هوای کلاینت‌ساید) */
+  daddy_lat?: number
+  daddy_lng?: number
+  daddy_timezone?: string
   daughter_city?: string
+  /** مختصات و منطقه‌ی زمانی مؤثر دخترم (موقعیت زنده یا مقدار پنل) */
+  daughter_lat?: number
+  daughter_lng?: number
+  daughter_timezone?: string
+  daughter_is_live?: boolean
   allow_daughter_music_upload?: boolean
   vault_open?: boolean
   birthday?: string | null
